@@ -1,0 +1,42 @@
+<MainApp>
+
+<ExperimentLayout>:
+
+    button_left: button_left
+    button_right: button_right
+    label_left: label_left
+    label_right: label_right
+
+    canvas.before:
+        Rectangle:
+            size: self.size
+            source: "assets/images/panel.png"
+
+    BasicImageButtonLeft:  
+        id: button_left
+        source: 'assets/images/green_light.png'
+        size_hint: .3, .3
+        pos_hint:  {'center_x':.3, 'center_y':.75}
+
+    BasicImageButton:  
+        id: button_right
+        source: 'assets/images/red_light.png'
+        size_hint: .3, .3
+        pos_hint:  {'center_x':.7, 'center_y':.75} 
+
+
+    Label:
+        id: label_right
+        pos_hint:  {'center_x':.95, 'center_y':.05} 
+        text: "??"
+        font_size: '56sp'
+        bold: True
+        color: 0.3, 0.3, 0.3, 0.8
+
+    Label:
+        id: label_left
+        pos_hint:  {'center_x':.05, 'center_y':.05} 
+        text: "??"
+        font_size: '56sp'
+        bold: True
+        color: 0.3, 0.3, 0.3, 0.8
