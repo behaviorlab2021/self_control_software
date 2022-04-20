@@ -15,13 +15,12 @@ from functions import distance_from_center
 from kivy.properties import ObjectProperty
 from kivy.properties import StringProperty
 from kivy.graphics.vertex_instructions import Rectangle
-
-Window.fullscreen = True
+import random
+# Window.fullscreen = True
 # Window.show_cursor = False
 
 Config.set('input', 'mouse', 'mouse, multitouch_on_demand')
 
-phase_time = 15
 
 class ExperimentLayout(FloatLayout):
 
@@ -30,30 +29,35 @@ class ExperimentLayout(FloatLayout):
     feeding_condition = False
     warning_period = 3
     punishment_period = 30
-
     feed_time = 3
-    end_score = 28
-
+    total_reinforcements = 28
     score_label = StringProperty()
     score = 0
     used_tries = 0
     clicks_label = StringProperty()
-    
     phase = 1 
+    take_a_break_from_punishment = 3
+    subsequent_punishments = 0
 
     canvas_picture = ObjectProperty(None)
     button_left = ObjectProperty(None)
     button_right = ObjectProperty(None)
     label_left = ObjectProperty(None)
     label_right = ObjectProperty(None)
-    
+    button_right_shadow = ObjectProperty(None)
+
     was_warned = False
 
-    def calculate_score(self):
+    def randomize_array(self):
+        # self.warning_signal_points = [random.randint(1, self.reinforcement_ratio - self.warning_period - 1)]
+        self.warning_signal_points = []
+
+    def check_reinforcement_condition(self):
 
         if (self.button_left.button_count >= self.reinforcement_ratio):
             self.score = self.score + 1
             self.feed()
+            self.subsequent_punishments = 0
             self.button_left.button_count = 0
 
     def end_experiment(self):
@@ -62,21 +66,23 @@ class ExperimentLayout(FloatLayout):
         pass
 
     def check_if_red(self):
-        if not self.was_warned and self.button_left.button_count in self.warning_signal_points:
+        if not self.was_warned and self.button_left.button_count in self.warning_signal_points and self.subsequent_punishments < self.take_a_break_from_punishment:
             self.button_right.enable_button()
             self.button_right_shadow.disable_button()
             self.was_warned = True
         pass
 
     def check_if_end(self):
-        if (self.score >= self.end_score):
+        if (self.score >= self.total_reinforcements):
             self.end_experiment()
         pass
 
 
     def turn_feeding_condition_off(self, dt):
+        self.randomize_array()
+        self.button_left.disabled = False
         self.feeding_condition = False
-       
+        self.label_right.text = "00"
         pass
 
 
@@ -84,6 +90,7 @@ class ExperimentLayout(FloatLayout):
         if not self.feeding_condition:
             self.feeding_condition = True
             feeder.activate()
+            self.button_left.disabled = True
             feeder.create_deactivate_feeder_event(self.feed_time)
             Clock.schedule_once(self.turn_feeding_condition_off, self.feed_time+1)
              
@@ -92,17 +99,18 @@ class ExperimentLayout(FloatLayout):
         pass
 
     def check_if_punishment(self):
-
-        if self.used_tries > self.warning_period:
+        if self.used_tries > self.warning_period: 
             self.punish()
     
     def punish(self):
-
+        
         self.rect.source ="assets/images/punishment_panel.png"
         self.button_right.disable_button()
         self.button_left.disable_button()
         self.label_left.opacity = 0
         self.label_right.opacity = 0
+        self.subsequent_punishments += 1 
+        self.button_left.zeroing()
         Clock.schedule_once(self.un_punish, self.punishment_period)
         pass
 
@@ -112,7 +120,6 @@ class ExperimentLayout(FloatLayout):
         self.label_left.opacity = 1
         self.label_right.opacity = 1
         self.used_tries = 0
-        self.button_left.zeroing()
         self.button_right_shadow.enable_button()
         self.label_right.text = "00"
         self.was_warned = True 
@@ -121,8 +128,8 @@ class ExperimentLayout(FloatLayout):
         self.clicks = self.button_left.button_count
         self.update_used_tries()
         self.check_if_punishment()
+        self.check_reinforcement_condition()
         self.check_if_red()
-        self.calculate_score()
         self.score_label = str(self.score).zfill(2)
         self.clicks_label = str(self.clicks).zfill(2)
         self.label_right.text = self.clicks_label
@@ -152,7 +159,7 @@ class ExperimentLayout(FloatLayout):
 
     def prepare_buttons(self, dt):
 
-
+        self.randomize_array()
 
         self.button_left.source = "assets/images/green_light.png"
         self.button_left.source_file = "assets/images/green_light.png"
@@ -191,8 +198,8 @@ class BasicImageButton(ButtonBehavior, Image):
 class BasicImageButtonLeft(BasicImageButton):
 
     def on_release(self):
-        self.source = self.source_file
         parent = self.parent
+        self.source = self.source_file
         parent.was_warned = False
         parent.update_score()
 
