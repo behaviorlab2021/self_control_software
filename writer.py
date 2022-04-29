@@ -1,7 +1,7 @@
 from time_functions import *
 import csv
 
-header = ['Time', 'Operant', 'Reinforcers', 'Event', 'Hit', 'x', 'y']
+header = ['Time', 'Operant', 'Reinforcers', 'Event', 'x', 'y']
 
 
 class Writer:

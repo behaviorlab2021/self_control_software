@@ -22,18 +22,18 @@ import time
 import os
 
 Window.fullscreen = True
-Window.show_cursor = False
+# Window.show_cursor = False
 
 Config.set('input', 'mouse', 'mouse, multitouch_on_demand')
 
 
 class ExperimentLayout(FloatLayout):
 
-    reinforcement_ratio = 60
+    reinforcement_ratio = 10
     warning_signal_points = []
     feeding_condition = False
     warning_pecks = 3
-    punishment_period = 30
+    punishment_period = 3
     feed_time = 3
     total_reinforcements = 28
     score_label = StringProperty()
@@ -44,7 +44,7 @@ class ExperimentLayout(FloatLayout):
     take_a_break_from_punishment = 3
     subsequent_punishments = 0
     is_spot_on = True
-    random_warning = False
+    random_warning = True
 
     buzzer_file = "assets/audio/buzzer.mp3"
 
@@ -66,7 +66,7 @@ class ExperimentLayout(FloatLayout):
 
     def on_touch_down(self,touch):
         
-        writer.write_click_data(self.label_left, self.score, touch.sx, touch.sy)
+        writer.write_click_data(self.label_right.text, self.score, touch.sx, touch.sy)
 
         if self.is_spot_on:
             self.spot.pos_hint = {'center_x':touch.sx, 'center_y':touch.sy}
@@ -126,7 +126,7 @@ class ExperimentLayout(FloatLayout):
         pass
 
     def check_if_punishment(self):
-        if self.used_tries > self.warning_pecks: 
+        if self.used_tries > self.warning_pecks:
             self.punish()
     
     def turn_off_screen(self):
@@ -147,6 +147,7 @@ class ExperimentLayout(FloatLayout):
         self.label_right.opacity = 1
 
     def punish(self):
+        self.buzzer.cancel() 
         self.turn_off_screen()
         self.subsequent_punishments += 1 
         self.button_left.zeroing()
