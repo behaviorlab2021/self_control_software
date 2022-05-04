@@ -23,7 +23,7 @@ import time
 import os
 
 Window.fullscreen = True
-# Window.show_cursor = False
+Window.show_cursor = False
 
 Config.set('input', 'mouse', 'mouse, multitouch_on_demand')
 
@@ -36,7 +36,7 @@ class ExperimentLayout(FloatLayout):
     warning_pecks = 3
     punishment_period = 3
     feed_time = 3
-    total_reinforcements = 2
+    total_reinforcements = 10
     score_label = StringProperty()
     score = 0
     used_tries = 0
@@ -45,7 +45,7 @@ class ExperimentLayout(FloatLayout):
     take_a_break_from_punishment = 3
     subsequent_punishments = 0
     is_spot_on = False
-    random_warning = False
+    random_warning = True
 
     buzzer_file = "assets/audio/buzzer.mp3"
 
@@ -102,25 +102,28 @@ class ExperimentLayout(FloatLayout):
     def check_if_end(self):
         if (self.score >= self.total_reinforcements):
             self.end_experiment()
-        pass
+            return True
+        else: 
+            return False
 
 
     def turn_feeding_condition_off(self, dt):
-        houseLight.activate()
-        self.randomize_array()
-        self.turn_on_screen()
-        self.feeding_condition = False
-        self.label_right.text = "00"
-        self.check_if_end()
+               
+        if not self.check_if_end():
+            self.randomize_array()
+            houseLight.activate()
+            self.turn_on_screen()
+            self.feeding_condition = False
+            self.label_right.text = "00"
         pass
 
 
     def feed(self):
         if not self.feeding_condition:
             self.feeding_condition = True
+            self.turn_off_screen() 
             houseLight.deactivate()
             feeder.activate()
-            self.turn_off_screen() 
             feeder.create_deactivate_feeder_event(self.feed_time)
             Clock.schedule_once(self.turn_feeding_condition_off, self.feed_time)
 
