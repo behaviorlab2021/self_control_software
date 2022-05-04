@@ -1,8 +1,8 @@
 
-from usb_relay import activate_relay_1, deactivate_relay_1
+from usb_relay import activate_relay_2, deactivate_relay_2
 from kivy.clock import Clock
 
-class Feeder:
+class HouseLight:
 
     def __init__(self):
         self.counter = 0 
@@ -10,11 +10,11 @@ class Feeder:
 
     def activate(self):
         self.is_active = True
-        activate_relay_1()
+        activate_relay_2()
 
     def deactivate(self):
         self.is_active = False
-        deactivate_relay_1()
+        deactivate_relay_2()
         print("Feeder is reactivated")
         pass
 

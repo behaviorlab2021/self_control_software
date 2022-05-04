@@ -3,7 +3,8 @@ from xml.dom.pulldom import parseString
 from kivy.uix.behaviors import ButtonBehavior  
 from kivy.uix.image import Image  
 from kivy.lang import Builder    
-from kivy.uix.floatlayout import FloatLayout  
+from kivy.uix.floatlayout import FloatLayout
+from house_light import HouseLight  
 from writer import Writer
 import kivy
 from kivy.app import App
@@ -35,7 +36,7 @@ class ExperimentLayout(FloatLayout):
     warning_pecks = 3
     punishment_period = 3
     feed_time = 3
-    total_reinforcements = 28
+    total_reinforcements = 2
     score_label = StringProperty()
     score = 0
     used_tries = 0
@@ -43,8 +44,8 @@ class ExperimentLayout(FloatLayout):
     phase = 1 
     take_a_break_from_punishment = 3
     subsequent_punishments = 0
-    is_spot_on = True
-    random_warning = True
+    is_spot_on = False
+    random_warning = False
 
     buzzer_file = "assets/audio/buzzer.mp3"
 
@@ -81,9 +82,8 @@ class ExperimentLayout(FloatLayout):
             self.button_left.button_count = 0
 
     def end_experiment(self):
-        self.button_left.disable_button()
-        self.button_right.disable_button()
-        self.button_right_shadow.disable_button()
+        houseLight.deactivate()
+        self.turn_off_screen()
         pass
 
     def check_if_red(self):
@@ -106,6 +106,7 @@ class ExperimentLayout(FloatLayout):
 
 
     def turn_feeding_condition_off(self, dt):
+        houseLight.activate()
         self.randomize_array()
         self.turn_on_screen()
         self.feeding_condition = False
@@ -117,6 +118,7 @@ class ExperimentLayout(FloatLayout):
     def feed(self):
         if not self.feeding_condition:
             self.feeding_condition = True
+            houseLight.deactivate()
             feeder.activate()
             self.turn_off_screen() 
             feeder.create_deactivate_feeder_event(self.feed_time)
@@ -147,6 +149,7 @@ class ExperimentLayout(FloatLayout):
         self.label_right.opacity = 1
 
     def punish(self):
+        houseLight.deactivate()
         self.buzzer.cancel() 
         self.turn_off_screen()
         self.subsequent_punishments += 1 
@@ -155,6 +158,7 @@ class ExperimentLayout(FloatLayout):
         pass
 
     def un_punish(self, dt):
+        houseLight.activate()
         self.turn_on_screen()
         self.used_tries = 0
         self.button_right_shadow.enable_button()
@@ -213,7 +217,7 @@ class ExperimentLayout(FloatLayout):
         self.button_right_shadow.source = "assets/images/grey_light.png"
         self.button_right_shadow.source_file = "assets/images/grey_light.png"
         self.button_right_shadow.source_file_press = "assets/images/grey_dark.png"
-        
+        houseLight.activate()
 
 class BasicImageButton(ButtonBehavior, Image):
 
@@ -311,6 +315,7 @@ class MainApp(App):
 
 if __name__ == "__main__":
   feeder = Feeder()
+  houseLight = HouseLight()
   writer = Writer()
   mainApp = MainApp()
   mainApp.run()
