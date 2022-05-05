@@ -1,4 +1,5 @@
 from ast import Pass
+from kivy.core.window import Window
 from xml.dom.pulldom import parseString
 from kivy.uix.behaviors import ButtonBehavior  
 from kivy.uix.image import Image  
@@ -22,31 +23,31 @@ import random
 import time
 import os
 
-Window.fullscreen = True
-Window.show_cursor = False
+Window.fullscreen = False
+Window.show_cursor = True
 
 Config.set('input', 'mouse', 'mouse, multitouch_on_demand')
 
 
 class ExperimentLayout(FloatLayout):
 
-    reinforcement_ratio = 10
+    reinforcement_ratio = 6
     warning_signal_points = []
     feeding_condition = False
     warning_pecks = 3
     punishment_period = 3
     feed_time = 3
-    total_reinforcements = 10
+    total_reinforcements = 1
     score_label = StringProperty()
     score = 0
     used_tries = 0
     clicks_label = StringProperty()
-    phase = 1 
+    phase = 1     
     take_a_break_from_punishment = 3
     subsequent_punishments = 0
-    is_spot_on = False
-    random_warning = True
-
+    is_spot_on = True
+    random_warning = False
+    
     buzzer_file = "assets/audio/buzzer.mp3"
 
     canvas_picture = ObjectProperty(None)
@@ -189,6 +190,10 @@ class ExperimentLayout(FloatLayout):
     def __init__(self, **kwargs):
         self.score_label = "00"
         Clock.schedule_once(self.prepare_buttons, 0.8)
+        self._keyboard = Window.request_keyboard(self._keyboard_closed, self)
+        self._keyboard.bind(on_key_down=self._on_keyboard_down)
+        # self._keyboard.bind(on_key_up=self._on_keyboard_up)
+
         super(FloatLayout, self).__init__(**kwargs)
         with self.canvas.before:
             self.rect = Rectangle(source="assets/images/panel.png")
@@ -222,6 +227,33 @@ class ExperimentLayout(FloatLayout):
         self.button_right_shadow.source_file_press = "assets/images/grey_dark.png"
         houseLight.activate()
 
+    def _keyboard_closed(self):
+            self._keyboard.unbind(on_key_down=self._on_keyboard_down)
+            self._keyboard = None
+
+    def _on_keyboard_down(self, keyboard, keycode, text, modifiers):
+
+        if keycode[1] == 'escape':
+            houseLight.deactivate()
+            App.get_running_app().stop()
+
+        elif keycode[1] == 'spacebar':
+            
+            self.button_left.button_count = self.button_left.button_count + 1
+            self.button_left.source = self.button_left.source_file_press
+            self.was_warned = False
+            self.update_score()
+            
+        elif keycode[1] == 'enter':
+            print("enter pressed")
+
+        return True
+
+    # def _on_keyboard_up(self, keyboard, keycode, text, modifiers):
+    #     if keycode[1] == 'spacebar':
+    #         self.button_left.source = self.button_left.source_file_press
+
+
 class BasicImageButton(ButtonBehavior, Image):
 
     button_count = 0
@@ -230,7 +262,6 @@ class BasicImageButton(ButtonBehavior, Image):
         if self.touch_on_button(touch) and not self.disabled:
 
             self.button_count = self.button_count + 1
-
             # self.parent.ids.label.text ...
             self.source = self.source_file_press
             
@@ -322,3 +353,5 @@ if __name__ == "__main__":
   writer = Writer()
   mainApp = MainApp()
   mainApp.run()
+
+
