@@ -13,16 +13,20 @@ class Writer:
             cwriter = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
             cwriter.writerow(header)
 
-    def write_data(self, data):
+    def write_to_file(self, data):
         with open(self.filename, 'a') as csvfile:
             cwriter = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
             cwriter.writerow(data)
 
-    def write_click_data(self, operant, reinforcements, click_x, click_y):
+    def write_peck_data(self, reinforcements, quarter, pecks, click_x, click_y):
         time = get_time_dif(self.start_time)
-        event = "click"
-        data = [time, operant, reinforcements, event, click_x, click_y]
-        self.write_data(data)
+        event = "peck"
+        data = [time, reinforcements, quarter, pecks, event, click_x, click_y]
+        self.write_to_file(data)
 
+    def write_data(self, reinforcements, quarter, pecks, event):
+        time = get_time_dif(self.start_time)
+        data = [time, reinforcements, quarter, pecks, event, 0, 0]
+        self.write_to_file(data)
 
 

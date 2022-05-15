@@ -1,6 +1,9 @@
-def distance_from_center (point_x, point_y, center_x, center_y, aspect_ratio):
+x = 44
+q = 0
+tr = 60
+qn = tr / 4
 
-    return ((point_x - center_x) * aspect_ratio **2 + (point_y - center_y)**2 ) ** 0.5
+# if x%qn == 0:
+#      q = x / qn
 
-print(type(distance_from_center(1,1,1.3,1.6,1)))
-
+print((x//qn)+1)
