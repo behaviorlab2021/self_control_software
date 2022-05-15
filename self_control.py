@@ -32,6 +32,8 @@ Config.set('input', 'mouse', 'mouse, multitouch_on_demand')
 
 class ExperimentLayout(FloatLayout):
 
+
+
     reinforcement_ratio = 60
     warning_signal_points = []
     warning_pecks = 3
@@ -39,24 +41,25 @@ class ExperimentLayout(FloatLayout):
     feed_time = 3
     total_reinforcements = 28
     take_a_break_from_punishment = 3
-    
+    warning_alarm_volume = 1
+    warning_display_volumne = 1
+    punishment_condition = 1
 
-
+    is_spot_on = True
+    random_warning = False
 
     feeding_condition = False
     score = 0
     used_tries = 0
     clicks_label = StringProperty()
     score_label = StringProperty()
-    phase = 1     
     subsequent_punishments = 0
     clicks = 0
     quarter = 1
     warning_quarter = 0
     warning_variable = False
 
-    is_spot_on = True
-    random_warning = True
+
 
     buzzer_file = "assets/audio/buzzer.mp3"
 
