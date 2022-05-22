@@ -1,9 +1,10 @@
-x = 44
-q = 0
-tr = 60
-qn = tr / 4
+test_dictionary = {
+    "one" : 1,
+    "two" : 2
+}
 
-# if x%qn == 0:
-#      q = x / qn
+print(list(test_dictionary.values())[1])
+print(list(test_dictionary.keys()))
 
-print((x//qn)+1)
+
+

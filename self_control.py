@@ -29,24 +29,37 @@ Window.show_cursor = False
 
 Config.set('input', 'mouse', 'mouse, multitouch_on_demand')
 
+constant_data =  {
+    'reinforcement_ratio' :60,
+    'warning_signal_points' :[],
+    'warning_pecks' :5,
+    'punishment_period' :30,
+    'feed_time' :3,
+    'total_reinforcements' :28,
+    'take_a_break_from_punishment' :3,
+    'warning_alarm_volume' :100,
+    'warning_display_volume' :100,
+    'punishment_condition' :1,
+    'subject' :"",
+    'is_spot_on' :True,
+    'random_warning' :True,
+}
 
 class ExperimentLayout(FloatLayout):
 
-
-
-    reinforcement_ratio = 60
-    warning_signal_points = []
-    warning_pecks = 3
-    punishment_period = 30
-    feed_time = 3
-    total_reinforcements = 28
-    take_a_break_from_punishment = 3
-    warning_alarm_volume = 1
-    warning_display_volumne = 1
-    punishment_condition = 1
-
-    is_spot_on = True
-    random_warning = False
+    reinforcement_ratio = constant_data["reinforcement_ratio"]
+    warning_signal_points = constant_data['warning_signal_points']
+    warning_pecks = constant_data["warning_pecks"]
+    punishment_period = constant_data["punishment_period"]
+    feed_time = constant_data["feed_time"]
+    total_reinforcements = constant_data["total_reinforcements"]
+    take_a_break_from_punishment = constant_data["take_a_break_from_punishment"]
+    warning_alarm_volume = constant_data["warning_alarm_volume"]
+    warning_display_volume = constant_data["warning_display_volume"]
+    punishment_condition = constant_data["punishment_condition"]
+    subject = constant_data["subject"]
+    is_spot_on = constant_data["is_spot_on"]
+    random_warning = constant_data["random_warning"]
 
     feeding_condition = False
     score = 0
@@ -74,7 +87,10 @@ class ExperimentLayout(FloatLayout):
     was_warned = False
 
     def update_quarter(self):
-        self.quarter = (self.clicks//(self.reinforcement_ratio/4))+1
+        if self.clicks>= self.reinforcement_ratio:
+            self.quarter = 0
+        else:
+            self.quarter = (self.clicks//( self.reinforcement_ratio/4))+1
 
 
     def update_warning_quarter(self):
@@ -93,7 +109,10 @@ class ExperimentLayout(FloatLayout):
 
     def on_touch_down(self,touch):
         #Event Touch
-        writer.write_peck_data( self.score, self.quarter, self.clicks, touch.sx, touch.sy)
+        if self.button_left.opacity == 0:
+            writer.write_peck_data_blind( self.score, self.quarter, self.clicks, touch.sx, touch.sy, "blind-peck")
+        else:
+            writer.write_peck_data( self.score, self.quarter, self.clicks, touch.sx, touch.sy)
 
         if self.is_spot_on:
             self.spot.pos_hint = {'center_x':touch.sx, 'center_y':touch.sy}
@@ -102,10 +121,7 @@ class ExperimentLayout(FloatLayout):
     def check_reinforcement_condition(self):
 
         if (self.button_left.button_count >= self.reinforcement_ratio):
-            self.score = self.score + 1
-            self.feed()
-            self.subsequent_punishments = 0
-            self.button_left.button_count = 0
+            self.positive_reinforcement()
 
     def end_experiment(self):
         houseLight.deactivate()
@@ -217,14 +233,15 @@ class ExperimentLayout(FloatLayout):
         self.check_reinforcement_condition()
         self.check_if_red()
         self.update_quarter()
-        print("Button Count" + str(self.button_left.button_count))
-        print("self.clicks" + str(self.clicks))
+        self.update_labels()
+
+    def update_labels(self):
         self.score_label = str(self.score).zfill(2)
         self.clicks_label = str(self.clicks).zfill(2)
         self.label_right.text = self.clicks_label
         self.label_left.text = self.score_label
 
-    
+
     def update_used_tries(self):
         if self.button_right.opacity == 1:
             self.used_tries += 1
@@ -240,8 +257,6 @@ class ExperimentLayout(FloatLayout):
         self.warning_variable = False
         #Event Start
         writer.write_data(self.score, self.quarter, 0, "Start") 
-
-        # self._keyboard.bind(on_key_up=self._on_keyboard_up)
 
         super(FloatLayout, self).__init__(**kwargs)
         with self.canvas.before:
@@ -287,24 +302,41 @@ class ExperimentLayout(FloatLayout):
             houseLight.deactivate()
             App.get_running_app().stop()
 
+
         elif keycode[1] == 'spacebar':
+
+            print("spacebar")
+            if not self.button_right.opacity !=0 :
+                #Event free-food
+                writer.write_data(self.score, self.quarter, self.clicks, "free-food") 
+                self.positive_reinforcement()
             
-            #Event gratis
-            writer.write_data(self.score, self.quarter, self.clicks, "gratis") 
-            self.button_left.button_count = self.button_left.button_count + 1
-            self.button_left.source = self.button_left.source_file_press
-            self.was_warned = False
-            self.update_score()
+
             
         elif keycode[1] == 'enter':
-            print("enter pressed")
+            print("enter")
+            # Event gratis-red
+            writer.write_data(self.score, self.quarter, self.clicks, "gratis-red-"+str(self.warning_quarter))
+            if self.button_right.opacity !=0 :
+                self.negative_reinforcement()
 
         return True
 
-    # def _on_keyboard_up(self, keyboard, keycode, text, modifiers):
-    #     if keycode[1] == 'spacebar':
-    #         self.button_left.source = self.button_left.source_file_press
 
+    def positive_reinforcement(self):
+        self.score = self.score + 1
+        self.feed()
+        self.subsequent_punishments = 0
+        self.button_left.button_count = 0
+        self.update_quarter()
+        self.update_labels()
+        pass
+
+    def negative_reinforcement(self):
+        self.button_right.source = self.button_right.source_file
+        self.button_right.disable_button()
+        self.buzzer.cancel()
+        self.button_right_shadow.enable_button()
 
 class BasicImageButton(ButtonBehavior, Image):
 
@@ -361,16 +393,10 @@ class BasicImageButtonRight(BasicImageButton):
 
     def on_touch_up(self, touch):
         if self.touch_on_button(touch) and not self.disabled:
-            
             parent = self.parent
-
             # Event Red
             writer.write_data(parent.score, parent.quarter, parent.clicks, "red-"+str(parent.warning_quarter)) 
-        
-            self.source = self.source_file
-            self.disable_button()
-            parent.buzzer.cancel()
-            parent.button_right_shadow.enable_button()
+            parent.negative_reinforcement()
 
     def disable_button(self):
         self.disabled = True
@@ -422,9 +448,10 @@ class MainApp(App):
         return self.layout
 
 if __name__ == "__main__":
+
   feeder = Feeder()
   houseLight = HouseLight()
-  writer = Writer()
+  writer = Writer(constant_data)
   mainApp = MainApp()
   mainApp.run()
 
