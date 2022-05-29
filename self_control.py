@@ -30,14 +30,14 @@ Window.show_cursor = False
 Config.set('input', 'mouse', 'mouse, multitouch_on_demand')
 
 constant_data =  {
-    'reinforcement_ratio' :60,
+    'reinforcement_ratio' :10,
     'warning_signal_points' :[],
-    'warning_pecks' :5,
-    'punishment_period' :30,
+    'warning_pecks' :3,
+    'punishment_period' :5,
     'feed_time' :3,
     'total_reinforcements' :28,
     'take_a_break_from_punishment' :3,
-    'warning_alarm_volume' :100,
+    'warning_alarm_volume' : 100,
     'warning_display_volume' :100,
     'punishment_condition' :1,
     'subject' :"",
@@ -134,10 +134,10 @@ class ExperimentLayout(FloatLayout):
     def check_if_red(self):
         if not self.was_warned and self.button_left.button_count in self.warning_signal_points and self.subsequent_punishments < self.take_a_break_from_punishment:
 
-            os.system("mpg123 " + self.buzzer_file)
+            os.system("mpg321 -g " + str(self.warning_alarm_volume) + " " + self.buzzer_file)
             self.buzzer = Clock.schedule_interval(self.sound_buzzer, 0.5)
             self.button_right.enable_button()
-            self.button_right_shadow.disable_button()
+            self.button_right_shadow.disable_button_100()
             self.was_warned = True
             self.warning_variable = True
             self.update_warning_quarter()
@@ -146,7 +146,9 @@ class ExperimentLayout(FloatLayout):
 
         
     def sound_buzzer(self, dt):
-        os.system("mpg123 " + self.buzzer_file)
+        #Buzzer
+        os.system("mpg321 -g " + str(self.warning_alarm_volume) + " " + self.buzzer_file)
+
  
 
     def check_if_end(self):
@@ -191,7 +193,7 @@ class ExperimentLayout(FloatLayout):
         self.rect.source ="assets/images/black_panel.png"
         self.button_right.disable_button()
         self.button_left.disable_button()
-        self.button_right_shadow.disable_button()
+        self.button_right_shadow.disable_button_0()
         self.spot.opacity = 0
         self.label_left.opacity = 0
         self.label_right.opacity = 0
@@ -306,7 +308,7 @@ class ExperimentLayout(FloatLayout):
         elif keycode[1] == 'spacebar':
 
             print("spacebar")
-            if not self.button_right.opacity !=0 :
+            if self.button_right.disabled == True :
                 #Event free-food
                 writer.write_data(self.score, self.quarter, self.clicks, "free-food") 
                 self.positive_reinforcement()
@@ -317,7 +319,7 @@ class ExperimentLayout(FloatLayout):
             print("enter")
             # Event gratis-red
             writer.write_data(self.score, self.quarter, self.clicks, "gratis-red-"+str(self.warning_quarter))
-            if self.button_right.opacity !=0 :
+            if self.button_right.disabled == False :
                 self.negative_reinforcement()
 
         return True
@@ -401,11 +403,15 @@ class BasicImageButtonRight(BasicImageButton):
     def disable_button(self):
         self.disabled = True
         self.opacity= 0
-        self.pos_hint = {'center_x': 2, 'center_y':.75}
+        self.pos_hint = {'center_x': .7, 'center_y':.75}
             
     def enable_button(self):
+        parent = self.parent
         self.disabled = False
-        self.opacity= 1
+        self.opacity= (parent.warning_display_volume / 100)
+        print(f'self.opacity {self.opacity}')
+        print(f'parent.warning_display_volume {parent.warning_display_volume}')
+        #Warning Volume
         self.pos_hint = {'center_x':.7, 'center_y':.75}
 
 class BasicImageButtonGrey(BasicImageButton):
@@ -424,13 +430,22 @@ class BasicImageButtonGrey(BasicImageButton):
                 pass
 
 
-    def disable_button(self):
+    def disable_button_100(self):
         self.disabled = True
-        self.opacity= 0
-        self.pos_hint = {'center_x':2, 'center_y':.75}
+        #Warning Volume
+        self.opacity= 1
+        self.pos_hint = {'center_x':.7, 'center_y':.75}
+
             
+    def disable_button_0(self):
+        self.disabled = True
+        #Warning Volume
+        self.opacity= 0
+        self.pos_hint = {'center_x':.7, 'center_y':.75}
+
     def enable_button(self):
         self.disabled = False
+        #Warning Volume
         self.opacity= 1
         self.pos_hint = {'center_x':.7, 'center_y':.75}
 
