@@ -33,12 +33,12 @@ constant_data =  {
     'reinforcement_ratio' :10,
     'warning_signal_points' :[],
     'warning_pecks' :3,
-    'punishment_period' :5,
+    'punishment_period' :3,
     'feed_time' :3,
     'total_reinforcements' :28,
     'take_a_break_from_punishment' :3,
-    'warning_alarm_volume' : 100,
-    'warning_display_volume' :100,
+    'warning_alarm_volume' : 90,
+    'warning_display_volume' :20,
     'punishment_condition' :1,
     'subject' :"",
     'is_spot_on' :True,
@@ -245,7 +245,7 @@ class ExperimentLayout(FloatLayout):
 
 
     def update_used_tries(self):
-        if self.button_right.opacity == 1:
+        if self.button_right.disabled == False:
             self.used_tries += 1
         else:   
             self.used_tries = 0
