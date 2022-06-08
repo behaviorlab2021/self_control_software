@@ -20,9 +20,12 @@ from functions import distance_from_center
 from kivy.properties import ObjectProperty
 from kivy.properties import StringProperty
 from kivy.graphics.vertex_instructions import Rectangle
+from kivy.core.audio import SoundLoader
 import random
 import time
 import os
+import threading
+
 
 Window.fullscreen = True
 Window.show_cursor = False
@@ -33,17 +36,19 @@ constant_data =  {
     'reinforcement_ratio' :10,
     'warning_signal_points' :[],
     'warning_pecks' :3,
-    'punishment_period' :3,
+    'punishment_period' : 3,
     'feed_time' :3,
     'total_reinforcements' :28,
     'take_a_break_from_punishment' :3,
-    'warning_alarm_volume' : 90,
-    'warning_display_volume' :20,
+    'warning_alarm_volume' :80,
+    'warning_display_volume' :80,
     'punishment_condition' :1,
     'subject' :"",
     'is_spot_on' :True,
     'random_warning' :True,
 }
+
+
 
 class ExperimentLayout(FloatLayout):
 
@@ -72,9 +77,8 @@ class ExperimentLayout(FloatLayout):
     warning_quarter = 0
     warning_variable = False
 
-
-
     buzzer_file = "assets/audio/buzzer.mp3"
+    sound = SoundLoader.load(buzzer_file) 
 
     canvas_picture = ObjectProperty(None)
     button_left = ObjectProperty(None)
@@ -134,7 +138,7 @@ class ExperimentLayout(FloatLayout):
     def check_if_red(self):
         if not self.was_warned and self.button_left.button_count in self.warning_signal_points and self.subsequent_punishments < self.take_a_break_from_punishment:
 
-            os.system("mpg321 -g " + str(self.warning_alarm_volume) + " " + self.buzzer_file)
+            self.play_sound()
             self.buzzer = Clock.schedule_interval(self.sound_buzzer, 0.5)
             self.button_right.enable_button()
             self.button_right_shadow.disable_button_100()
@@ -143,14 +147,17 @@ class ExperimentLayout(FloatLayout):
             self.update_warning_quarter()
             #Event warning
             writer.write_data(self.score, self.quarter, self.clicks, "warning-"+str(self.warning_quarter))
-
         
     def sound_buzzer(self, dt):
+        self.play_sound()
         #Buzzer
-        os.system("mpg321 -g " + str(self.warning_alarm_volume) + " " + self.buzzer_file)
-
- 
-
+        
+    def play_sound(self):
+        if self.sound:
+            self.sound.volume = self.warning_alarm_volume ** 3 / 1000000
+            self.sound.play()
+        pass
+        
     def check_if_end(self):
         if (self.score >= self.total_reinforcements):
             self.end_experiment()
@@ -313,8 +320,6 @@ class ExperimentLayout(FloatLayout):
                 writer.write_data(self.score, self.quarter, self.clicks, "free-food") 
                 self.positive_reinforcement()
             
-
-            
         elif keycode[1] == 'enter':
             print("enter")
             # Event gratis-red
@@ -338,7 +343,7 @@ class ExperimentLayout(FloatLayout):
         self.button_right.source = self.button_right.source_file
         self.button_right.disable_button()
         self.buzzer.cancel()
-        self.button_right_shadow.enable_button()
+        Clock.schedule_once(self.button_right_shadow.enable_button_delayed, 0.3)
 
 class BasicImageButton(ButtonBehavior, Image):
 
@@ -358,6 +363,10 @@ class BasicImageButton(ButtonBehavior, Image):
         self.disabled = True
         self.opacity= 0
     
+    def enable_button_delayed(self, dt):
+        self.disabled = False
+        self.opacity= 1
+
     def enable_button(self):
         self.disabled = False
         self.opacity= 1
