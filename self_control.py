@@ -356,12 +356,12 @@ class BasicImageButton(ButtonBehavior, Image):
 
     def on_touch_down(self, touch):
         if self.touch_on_button(touch) and not self.disabled:
-            self.button_count = self.button_count + 1
             # self.parent.ids.label.text ...
             self.source = self.source_file_press
             
     def on_touch_up(self, touch):
         if self.touch_on_button(touch) and not self.disabled:
+            self.button_count = self.button_count + 1
             self.source = self.source_file
     
     def disable_button(self):
@@ -393,14 +393,15 @@ class BasicImageButtonLeft(BasicImageButton):
 
     def on_touch_up(self, touch):
         if self.touch_on_button(touch) and not self.disabled:
+            self.disabled = True
             parent = self.parent
             self.source = self.source_file
             parent.was_warned = False
-
+            self.button_count = self.button_count + 1
             #Event Green
             writer.write_data(parent.score, parent.quarter, self.button_count, "green", not parent.button_right.disabled)
-            
             parent.update_score()
+            self.disabled = False
 
 
     def zeroing(self):
@@ -410,6 +411,7 @@ class BasicImageButtonRight(BasicImageButton):
 
     def on_touch_up(self, touch):
         if self.touch_on_button(touch) and not self.disabled:
+            self.button_count = self.button_count + 1
             parent = self.parent
             # Event Red
             writer.write_data(parent.score, parent.quarter, parent.clicks, "red-"+str(parent.warning_quarter), not parent.button_right.disabled) 
