@@ -1,0 +1,13 @@
+reinforcement_ratio,warning_signal_points,warning_pecks,punishment_period,feed_time,total_reinforcements,skip_to_next_value,warning_alarm_volume,warning_display_volume,punishment_condition,subject,is_spot_on,random_warning,Time,Reinforcers,Quarter,Pecks,Event,x,y
+30,[],3,30,5,38,3,100,100,1,Pigeon,True,False,0:00:00.008822,0,1,0,Start,0,0,False
+30,[],3,30,5,38,3,100,100,1,Pigeon,True,False,0:00:03.301438,0,1,0,peck,0.6879777623349548,0.353726362625139,False
+30,[],3,30,5,38,3,100,100,1,Pigeon,True,False,0:00:03.377083,0,1,1,green,0,0,False
+30,[],3,30,5,38,3,100,100,1,Pigeon,True,False,0:00:03.525130,0,1.0,1,peck,0.6879777623349548,0.353726362625139,False
+30,[],3,30,5,38,3,100,100,1,Pigeon,True,False,0:00:03.600170,0,1.0,2,green,0,0,False
+30,[],3,30,5,38,3,100,100,1,Pigeon,True,False,0:00:03.711083,0,1.0,2,peck,0.6879777623349548,0.353726362625139,False
+30,[],3,30,5,38,3,100,100,1,Pigeon,True,False,0:00:03.810574,0,1.0,3,green,0,0,False
+30,[],3,30,5,38,3,100,100,1,Pigeon,True,False,0:00:03.897994,0,1.0,3,peck,0.6879777623349548,0.353726362625139,False
+30,[],3,30,5,38,3,100,100,1,Pigeon,True,False,0:00:03.984323,0,1.0,4,green,0,0,False
+30,[],3,30,5,38,3,100,100,1,Pigeon,True,False,0:00:04.131474,0,1.0,4,peck,0.6963168867268936,0.353726362625139,False
+30,[],3,30,5,38,3,100,100,1,Pigeon,True,False,0:00:04.242449,0,1.0,5,green,0,0,False
+30,[],3,30,5,38,3,100,100,1,Pigeon,True,False,0:00:05.756546,0,1.0,5,peck,0.7804030576789437,0.7208008898776419,False

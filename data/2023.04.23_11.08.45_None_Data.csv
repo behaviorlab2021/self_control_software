@@ -1,0 +1,2 @@
+reinforcement_ratio,warning_signal_points,warning_pecks,punishment_period,feed_time,total_reinforcements,skip_to_next_value,warning_alarm_volume,warning_display_volume,punishment_condition,subject,is_spot_on,random_warning,Time,Reinforcers,Quarter,Pecks,Event,x,y
+30,[],3,30,5,38,3,100,100,1,Pigeon,True,False,0:00:00.006811,0,1,0,Start,0,0,False

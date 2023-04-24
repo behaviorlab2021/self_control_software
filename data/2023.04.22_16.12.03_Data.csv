@@ -1,0 +1,7 @@
+reinforcement_ratio,warning_signal_points,warning_pecks,punishment_period,feed_time,total_reinforcements,skip_to_next_value,warning_alarm_volume,warning_display_volume,punishment_condition,subject,is_spot_on,random_warning,Time,Reinforcers,Quarter,Pecks,Event,x,y
+30,[],3,30,5,38,3,100,100,1,,True,False,0:00:00.010143,0,1,0,Start,0,0,False
+30,[],3,30,5,38,3,100,100,1,,True,False,0:00:10.602379,0,1,0,peck,0.6782487838776928,0.3515016685205784,False
+30,[],3,30,5,38,3,100,100,1,,True,False,0:00:10.662340,0,1,1,green,0,0,False
+30,[],3,30,5,38,3,100,100,1,,True,False,0:00:11.368667,0,1.0,1,peck,0.7053509381514941,0.5228031145717464,False
+30,[],3,30,5,38,3,100,100,1,,True,False,0:00:11.874546,0,1.0,1,peck,0.7123002084781098,0.34816462736373743,False
+30,[],3,30,5,38,3,100,100,1,,True,False,0:00:11.948748,0,1.0,2,green,0,0,False
