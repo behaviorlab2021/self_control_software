@@ -1,11 +1,12 @@
 from time_functions import *
 import csv
+import os
 
 
 
 class Writer:
 
-    def __init__(self, constant_data):
+    def __init__(self, constant_data, subject):
         self.cd_values = list(constant_data.values())
         self.header =  list(constant_data.keys()) + ['Time', 
                 'Reinforcers',
@@ -18,7 +19,7 @@ class Writer:
 
         self.start_time = get_time_now()
 
-        self.filename = "data/" + get_timestamp_for_filename() + "_Data.csv"
+        self.filename =  "c:/Users/SKINNER BOX/Documents/self_control_software/" + "data/" + get_timestamp_for_filename()+ "_"+ subject + "_Data.csv"
         with open(self.filename, 'w') as csvfile:
             cwriter = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
             cwriter.writerow(self.header)

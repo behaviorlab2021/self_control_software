@@ -1,6 +1,12 @@
 from ast import Pass
 from cProfile import run
 from logging import warning
+from kivy.config import Config  # Import the Config module
+Config.set('graphics', 'position', 'custom')
+Config.set('graphics', 'top', '0')
+Config.set('graphics', 'left', '-1440')
+Config.set('graphics', 'fullscreen', 'auto')
+
 from kivy.core.window import Window
 from xml.dom.pulldom import parseString
 from kivy.uix.behaviors import ButtonBehavior  
@@ -11,8 +17,6 @@ from house_light import HouseLight
 from writer import Writer
 import kivy
 from kivy.app import App
-from kivy.config import Config
-from kivy.core.window import Window
 from kivy.clock import Clock
 from numpy import True_
 from experiment import Experiment
@@ -23,35 +27,32 @@ from kivy.properties import StringProperty
 from kivy.graphics.vertex_instructions import Rectangle
 from kivy.core.audio import SoundLoader
 import random
-import time
-import os
-import threading
+import sys
+import os 
 
 
-Window.fullscreen = True
-Window.show_cursor = False
 
-Config.set('input', 'mouse', 'mouse, multitouch_on_demand')
 
 constant_data =  {
-    'reinforcement_ratio' :60,
+    'reinforcement_ratio' :30,
     'warning_signal_points' :[],
     'warning_pecks' :3,
     'punishment_period' :30,
-    'feed_time' :3,
+    'feed_time' :5,
     'total_reinforcements' :38,
     'skip_to_next_value' :3,
     'warning_alarm_volume' :100,
     'warning_display_volume' :100,
-    'punishment_condition' :1,
-    'subject' :"",
+    'punishment_condition' :0,
+    'subject' :"Pigeon",
     'is_spot_on' :True,
-    'random_warning' :True,
+    'random_warning' :False,
 }
 
 
 
 class ExperimentLayout(FloatLayout):
+
 
     reinforcement_ratio = constant_data["reinforcement_ratio"]
     warning_signal_points = constant_data['warning_signal_points']
@@ -96,7 +97,6 @@ class ExperimentLayout(FloatLayout):
             self.quarter = 0
         else:
             self.quarter = (self.clicks//( self.reinforcement_ratio/4))+1
-
 
     def update_warning_quarter(self):
         self.warning_quarter = self.quarter
@@ -262,16 +262,22 @@ class ExperimentLayout(FloatLayout):
         else:   
             self.used_tries = 0
 
-    def __init__(self, **kwargs):
+    def __init__(self, my_arg1=None, my_arg2=None,**kwargs):
+
+        self.my_arg1 =  my_arg1
+        print("my_arg1",my_arg1)
         self.score_label = "00"
         Clock.schedule_once(self.prepare_buttons, 0.8)
         self._keyboard = Window.request_keyboard(self._keyboard_closed, self)
         self._keyboard.bind(on_key_down=self._on_keyboard_down)
         self.reset_quarters()
+        if my_arg1:
+            self.reinforcement_ratio = int(my_arg1)
+        if my_arg2:
+            self.subject = my_arg2
         self.warning_variable = False
         #Event Start
         writer.write_data(self.score, self.quarter, 0, "Start", False) 
-
         super(FloatLayout, self).__init__(**kwargs)
         with self.canvas.before:
             self.rect = Rectangle(source="assets/images/panel.png")
@@ -420,7 +426,7 @@ class BasicImageButtonRight(BasicImageButton):
     def disable_button(self):
         self.disabled = True
         self.opacity= 0
-        self.pos_hint = {'center_x': .7, 'center_y':.75}
+        self.pos_hint = {'center_x': .3, 'center_y':.35}
             
     def enable_button(self):
         parent = self.parent
@@ -429,7 +435,7 @@ class BasicImageButtonRight(BasicImageButton):
         print(f'self.opacity {self.opacity}')
         print(f'parent.warning_display_volume {parent.warning_display_volume}')
         #Warning Volume
-        self.pos_hint = {'center_x':.7, 'center_y':.75}
+        self.pos_hint = {'center_x':.3, 'center_y':.35}
 
 class BasicImageButtonGrey(BasicImageButton):
 
@@ -446,43 +452,44 @@ class BasicImageButtonGrey(BasicImageButton):
                 writer.write_data(parent.score, parent.quarter, parent.clicks, "after", not parent.button_right.disabled) 
                 pass
 
-
     def disable_button_100(self):
         self.disabled = True
         #Warning Volume
         self.opacity= 1
-        self.pos_hint = {'center_x':.7, 'center_y':.75}
+        self.pos_hint = {'center_x':.3, 'center_y':.35}
 
-            
     def disable_button_0(self):
         self.disabled = True
         #Warning Volume
         self.opacity= 0
-        self.pos_hint = {'center_x':.7, 'center_y':.75}
+        self.pos_hint = {'center_x':.3, 'center_y':.35}
 
     def enable_button(self):
         self.disabled = False
         #Warning Volume
         self.opacity= 1
-        self.pos_hint = {'center_x':.7, 'center_y':.75}
-
-
+        self.pos_hint = {'center_x':.3, 'center_y':.35}
 
 class MainApp(App):
-
-    def __init__(self, **kwargs):
-
-        self.load_kv("self_control.kv")
-        self.layout = ExperimentLayout()
+    def __init__(self,  my_arg1=None, my_arg2=None, **kwargs):
+        self.my_arg1 = my_arg1
+        self.my_arg2 = my_arg2
         super(MainApp, self).__init__(**kwargs)
 
     def build(self):
-        return self.layout
+        Builder.load_file("self_control.kv")
+        layout = ExperimentLayout(my_arg1=self.my_arg1, my_arg2=self.my_arg2)
+        return layout
 
 if __name__ == "__main__":
-
+  my_arg1 = sys.argv[1] if len(sys.argv) > 1 else None
+  my_arg2 = sys.argv[2] if len(sys.argv) > 2 else None
   feeder = Feeder()
   houseLight = HouseLight()
-  writer = Writer(constant_data)
-  mainApp = MainApp()
+  feeder.deactivate()
+  houseLight.activate()
+  subject_name = "None" 
+  if my_arg2: subject_name = my_arg2 
+  writer = Writer(constant_data, subject_name)
+  mainApp = MainApp(my_arg1, my_arg2)
   mainApp.run()
