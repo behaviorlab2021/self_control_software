@@ -14,14 +14,18 @@ def is_number(input):
 
 def start_kivy_app():
     number_argument = number_entry.get()  # Get the input value for the number
+    trials_argument = trials_entry.get()  # Get the input value for the trials
     string_argument = string_entry.get()  # Get the input value for the string
 
     # Check if the number input is empty
     if number_argument.strip() == "":
-        messagebox.showerror("Error", "Please enter a number.")
+        messagebox.showerror("Error", "Please enter number of reinforcers.")
         return
-
-    subprocess.Popen(["python", "c:/Users/SKINNER BOX/Documents/self_control_software/self_control.py", number_argument, string_argument])
+    if trials_argument.strip() == "":
+        messagebox.showerror("Error", "Please enter number of trials.")
+        return
+    
+    subprocess.Popen(["python", "c:/Users/SKINNER BOX/Documents/self_control_software/self_control.py", number_argument, trials_argument, string_argument])
     root.destroy()
 
 Config.set('graphics', 'fullscreen', 'auto')
@@ -33,6 +37,8 @@ root.iconbitmap("g220.ico")
 # Set the default size of the application
 root.geometry("300x250")
 
+
+# REINFORCING RATIO
 # Create a label for the number input
 number_label = tk.Label(root, text="Enter reinforcing ratio:", font=("Helvetica", 14), justify='center')
 number_label.pack()
@@ -44,6 +50,20 @@ validate_number = (root.register(is_number), '%P')
 number_entry = tk.Entry(root, validate="key", validatecommand=validate_number, justify='center')
 number_entry.pack()
 
+
+# NUMBER OF TRIALS
+# Create a label for the number input
+trials_label = tk.Label(root, text="Enter number of trials:", font=("Helvetica", 14), justify='center')
+trials_label.pack()
+
+# Create a validation command
+validate_trials = (root.register(is_number), '%P')
+
+# Create an Entry widget for the number input with the validation command and centered input text
+trials_entry = tk.Entry(root, validate="key", validatecommand=validate_trials, justify='center')
+trials_entry.pack()
+
+# PIGEON NAME
 # Create a label for the string input
 string_label = tk.Label(root, text="Enter pigeon name:", font=("Helvetica", 14), justify='center')
 string_label.pack()

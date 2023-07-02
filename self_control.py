@@ -29,7 +29,8 @@ from kivy.core.audio import SoundLoader
 import random
 import sys
 import os 
-
+from usbmonitor import USBMonitor
+from usbmonitor.attributes import ID_MODEL, ID_MODEL_ID, ID_VENDOR_ID
 
 
 
@@ -38,8 +39,8 @@ constant_data =  {
     'warning_signal_points' :[],
     'warning_pecks' :3,
     'punishment_period' :30,
-    'feed_time' :5,
-    'total_reinforcements' :38,
+    'feed_time' :4,
+    'total_reinforcements' :35,
     'skip_to_next_value' :3,
     'warning_alarm_volume' :100,
     'warning_display_volume' :100,
@@ -49,7 +50,7 @@ constant_data =  {
     'random_warning' :False,
 }
 
-
+button_height = 0.55
 
 class ExperimentLayout(FloatLayout):
 
@@ -73,6 +74,7 @@ class ExperimentLayout(FloatLayout):
     used_tries = 0
     clicks_label = StringProperty()
     score_label = StringProperty()
+    is_panel_connected = False
     subsequent_punishments = 0
     clicks = 0
     quarter = 1
@@ -87,10 +89,27 @@ class ExperimentLayout(FloatLayout):
     button_right = ObjectProperty(None)
     label_left = ObjectProperty(None)
     label_right = ObjectProperty(None)
+    panel_connected_label = ObjectProperty(None)
     button_right_shadow = ObjectProperty(None)
     spot = ObjectProperty(None)
-
     was_warned = False
+
+
+    def initial_pannel_connected_text(self):
+            # self.panel_connected_label.text = "Application started with Touch Pannel DISCONNECTED"
+            # self.panel_connected_label.color = [1, 0.2, 0.2, 0.2]
+        return 'Touch Pannel started ' + ('CONNECTED' if self.is_panel_connected else 'DISCONNECTED')
+
+
+    
+    def initial_pannel_connected_color(self):
+
+        return [0.2, 0.2, 0.2, 0.2] if self.is_panel_connected  else [1, 0.2, 0.2, 1]
+    
+
+    def printSomething():
+        print("Helllo")
+
 
     def update_quarter(self):
         if self.clicks>= self.reinforcement_ratio:
@@ -204,6 +223,7 @@ class ExperimentLayout(FloatLayout):
         self.button_right_shadow.disable_button_0()
         self.spot.opacity = 0
         self.label_left.opacity = 0
+        self.panel_connected_label.opacity = 0.3
         self.label_right.opacity = 0
 
     def turn_on_screen(self):
@@ -212,6 +232,7 @@ class ExperimentLayout(FloatLayout):
         self.button_right_shadow.enable_button()
         self.spot.opacity = 1
         self.label_left.opacity = 1
+        self.panel_connected_label.opacity = 1
         self.label_right.opacity = 1
 
     def punish(self):
@@ -250,6 +271,7 @@ class ExperimentLayout(FloatLayout):
         self.update_labels()
 
     def update_labels(self):
+
         self.score_label = str(self.score).zfill(2)
         self.clicks_label = str(self.clicks).zfill(2)
         self.label_right.text = self.clicks_label
@@ -262,25 +284,63 @@ class ExperimentLayout(FloatLayout):
         else:   
             self.used_tries = 0
 
-    def __init__(self, my_arg1=None, my_arg2=None,**kwargs):
+    def usb_remove_callback(self, device_id, device_info):
+        if device_info[ID_VENDOR_ID] == "0c45":
+            print(f"{device_info[ID_VENDOR_ID]}")
+            print("Touch Pannel if DISCONNECTED")
+            self.panel_connected_label.text = "Touch Pannel is DISCONNECTED"
+            self.panel_connected_label.color = [1, 0.2, 0.2, 1]
 
-        self.my_arg1 =  my_arg1
-        print("my_arg1",my_arg1)
-        self.score_label = "00"
+    def usb_add_callback(self, device_id, device_info):
+        if device_info[ID_VENDOR_ID] == "0c45":
+            print(f"{device_info[ID_VENDOR_ID]}")
+            print("Touch Pannel is RECONNECTED")
+            self.panel_connected_label.text = "Touch Pannel is RECONNECTED"
+            self.panel_connected_label.color = [0.2, 0.2, 0.2, 0.2]
+    
+    def __init__(self, my_arg1=None, my_arg2=None, my_arg3=None, **kwargs):
+
+
+        self.score_label = "77"
         Clock.schedule_once(self.prepare_buttons, 0.8)
         self._keyboard = Window.request_keyboard(self._keyboard_closed, self)
         self._keyboard.bind(on_key_down=self._on_keyboard_down)
+        
+        # USB MONITORING
+        self.usb_monitor = USBMonitor()
+        self.usb_monitor.start_monitoring(on_connect=self.usb_add_callback, on_disconnect=self.usb_remove_callback)
+
+
+                    
         self.reset_quarters()
         if my_arg1:
             self.reinforcement_ratio = int(my_arg1)
         if my_arg2:
-            self.subject = my_arg2
+            self.total_reinforcements = int(my_arg2)
+        if my_arg3:
+            self.subject = my_arg3
         self.warning_variable = False
+
+
+        devices_dict = self.usb_monitor.get_available_devices()
+        if any(device.split("\\")[1] == "VID_0C45&PID_8419" for device in devices_dict):
+            print("Application started with Touch Pannel Connected")
+            self.is_panel_connected = True  
+
+            # self.panel_connected_label.text = "Application started with Touch Pannel Connected"
+            # self.panel_connected_label.color = [0.2, 0.2, 0.2, 0.2]
+        else:
+            print("Application started with Touch Pannel DISCONNECTED")
+            self.is_panel_connected = False
+
+
         #Event Start
         writer.write_data(self.score, self.quarter, 0, "Start", False) 
         super(FloatLayout, self).__init__(**kwargs)
         with self.canvas.before:
             self.rect = Rectangle(source="assets/images/panel.png")
+        
+        
     
     def on_pos(self, *args):
         # update Rectangle position when MazeSolution position changes
@@ -426,7 +486,7 @@ class BasicImageButtonRight(BasicImageButton):
     def disable_button(self):
         self.disabled = True
         self.opacity= 0
-        self.pos_hint = {'center_x': .3, 'center_y':.35}
+        self.pos_hint = {'center_x': .3, 'center_y':button_height}
             
     def enable_button(self):
         parent = self.parent
@@ -435,7 +495,7 @@ class BasicImageButtonRight(BasicImageButton):
         print(f'self.opacity {self.opacity}')
         print(f'parent.warning_display_volume {parent.warning_display_volume}')
         #Warning Volume
-        self.pos_hint = {'center_x':.3, 'center_y':.35}
+        self.pos_hint = {'center_x':.3, 'center_y':button_height}
 
 class BasicImageButtonGrey(BasicImageButton):
 
@@ -456,40 +516,43 @@ class BasicImageButtonGrey(BasicImageButton):
         self.disabled = True
         #Warning Volume
         self.opacity= 1
-        self.pos_hint = {'center_x':.3, 'center_y':.35}
+        self.pos_hint = {'center_x':.3, 'center_y':button_height}
 
     def disable_button_0(self):
         self.disabled = True
         #Warning Volume
         self.opacity= 0
-        self.pos_hint = {'center_x':.3, 'center_y':.35}
+        self.pos_hint = {'center_x':.3, 'center_y':button_height}
 
     def enable_button(self):
         self.disabled = False
         #Warning Volume
         self.opacity= 1
-        self.pos_hint = {'center_x':.3, 'center_y':.35}
+        self.pos_hint = {'center_x':.3, 'center_y':button_height}
 
 class MainApp(App):
-    def __init__(self,  my_arg1=None, my_arg2=None, **kwargs):
+    def __init__(self,  my_arg1=None, my_arg2=None, my_arg3=None, **kwargs):
         self.my_arg1 = my_arg1
         self.my_arg2 = my_arg2
+        self.my_arg3 = my_arg3
         super(MainApp, self).__init__(**kwargs)
 
     def build(self):
         Builder.load_file("self_control.kv")
-        layout = ExperimentLayout(my_arg1=self.my_arg1, my_arg2=self.my_arg2)
+        layout = ExperimentLayout(my_arg1=self.my_arg1, my_arg2=self.my_arg2, my_arg3=self.my_arg3 )
         return layout
 
 if __name__ == "__main__":
   my_arg1 = sys.argv[1] if len(sys.argv) > 1 else None
   my_arg2 = sys.argv[2] if len(sys.argv) > 2 else None
+  my_arg3 = sys.argv[3] if len(sys.argv) > 3 else None
+
   feeder = Feeder()
   houseLight = HouseLight()
   feeder.deactivate()
   houseLight.activate()
   subject_name = "None" 
-  if my_arg2: subject_name = my_arg2 
+  if my_arg3: subject_name = my_arg3 
   writer = Writer(constant_data, subject_name)
-  mainApp = MainApp(my_arg1, my_arg2)
+  mainApp = MainApp(my_arg1, my_arg2, my_arg3)
   mainApp.run()

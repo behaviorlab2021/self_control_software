@@ -8,41 +8,50 @@
     spot: spot
     label_right: label_right
     label_left: label_left
+    panel_connected_label: panel_connected_label
 
 
     BasicImageButtonLeft:  
         id: button_left
         source: 'assets/images/green_light.png'
         size_hint: .15, .15
-        pos_hint:  {'center_x':.7, 'center_y':.35}
+        pos_hint:  {'center_x':.7, 'center_y':.55}
 
     BasicImageButtonGrey:  
         id: button_right_shadow
         source: 'assets/images/grey_light.png'
         size_hint: .15, .15
-        pos_hint:  {'center_x':.3, 'center_y':.35} 
+        pos_hint:  {'center_x':.3, 'center_y':.55} 
     
     BasicImageButtonRight:  
         id: button_right
         source: 'assets/images/red_light.png'
         size_hint: .15, .15
-        pos_hint:  {'center_x':.3, 'center_y':.35} 
+        pos_hint:  {'center_x':.3, 'center_y':.55} 
 
     Label:
         id: label_right
-        pos_hint:  {'center_x':.95, 'center_y':.05} 
+        pos_hint:  {'center_x':.95, 'center_y':.95} 
         text: "??"
         font_size: '56sp'
         bold: True
-        color: 0.3, 0.3, 0.3, 0.8
+        color: 0.2, 0.2, 0.2, 0.8
 
     Label:
         id: label_left
-        pos_hint:  {'center_x':.05, 'center_y':.05} 
+        pos_hint:  {'center_x':.05, 'center_y':.95} 
         text: "??"
         font_size: '56sp'
         bold: True
-        color: 0.3, 0.3, 0.3, 0.8
+        color: 0.2, 0.2, 0.2, 0.8
+
+    Label:
+        id: panel_connected_label
+        pos_hint:  {'center_x':.5, 'center_y':.15} 
+        text: root.initial_pannel_connected_text()
+        font_size: '56sp'
+        bold: True
+        color: root.initial_pannel_connected_color()
         
     Image:
         id: spot
