@@ -11,11 +11,18 @@ def is_number(input):
         return True
     except ValueError:
         return False
+def toggle_warning_level(*args):
+    if punishment_var.get():
+        warning_level_entry.config(state="normal")
+    else:
+        warning_level_entry.config(state="disabled")
 
 def start_kivy_app():
     number_argument = number_entry.get()  # Get the input value for the number
     trials_argument = trials_entry.get()  # Get the input value for the trials
     string_argument = string_entry.get()  # Get the input value for the string
+    punishment_argument = punishment_var.get()  # Get the state of the punishment checkbox
+    warning_level_argument = warning_level_entry.get()  # Get the input value for the warning level
 
     # Check if the number input is empty
     if number_argument.strip() == "":
@@ -24,8 +31,10 @@ def start_kivy_app():
     if trials_argument.strip() == "":
         messagebox.showerror("Error", "Please enter number of trials.")
         return
-    
-    subprocess.Popen(["python", "c:/Users/SKINNER BOX/Documents/self_control_software/self_control.py", number_argument, trials_argument, string_argument])
+    if warning_level_argument.strip() =="" and  warning_level_entry.cget("state") != "disabled":
+        messagebox.showerror("Error", "Please enter warning level %.")
+        return    
+    subprocess.Popen(["python", "c:/Users/SKINNER BOX/Documents/self_control_software/self_control.py", number_argument, trials_argument, string_argument, str(punishment_argument), warning_level_argument ])
     root.destroy()
 
 Config.set('graphics', 'fullscreen', 'auto')
@@ -35,7 +44,7 @@ root.title("Open experiment")
 root.iconbitmap("g220.ico")
 
 # Set the default size of the application
-root.geometry("300x250")
+root.geometry("300x350")
 
 
 # REINFORCING RATIO
@@ -72,8 +81,33 @@ string_label.pack()
 string_entry = tk.Entry(root,  justify='center')
 string_entry.insert(0, "Pigeon")  # Insert the default value
 string_entry.pack()
+# WARNING CHECKBOX
+# Create a label for the punishment checkbox
+punishment_label = tk.Label(root, text="Punishment:", font=("Helvetica", 14), justify='center')
+punishment_label.pack()
 
+# Create a BooleanVar to hold the state of the checkbox
+punishment_var = tk.BooleanVar()
+punishment_var.trace("w", toggle_warning_level)
+# Create a Checkbutton for the punishment option
+
+punishment_checkbutton = tk.Checkbutton(root, text="Enable", variable=punishment_var)
+punishment_checkbutton.pack()
+
+# SIGNAL LEVEL
+# Create a label for the warning level input
+warning_level_label = tk.Label(root, text="Enter warning level %:", font=("Helvetica", 14), justify='center')
+warning_level_label.pack()
+
+# Create a validation command
+validate_warning_level = (root.register(is_number), '%P')
+
+# Create an Entry widget for the warning level input with the validation command and centered input text
+warning_level_entry = tk.Entry(root, validate="key", validatecommand=validate_warning_level, justify='center', state='disabled')
+warning_level_entry.pack()
 # Add a margin before the button
+
+
 margin = tk.Label(root, height=2)
 margin.pack()
 

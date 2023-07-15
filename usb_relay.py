@@ -44,4 +44,3 @@ def deactivate_relay_2():
 #     time.sleep(5)
 #     deactivate_relay_1()
 #     time.sleep(20)
-

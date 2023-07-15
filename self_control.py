@@ -158,6 +158,8 @@ class ExperimentLayout(FloatLayout):
     def check_if_red(self):
         if not self.was_warned and self.button_left.button_count in self.warning_signal_points:
 
+            
+
             self.play_sound()
             self.buzzer = Clock.schedule_interval(self.sound_buzzer, 0.5)
             self.button_right.enable_button()
@@ -298,7 +300,7 @@ class ExperimentLayout(FloatLayout):
             self.panel_connected_label.text = "Touch Pannel is RECONNECTED"
             self.panel_connected_label.color = [0.2, 0.2, 0.2, 0.2]
     
-    def __init__(self, my_arg1=None, my_arg2=None, my_arg3=None, **kwargs):
+    def __init__(self, my_arg1=None, my_arg2=None, my_arg3=None, my_arg4=None , my_arg5=None , **kwargs):
 
 
         self.score_label = "77"
@@ -318,8 +320,16 @@ class ExperimentLayout(FloatLayout):
         if my_arg2:
             self.total_reinforcements = int(my_arg2)
         if my_arg3:
-            self.subject = my_arg3
-        self.warning_variable = False
+            self.subject = str(my_arg3)
+        if my_arg4 == "True":
+            self.random_warning = True
+            print("T self.random_warning" , self.random_warning)        
+        elif my_arg4 == "False":
+            self.random_warning = False
+            print("F self.random_warning" , self.random_warning)        
+        if my_arg5:
+            self.warning_alarm_volume= int(my_arg5)
+            self.warning_display_volume= int(my_arg5)
 
 
         devices_dict = self.usb_monitor.get_available_devices()
@@ -468,7 +478,25 @@ class BasicImageButtonLeft(BasicImageButton):
             writer.write_data(parent.score, parent.quarter, self.button_count, "green", not parent.button_right.disabled)
             parent.update_score()
             self.disabled = False
+    
+    def disable_button(self):
+        self.disabled = True
+        self.opacity= 0
+        self.pos_hint = {'center_x': 4, 'center_y':button_height}
 
+    def enable_button_delayed(self, dt):
+        print("Enabling Button delayed")
+        self.disabled = False
+        self.opacity= 1
+        self.pos_hint = {'center_x': .7, 'center_y':button_height}
+
+
+    def enable_button(self):
+        print("Enabling Button ")
+
+        self.disabled = False
+        self.opacity= 1
+        self.pos_hint = {'center_x': .7, 'center_y':button_height}
 
     def zeroing(self):
         self.button_count = 0
@@ -531,21 +559,26 @@ class BasicImageButtonGrey(BasicImageButton):
         self.pos_hint = {'center_x':.3, 'center_y':button_height}
 
 class MainApp(App):
-    def __init__(self,  my_arg1=None, my_arg2=None, my_arg3=None, **kwargs):
+    def __init__(self,  my_arg1=None, my_arg2=None, my_arg3=None, my_arg4=None, my_arg5=None, **kwargs):
         self.my_arg1 = my_arg1
         self.my_arg2 = my_arg2
         self.my_arg3 = my_arg3
+        self.my_arg4 = my_arg4
+        self.my_arg5 = my_arg5
+
         super(MainApp, self).__init__(**kwargs)
 
     def build(self):
         Builder.load_file("self_control.kv")
-        layout = ExperimentLayout(my_arg1=self.my_arg1, my_arg2=self.my_arg2, my_arg3=self.my_arg3 )
+        layout = ExperimentLayout(my_arg1=self.my_arg1, my_arg2=self.my_arg2, my_arg3=self.my_arg3, my_arg4=self.my_arg4, my_arg5=self.my_arg5 )
         return layout
 
 if __name__ == "__main__":
   my_arg1 = sys.argv[1] if len(sys.argv) > 1 else None
   my_arg2 = sys.argv[2] if len(sys.argv) > 2 else None
   my_arg3 = sys.argv[3] if len(sys.argv) > 3 else None
+  my_arg4 = sys.argv[4] if len(sys.argv) > 4 else None
+  my_arg5 = sys.argv[5] if len(sys.argv) > 5 else None
 
   feeder = Feeder()
   houseLight = HouseLight()
@@ -554,5 +587,6 @@ if __name__ == "__main__":
   subject_name = "None" 
   if my_arg3: subject_name = my_arg3 
   writer = Writer(constant_data, subject_name)
-  mainApp = MainApp(my_arg1, my_arg2, my_arg3)
+  print("my_arg5", my_arg5) 
+  mainApp = MainApp(my_arg1, my_arg2, my_arg3, my_arg4, my_arg5)
   mainApp.run()
