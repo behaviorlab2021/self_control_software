@@ -5,7 +5,7 @@ from kivy.config import Config  # Import the Config module
 Config.set('graphics', 'position', 'custom')
 Config.set('graphics', 'top', '0')
 Config.set('graphics', 'left', '-1440')
-Config.set('graphics', 'fullscreen', 'auto')
+# Config.set('graphics', 'fullscreen', 'auto')
 
 from kivy.core.window import Window
 from xml.dom.pulldom import parseString
@@ -32,6 +32,7 @@ import os
 from usbmonitor import USBMonitor
 from usbmonitor.attributes import ID_MODEL, ID_MODEL_ID, ID_VENDOR_ID
 
+import datetime
 
 
 constant_data =  {
@@ -48,6 +49,7 @@ constant_data =  {
     'subject' :"Pigeon",
     'is_spot_on' :True,
     'random_warning' :False,
+    'miliseconds_after_touch': 1000
 }
 
 button_height = 0.55
@@ -429,17 +431,19 @@ class ExperimentLayout(FloatLayout):
 class BasicImageButton(ButtonBehavior, Image):
 
     button_count = 0
+    last_seen_outside = datetime.datetime.strptime('26 Aug 2023', '%d %b %Y')
 
     def on_touch_down(self, touch):
         if self.touch_on_button(touch) and not self.disabled:
             # self.parent.ids.label.text ...
             self.source = self.source_file_press
+
             
     def on_touch_up(self, touch):
         if self.touch_on_button(touch) and not self.disabled:
             self.button_count = self.button_count + 1
             self.source = self.source_file
-    
+
     def disable_button(self):
         self.disabled = True
         self.opacity= 0
@@ -465,10 +469,17 @@ class BasicImageButton(ButtonBehavior, Image):
         dist_from_center  = distance_from_center(touch.sx, touch.sy, button_center_x, button_center_y, aspect_ratio)
         return  dist_from_center < button_radius
 
-class BasicImageButtonLeft(BasicImageButton):
+class BasicImageButtonGreen(BasicImageButton):
 
     def on_touch_up(self, touch):
-        if self.touch_on_button(touch) and not self.disabled:
+        if self.touch_on_button(touch) and not self.disabled and (datetime.datetime.now()-self.last_seen_outside > datetime.timedelta(seconds=1)):
+
+
+
+
+
+            print("diff",datetime.datetime.now()-self.last_seen_outside )
+            print("diff is greater than one sec ",datetime.datetime.now()-self.last_seen_outside > datetime.timedelta(seconds=1))
             self.disabled = True
             parent = self.parent
             self.source = self.source_file
@@ -478,6 +489,10 @@ class BasicImageButtonLeft(BasicImageButton):
             writer.write_data(parent.score, parent.quarter, self.button_count, "green", not parent.button_right.disabled)
             parent.update_score()
             self.disabled = False
+        elif not self.touch_on_button(touch):
+            self.last_seen_outside = datetime.datetime.now()
+            print(self.last_seen_outside)
+    
     
     def disable_button(self):
         self.disabled = True
@@ -501,7 +516,7 @@ class BasicImageButtonLeft(BasicImageButton):
     def zeroing(self):
         self.button_count = 0
 
-class BasicImageButtonRight(BasicImageButton):
+class BasicImageButtonRed(BasicImageButton):
 
     def on_touch_up(self, touch):
         if self.touch_on_button(touch) and not self.disabled:
