@@ -5,7 +5,7 @@ from kivy.config import Config  # Import the Config module
 Config.set('graphics', 'position', 'custom')
 Config.set('graphics', 'top', '0')
 Config.set('graphics', 'left', '-1440')
-# Config.set('graphics', 'fullscreen', 'auto')
+Config.set('graphics', 'fullscreen', 'auto')
 
 from kivy.core.window import Window
 from xml.dom.pulldom import parseString
@@ -31,7 +31,7 @@ import sys
 import os 
 from usbmonitor import USBMonitor
 from usbmonitor.attributes import ID_MODEL, ID_MODEL_ID, ID_VENDOR_ID
-
+from clicker import Clicker
 import datetime
 
 
@@ -47,7 +47,7 @@ constant_data =  {
     'warning_display_volume' :100,
     'punishment_condition' :0,
     'subject' :"Pigeon",
-    'is_spot_on' :True,
+    'is_spot_on' :False,
     'random_warning' :False,
     'miliseconds_after_touch': 1000
 }
@@ -100,7 +100,8 @@ class ExperimentLayout(FloatLayout):
     def initial_pannel_connected_text(self):
             # self.panel_connected_label.text = "Application started with Touch Pannel DISCONNECTED"
             # self.panel_connected_label.color = [1, 0.2, 0.2, 0.2]
-        return 'Touch Pannel started ' + ('CONNECTED' if self.is_panel_connected else 'DISCONNECTED')
+        return ''
+        # return 'Touch Pannel started ' + ('CONNECTED' if self.is_panel_connected else 'DISCONNECTED')
 
 
     
@@ -159,9 +160,6 @@ class ExperimentLayout(FloatLayout):
 
     def check_if_red(self):
         if not self.was_warned and self.button_left.button_count in self.warning_signal_points:
-
-            
-
             self.play_sound()
             self.buzzer = Clock.schedule_interval(self.sound_buzzer, 0.5)
             self.button_right.enable_button()
@@ -426,7 +424,7 @@ class ExperimentLayout(FloatLayout):
         self.button_right.source = self.button_right.source_file
         self.button_right.disable_button()
         self.buzzer.cancel()
-        Clock.schedule_once(self.button_right_shadow.enable_button_delayed, 0.3)
+        Clock.schedule_once(self.button_right_shadow.enable_button_delayed, 0.2)
 
 class BasicImageButton(ButtonBehavior, Image):
 
@@ -437,6 +435,12 @@ class BasicImageButton(ButtonBehavior, Image):
         if self.touch_on_button(touch) and not self.disabled:
             # self.parent.ids.label.text ...
             self.source = self.source_file_press
+            Clock.schedule_once(self.change_button_image, 0.3)
+
+    def change_button_image(self, dt):
+        self.source = self.source_file
+
+
 
             
     def on_touch_up(self, touch):
@@ -472,17 +476,14 @@ class BasicImageButton(ButtonBehavior, Image):
 class BasicImageButtonGreen(BasicImageButton):
 
     def on_touch_up(self, touch):
-        if self.touch_on_button(touch) and not self.disabled and (datetime.datetime.now()-self.last_seen_outside > datetime.timedelta(seconds=1)):
 
+        print((datetime.datetime.now()-self.last_seen_outside).total_seconds())
+        if self.touch_on_button(touch) and not self.disabled and (datetime.datetime.now()-self.last_seen_outside > datetime.timedelta(milliseconds=300)):
 
-
-
-
-            print("diff",datetime.datetime.now()-self.last_seen_outside )
-            print("diff is greater than one sec ",datetime.datetime.now()-self.last_seen_outside > datetime.timedelta(seconds=1))
+            clicker.click()
             self.disabled = True
             parent = self.parent
-            self.source = self.source_file
+            # self.source = self.source_file
             parent.was_warned = False
             self.button_count = self.button_count + 1
             #Event Green
@@ -491,7 +492,6 @@ class BasicImageButtonGreen(BasicImageButton):
             self.disabled = False
         elif not self.touch_on_button(touch):
             self.last_seen_outside = datetime.datetime.now()
-            print(self.last_seen_outside)
     
     
     def disable_button(self):
@@ -596,6 +596,7 @@ if __name__ == "__main__":
   my_arg5 = sys.argv[5] if len(sys.argv) > 5 else None
 
   feeder = Feeder()
+  clicker = Clicker()
   houseLight = HouseLight()
   feeder.deactivate()
   houseLight.activate()

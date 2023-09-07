@@ -37,6 +37,9 @@ def deactivate_relay_2():
     if relay.get_state(2):
         relay.toggle_state(2)
 
+def toggle_relay_3():
+    relay = pyhid_usb_relay.find()
+    relay.toggle_state(3)
 
 
 # while True:
