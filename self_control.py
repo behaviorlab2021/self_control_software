@@ -113,7 +113,6 @@ class ExperimentLayout(FloatLayout):
     def printSomething():
         print("Helllo")
 
-
     def update_quarter(self):
         if self.clicks>= self.reinforcement_ratio:
             self.quarter = 0
@@ -434,8 +433,7 @@ class BasicImageButton(ButtonBehavior, Image):
     def on_touch_down(self, touch):
         if self.touch_on_button(touch) and not self.disabled:
             # self.parent.ids.label.text ...
-            self.source = self.source_file_press
-            Clock.schedule_once(self.change_button_image, 0.3)
+            pass
 
     def change_button_image(self, dt):
         self.source = self.source_file
@@ -475,10 +473,32 @@ class BasicImageButton(ButtonBehavior, Image):
 
 class BasicImageButtonGreen(BasicImageButton):
 
+
+
+
+    green_button_changed = False
+    green_button_scheduled_event = None  # To keep track of the scheduled event
+
+    def on_touch_down(self, touch):
+        if self.touch_on_button(touch) and not self.disabled:
+        # self.parent.ids.label.text ...
+            pass
+
     def on_touch_up(self, touch):
 
         print((datetime.datetime.now()-self.last_seen_outside).total_seconds())
         if self.touch_on_button(touch) and not self.disabled and (datetime.datetime.now()-self.last_seen_outside > datetime.timedelta(milliseconds=300)):
+
+            if not self.green_button_changed:
+                self.green_button_changed = True
+                self.source = self.source_file_press
+                self.green_button_scheduled_event = Clock.schedule_once(self.change_button_image, .8)
+            
+            else:
+                self.green_button_changed = True
+                Clock.unschedule(self.green_button_scheduled_event)
+                self.green_button_scheduled_event = Clock.schedule_once(self.change_button_image, .8)
+            
 
             clicker.click()
             self.disabled = True
@@ -490,10 +510,15 @@ class BasicImageButtonGreen(BasicImageButton):
             writer.write_data(parent.score, parent.quarter, self.button_count, "green", not parent.button_right.disabled)
             parent.update_score()
             self.disabled = False
+            
         elif not self.touch_on_button(touch):
             self.last_seen_outside = datetime.datetime.now()
     
-    
+    def change_button_image(self, dt):
+        self.green_button_changed = False
+        self.source = self.source_file
+
+
     def disable_button(self):
         self.disabled = True
         self.opacity= 0
