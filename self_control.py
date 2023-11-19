@@ -33,6 +33,7 @@ from usbmonitor import USBMonitor
 from usbmonitor.attributes import ID_MODEL, ID_MODEL_ID, ID_VENDOR_ID
 from clicker import Clicker
 import datetime
+from kivy.properties import NumericProperty
 
 
 constant_data =  {
@@ -40,7 +41,7 @@ constant_data =  {
     'warning_signal_points' :[],
     'warning_pecks' :3,
     'punishment_period' :30,
-    'feed_time' :4,
+    'feed_time' :5,
     'total_reinforcements' :35,
     'skip_to_next_value' :3,
     'warning_alarm_volume' :100,
@@ -52,7 +53,8 @@ constant_data =  {
     'miliseconds_after_touch': 1000
 }
 
-button_height = 0.55
+
+[ADAM, SNIK, MOSES, ERMIS]  = ["Adam", "Snik", "Moses", "Ermis" ] 
 
 class ExperimentLayout(FloatLayout):
 
@@ -70,7 +72,7 @@ class ExperimentLayout(FloatLayout):
     subject = constant_data["subject"]
     is_spot_on = constant_data["is_spot_on"]
     random_warning = constant_data["random_warning"]
-
+    button_height = 0.5
     feeding_condition = False
     score = 0
     used_tries = 0
@@ -85,6 +87,7 @@ class ExperimentLayout(FloatLayout):
 
     buzzer_file = "assets/audio/buzzer.mp3"
     sound = SoundLoader.load(buzzer_file) 
+
 
     canvas_picture = ObjectProperty(None)
     button_left = ObjectProperty(None)
@@ -110,8 +113,6 @@ class ExperimentLayout(FloatLayout):
         return [0.2, 0.2, 0.2, 0.2] if self.is_panel_connected  else [1, 0.2, 0.2, 1]
     
 
-    def printSomething():
-        print("Helllo")
 
     def update_quarter(self):
         if self.clicks>= self.reinforcement_ratio:
@@ -311,8 +312,6 @@ class ExperimentLayout(FloatLayout):
         self.usb_monitor = USBMonitor()
         self.usb_monitor.start_monitoring(on_connect=self.usb_add_callback, on_disconnect=self.usb_remove_callback)
 
-
-                    
         self.reset_quarters()
         if my_arg1:
             self.reinforcement_ratio = int(my_arg1)
@@ -320,6 +319,13 @@ class ExperimentLayout(FloatLayout):
             self.total_reinforcements = int(my_arg2)
         if my_arg3:
             self.subject = str(my_arg3)
+
+            if self.subject == ERMIS:
+                print("Here is ERMIS !!!!!!!!")
+                self.button_height = 0.45
+            else:
+                self.button_height = 0.55 
+            
         if my_arg4 == "True":
             self.random_warning = True
             print("T self.random_warning" , self.random_warning)        
@@ -470,6 +476,17 @@ class BasicImageButton(ButtonBehavior, Image):
         # touch.sx and touch.sy are the relative coordinates of tfhe touch to the window, between 0 and 1 
         dist_from_center  = distance_from_center(touch.sx, touch.sy, button_center_x, button_center_y, aspect_ratio)
         return  dist_from_center < button_radius
+    def touch_close_to_button(self, touch):
+        window_x = Window.size[0]
+        window_y = Window.size[1]
+        button_center_x = self.pos_hint['center_x']
+        button_center_y = self.pos_hint['center_y']
+        button_radius = float(self.size_hint[0] / 2)       
+        aspect_ratio = float(window_x/window_y)
+
+        # touch.sx and touch.sy are the relative coordinates of tfhe touch to the window, between 0 and 1 
+        dist_from_center  = distance_from_center(touch.sx, touch.sy, button_center_x, button_center_y, aspect_ratio)
+        return  dist_from_center < (button_radius + (button_radius / 3))
 
 class BasicImageButtonGreen(BasicImageButton):
 
@@ -486,35 +503,43 @@ class BasicImageButtonGreen(BasicImageButton):
 
     def on_touch_up(self, touch):
 
-        print((datetime.datetime.now()-self.last_seen_outside).total_seconds())
-        if self.touch_on_button(touch) and not self.disabled and (datetime.datetime.now()-self.last_seen_outside > datetime.timedelta(milliseconds=300)):
+        
 
-            if not self.green_button_changed:
-                self.green_button_changed = True
-                self.source = self.source_file_press
-                self.green_button_scheduled_event = Clock.schedule_once(self.change_button_image, .8)
-            
+        if self.touch_on_button(touch):
+            print("IN", end=", ")
+            if  not self.disabled and (datetime.datetime.now()-self.last_seen_outside > datetime.timedelta(milliseconds=300)):
+                print("VALID")
+                if not self.green_button_changed:
+                    self.green_button_changed = True
+                    self.source = self.source_file_press
+                
+                else:
+                    self.green_button_changed = True
+                    Clock.unschedule(self.green_button_scheduled_event)
+                    
+                self.green_button_scheduled_event = Clock.schedule_once(self.change_button_image, .3)
+                clicker.click()
+                self.disabled = True
+                parent = self.parent
+                # self.source = self.source_file
+                parent.was_warned = False
+                self.button_count = self.button_count + 1
+                #Event Green
+                writer.write_data(parent.score, parent.quarter, self.button_count, "green", not parent.button_right.disabled)
+                parent.update_score()
+                self.disabled = False
             else:
-                self.green_button_changed = True
-                Clock.unschedule(self.green_button_scheduled_event)
-                self.green_button_scheduled_event = Clock.schedule_once(self.change_button_image, .8)
-            
-
-            clicker.click()
-            self.disabled = True
-            parent = self.parent
-            # self.source = self.source_file
-            parent.was_warned = False
-            self.button_count = self.button_count + 1
-            #Event Green
-            writer.write_data(parent.score, parent.quarter, self.button_count, "green", not parent.button_right.disabled)
-            parent.update_score()
-            self.disabled = False
-            
-        elif not self.touch_on_button(touch):
-            self.last_seen_outside = datetime.datetime.now()
+                print("INVALID: ", (datetime.datetime.now()-self.last_seen_outside).total_seconds())   
+   
+        else:
+            if self.touch_close_to_button(touch):
+                print("MISSED")
+            else:
+                print("OUT")
+                self.last_seen_outside = datetime.datetime.now()
     
     def change_button_image(self, dt):
+        
         self.green_button_changed = False
         self.source = self.source_file
 
@@ -522,13 +547,13 @@ class BasicImageButtonGreen(BasicImageButton):
     def disable_button(self):
         self.disabled = True
         self.opacity= 0
-        self.pos_hint = {'center_x': 4, 'center_y':button_height}
+        self.pos_hint = {'center_x': 4, 'center_y':self.parent.button_height}
 
     def enable_button_delayed(self, dt):
         print("Enabling Button delayed")
         self.disabled = False
         self.opacity= 1
-        self.pos_hint = {'center_x': .7, 'center_y':button_height}
+        self.pos_hint = {'center_x': .7, 'center_y':self.parent.button_height}
 
 
     def enable_button(self):
@@ -536,7 +561,7 @@ class BasicImageButtonGreen(BasicImageButton):
 
         self.disabled = False
         self.opacity= 1
-        self.pos_hint = {'center_x': .7, 'center_y':button_height}
+        self.pos_hint = {'center_x': .7, 'center_y':self.parent.button_height}
 
     def zeroing(self):
         self.button_count = 0
@@ -552,18 +577,20 @@ class BasicImageButtonRed(BasicImageButton):
             parent.negative_reinforcement()
 
     def disable_button(self):
+        parent = self.parent
         self.disabled = True
         self.opacity= 0
-        self.pos_hint = {'center_x': .3, 'center_y':button_height}
+        self.pos_hint = {'center_x': .3, 'center_y':parent.button_height}
             
     def enable_button(self):
+        
         parent = self.parent
         self.disabled = False
         self.opacity= (parent.warning_display_volume / 100)
         print(f'self.opacity {self.opacity}')
         print(f'parent.warning_display_volume {parent.warning_display_volume}')
         #Warning Volume
-        self.pos_hint = {'center_x':.3, 'center_y':button_height}
+        self.pos_hint = {'center_x':.3, 'center_y':self.button_height}
 
 class BasicImageButtonGrey(BasicImageButton):
 
@@ -584,19 +611,19 @@ class BasicImageButtonGrey(BasicImageButton):
         self.disabled = True
         #Warning Volume
         self.opacity= 1
-        self.pos_hint = {'center_x':.3, 'center_y':button_height}
+        self.pos_hint = {'center_x':.3, 'center_y':self.parent.button_height}
 
     def disable_button_0(self):
         self.disabled = True
         #Warning Volume
         self.opacity= 0
-        self.pos_hint = {'center_x':.3, 'center_y':button_height}
+        self.pos_hint = {'center_x':.3, 'center_y':self.parent.button_height}
 
     def enable_button(self):
         self.disabled = False
         #Warning Volume
         self.opacity= 1
-        self.pos_hint = {'center_x':.3, 'center_y':button_height}
+        self.pos_hint = {'center_x':.3, 'center_y':self.parent.button_height}
 
 class MainApp(App):
     def __init__(self,  my_arg1=None, my_arg2=None, my_arg3=None, my_arg4=None, my_arg5=None, **kwargs):
