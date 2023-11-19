@@ -51,7 +51,8 @@ constant_data =  {
     'is_spot_on' :False,
     'random_warning' :False,
     'miliseconds_after_touch': 1000,
-    'regular_rounds_before_punishment_training': 5,
+    'in_warning_signal_training': False,
+    'regular_rounds_before_warning_signal_training': 5,
     'warning_signal_presence_duration': 5,
     'time_before_warning_signal': 5,
     
@@ -88,6 +89,10 @@ class ExperimentLayout(FloatLayout):
     quarter = 1
     warning_quarter = 0
     warning_variable = False
+    in_warning_signal_training = constant_data["in_warning_signal_training"]
+    regular_rounds_before_punishment_training = constant_data["regular_rounds_before_warning_signal_training"]
+    warning_signal_presence_duration = constant_data["warning_signal_presence_duration"]
+    time_before_warning_signal = constant_data["time_before_warning_signal"]
 
     buzzer_file = "assets/audio/buzzer.mp3"
     sound = SoundLoader.load(buzzer_file) 
@@ -304,7 +309,7 @@ class ExperimentLayout(FloatLayout):
             self.panel_connected_label.text = "Touch Pannel is RECONNECTED"
             self.panel_connected_label.color = [0.2, 0.2, 0.2, 0.2]
     
-    def __init__(self, my_arg1=None, my_arg2=None, my_arg3=None, my_arg4=None , my_arg5=None , **kwargs):
+    def __init__(self, my_arg1=None, my_arg2=None, my_arg3=None, my_arg4=None , my_arg5=None , my_arg6=None, **kwargs):
 
 
         self.score_label = "77"
@@ -339,8 +344,15 @@ class ExperimentLayout(FloatLayout):
         if my_arg5:
             self.warning_alarm_volume= int(my_arg5)
             self.warning_display_volume= int(my_arg5)
+        if my_arg6 == "True":
+            self.in_warning_signal_training = True
+            print("T self.in_warning_signal_training" , self.in_warning_signal_training)        
+        elif my_arg6 == "False":
+            self.in_warning_signal_training = False
+            print("F self.in_warning_signal_training" , self.in_warning_signal_training)
 
 
+   
         devices_dict = self.usb_monitor.get_available_devices()
         if any(device.split("\\")[1] == "VID_0C45&PID_8419" for device in devices_dict):
             print("Application started with Touch Pannel Connected")
@@ -650,6 +662,7 @@ if __name__ == "__main__":
   my_arg3 = sys.argv[3] if len(sys.argv) > 3 else None
   my_arg4 = sys.argv[4] if len(sys.argv) > 4 else None
   my_arg5 = sys.argv[5] if len(sys.argv) > 5 else None
+  my_arg6 = sys.argv[6] if len(sys.argv) > 6 else None
 
   feeder = Feeder()
   clicker = Clicker()
@@ -660,5 +673,5 @@ if __name__ == "__main__":
   if my_arg3: subject_name = my_arg3 
   writer = Writer(constant_data, subject_name)
   print("my_arg5", my_arg5) 
-  mainApp = MainApp(my_arg1, my_arg2, my_arg3, my_arg4, my_arg5)
+  mainApp = MainApp(my_arg1, my_arg2, my_arg3, my_arg4, my_arg5, my_arg6)
   mainApp.run()
