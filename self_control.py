@@ -99,12 +99,12 @@ class ExperimentLayout(FloatLayout):
 
 
     canvas_picture = ObjectProperty(None)
-    button_left = ObjectProperty(None)
-    button_right = ObjectProperty(None)
+    button_green = ObjectProperty(None)
+    button_red = ObjectProperty(None)
     label_left = ObjectProperty(None)
     label_right = ObjectProperty(None)
     panel_connected_label = ObjectProperty(None)
-    button_right_shadow = ObjectProperty(None)
+    button_red_shadow = ObjectProperty(None)
     spot = ObjectProperty(None)
     was_warned = False
 
@@ -145,10 +145,10 @@ class ExperimentLayout(FloatLayout):
 
     def on_touch_down(self,touch):
         #Event Touch
-        if self.button_left.opacity == 0:
-            writer.write_peck_data_blind( self.score, self.quarter, self.clicks, touch.sx, touch.sy, "blind-peck", not self.button_right.disabled)
+        if self.button_green.opacity == 0:
+            writer.write_peck_data_blind( self.score, self.quarter, self.clicks, touch.sx, touch.sy, "blind-peck", not self.button_red.disabled)
         else:
-            writer.write_peck_data( self.score, self.quarter, self.clicks, touch.sx, touch.sy,  not self.button_right.disabled)
+            writer.write_peck_data( self.score, self.quarter, self.clicks, touch.sx, touch.sy,  not self.button_red.disabled)
 
         if self.is_spot_on:
             self.spot.pos_hint = {'center_x':touch.sx, 'center_y':touch.sy}
@@ -156,7 +156,7 @@ class ExperimentLayout(FloatLayout):
 
     def check_reinforcement_condition(self):
 
-        if (self.button_left.button_count >= self.reinforcement_ratio):
+        if (self.button_green.button_count >= self.reinforcement_ratio):
             self.positive_reinforcement()
 
     def end_experiment(self):
@@ -166,18 +166,28 @@ class ExperimentLayout(FloatLayout):
         writer.write_data(self.score, self.quarter, self.clicks, "end_of_experiment", False)
 
         pass
-
-    def check_if_red(self):
-        if not self.was_warned and self.button_left.button_count in self.warning_signal_points:
+    def check_if_warning_signal_training(self):
+        print("self.in_warning_signal_training",self.in_warning_signal_training)
+        if self.in_warning_signal_training:
             self.play_sound()
             self.buzzer = Clock.schedule_interval(self.sound_buzzer, 0.5)
-            self.button_right.enable_button()
-            self.button_right_shadow.disable_button_100()
+            self.button_red.enable_button()
+            self.button_red_shadow.disable_button_100()
+            # self.button_green.di
+            self.update_warning_quarter()
+            #Event warning
+
+    def check_if_red(self):
+        if not self.was_warned and self.button_green.button_count in self.warning_signal_points:
+            self.play_sound()
+            self.buzzer = Clock.schedule_interval(self.sound_buzzer, 0.5)
+            self.button_red.enable_button()
+            self.button_red_shadow.disable_button_100()
             self.was_warned = True
             self.warning_variable = True
             self.update_warning_quarter()
             #Event warning
-            writer.write_data(self.score, self.quarter, self.clicks, "warning-"+str(self.warning_quarter), not self.button_right.disabled)
+            writer.write_data(self.score, self.quarter, self.clicks, "warning-"+str(self.warning_quarter), not self.button_red.disabled)
         
     def sound_buzzer(self, dt):
         self.play_sound()
@@ -200,6 +210,7 @@ class ExperimentLayout(FloatLayout):
     def turn_feeding_condition_off(self, dt):
                
         if not self.check_if_end():
+            self.check_if_warning_signal_training()
             self.randomize_array()
             houseLight.activate()
             self.turn_on_screen()
@@ -208,7 +219,7 @@ class ExperimentLayout(FloatLayout):
             self.reset_quarters()
             self.warning_variable = False
             #Event Starting after reinforcement
-            writer.write_data(self.score, self.quarter, self.clicks, "starting-again", not self.button_right.disabled)
+            writer.write_data(self.score, self.quarter, self.clicks, "starting-again", not self.button_red.disabled)
         pass
 
 
@@ -221,7 +232,7 @@ class ExperimentLayout(FloatLayout):
             feeder.create_deactivate_feeder_event(self.feed_time)
             Clock.schedule_once(self.turn_feeding_condition_off, self.feed_time)
             #Event Reinforcement
-            writer.write_data(self.score, self.quarter, self.clicks, "reinforcement", not self.button_right.disabled)
+            writer.write_data(self.score, self.quarter, self.clicks, "reinforcement", not self.button_red.disabled)
 
     def check_if_punishment(self):
         if self.used_tries > self.warning_pecks:
@@ -229,9 +240,9 @@ class ExperimentLayout(FloatLayout):
     
     def turn_off_screen(self):
         self.rect.source ="assets/images/black_panel.png"
-        self.button_right.disable_button()
-        self.button_left.disable_button()
-        self.button_right_shadow.disable_button_0()
+        self.button_red.disable_button()
+        self.button_green.disable_button()
+        self.button_red_shadow.disable_button_0()
         self.spot.opacity = 0
         self.label_left.opacity = 0
         self.panel_connected_label.opacity = 0.3
@@ -239,8 +250,8 @@ class ExperimentLayout(FloatLayout):
 
     def turn_on_screen(self):
         self.rect.source ="assets/images/panel.png"
-        self.button_left.enable_button()
-        self.button_right_shadow.enable_button()
+        self.button_green.enable_button()
+        self.button_red_shadow.enable_button()
         self.spot.opacity = 1
         self.label_left.opacity = 1
         self.panel_connected_label.opacity = 1
@@ -251,16 +262,16 @@ class ExperimentLayout(FloatLayout):
         self.buzzer.cancel() 
         self.turn_off_screen()
         self.subsequent_punishments += 1 
-        self.button_left.zeroing()
+        self.button_green.zeroing()
         Clock.schedule_once(self.un_punish, self.punishment_period)
         #Event Punishment
-        writer.write_data(self.score, self.quarter, self.clicks, "punishment", not self.button_right.disabled)
+        writer.write_data(self.score, self.quarter, self.clicks, "punishment", not self.button_red.disabled)
 
     def un_punish(self, dt):
         houseLight.activate()
         self.turn_on_screen()
         self.used_tries = 0
-        self.button_right_shadow.enable_button()
+        self.button_red_shadow.enable_button()
         self.label_right.text = "00"
         self.was_warned = True
         self.reset_quarters()
@@ -270,13 +281,14 @@ class ExperimentLayout(FloatLayout):
             self.randomize_array()
             self.subsequent_punishments = 0
 
-        writer.write_data(self.score, self.quarter, self.clicks, "starting-over", not self.button_right.disabled) 
+        writer.write_data(self.score, self.quarter, self.clicks, "starting-over", not self.button_red.disabled) 
 
     def update_score(self):
-        self.clicks = self.button_left.button_count
+        self.clicks = self.button_green.button_count
         self.update_used_tries()
         self.check_if_punishment()
         self.check_reinforcement_condition()
+        self.check_if_warning_signal_training()
         self.check_if_red()
         self.update_quarter()
         self.update_labels()
@@ -290,7 +302,7 @@ class ExperimentLayout(FloatLayout):
 
 
     def update_used_tries(self):
-        if self.button_right.disabled == False:
+        if self.button_red.disabled == False:
             self.used_tries += 1
         else:   
             self.used_tries = 0
@@ -344,6 +356,7 @@ class ExperimentLayout(FloatLayout):
         if my_arg5:
             self.warning_alarm_volume= int(my_arg5)
             self.warning_display_volume= int(my_arg5)
+        print("my_arg6",my_arg6)
         if my_arg6 == "True":
             self.in_warning_signal_training = True
             print("T self.in_warning_signal_training" , self.in_warning_signal_training)        
@@ -385,22 +398,22 @@ class ExperimentLayout(FloatLayout):
 
         self.randomize_array()
 
-        self.button_left.source = "assets/images/green_light.png"
-        self.button_left.source_file = "assets/images/green_light.png"
-        self.button_left.source_file_press = "assets/images/green_dark.png"
+        self.button_green.source = "assets/images/green_light.png"
+        self.button_green.source_file = "assets/images/green_light.png"
+        self.button_green.source_file_press = "assets/images/green_dark.png"
 
-        self.button_right.source = "assets/images/red_light.png"
-        self.button_right.source_file = "assets/images/red_light.png"
-        self.button_right.source_file_press = "assets/images/red_dark.png"
-        self.button_right.disable_button()
+        self.button_red.source = "assets/images/red_light.png"
+        self.button_red.source_file = "assets/images/red_light.png"
+        self.button_red.source_file_press = "assets/images/red_dark.png"
+        self.button_red.disable_button()
         if self.is_spot_on:
             self.spot.pos_hint = {'center_x':.3, 'center_y':.75}
         else:
             self.spot.pos_hint = {'center_x': 3, 'center_y':.75}
 
-        self.button_right_shadow.source = "assets/images/grey_light.png"
-        self.button_right_shadow.source_file = "assets/images/grey_light.png"
-        self.button_right_shadow.source_file_press = "assets/images/grey_dark.png"
+        self.button_red_shadow.source = "assets/images/grey_light.png"
+        self.button_red_shadow.source_file = "assets/images/grey_light.png"
+        self.button_red_shadow.source_file_press = "assets/images/grey_dark.png"
         houseLight.activate()
 
     def _keyboard_closed(self):
@@ -417,16 +430,16 @@ class ExperimentLayout(FloatLayout):
         elif keycode[1] == 'spacebar':
 
             print("spacebar")
-            if self.button_right.disabled == True :
+            if self.button_red.disabled == True :
                 #Event free-food
-                writer.write_data(self.score, self.quarter, self.clicks, "free-food", not self.button_right.disabled) 
+                writer.write_data(self.score, self.quarter, self.clicks, "free-food", not self.button_red.disabled) 
                 self.positive_reinforcement()
             
         elif keycode[1] == 'enter':
             print("enter")
             # Event gratis-red
-            writer.write_data(self.score, self.quarter, self.clicks, "gratis-red-"+str(self.warning_quarter), not self.button_right.disabled)
-            if self.button_right.disabled == False :
+            writer.write_data(self.score, self.quarter, self.clicks, "gratis-red-"+str(self.warning_quarter), not self.button_red.disabled)
+            if self.button_red.disabled == False :
                 self.negative_reinforcement()
 
         return True
@@ -436,16 +449,16 @@ class ExperimentLayout(FloatLayout):
         self.score = self.score + 1
         self.feed()
         self.subsequent_punishments = 0
-        self.button_left.button_count = 0
+        self.button_green.button_count = 0
         self.update_quarter()
         self.update_labels()
         pass
 
     def negative_reinforcement(self):
-        self.button_right.source = self.button_right.source_file
-        self.button_right.disable_button()
+        self.button_red.source = self.button_red.source_file
+        self.button_red.disable_button()
         self.buzzer.cancel()
-        Clock.schedule_once(self.button_right_shadow.enable_button_delayed, 0.2)
+        Clock.schedule_once(self.button_red_shadow.enable_button_delayed, 0.2)
 
 class BasicImageButton(ButtonBehavior, Image):
 
@@ -460,9 +473,6 @@ class BasicImageButton(ButtonBehavior, Image):
     def change_button_image(self, dt):
         self.source = self.source_file
 
-
-
-            
     def on_touch_up(self, touch):
         if self.touch_on_button(touch) and not self.disabled:
             self.button_count = self.button_count + 1
@@ -506,9 +516,6 @@ class BasicImageButton(ButtonBehavior, Image):
 
 class BasicImageButtonGreen(BasicImageButton):
 
-
-
-
     green_button_changed = False
     green_button_scheduled_event = None  # To keep track of the scheduled event
 
@@ -518,8 +525,6 @@ class BasicImageButtonGreen(BasicImageButton):
             pass
 
     def on_touch_up(self, touch):
-
-        
 
         if self.touch_on_button(touch):
             print("IN", end=", ")
@@ -541,7 +546,7 @@ class BasicImageButtonGreen(BasicImageButton):
                 parent.was_warned = False
                 self.button_count = self.button_count + 1
                 #Event Green
-                writer.write_data(parent.score, parent.quarter, self.button_count, "green", not parent.button_right.disabled)
+                writer.write_data(parent.score, parent.quarter, self.button_count, "green", not parent.button_red.disabled)
                 parent.update_score()
                 self.disabled = False
             else:
@@ -589,7 +594,7 @@ class BasicImageButtonRed(BasicImageButton):
             self.button_count = self.button_count + 1
             parent = self.parent
             # Event Red
-            writer.write_data(parent.score, parent.quarter, parent.clicks, "red-"+str(parent.warning_quarter), not parent.button_right.disabled) 
+            writer.write_data(parent.score, parent.quarter, parent.clicks, "red-"+str(parent.warning_quarter), not parent.button_red.disabled) 
             parent.negative_reinforcement()
 
     def disable_button(self):
@@ -606,7 +611,7 @@ class BasicImageButtonRed(BasicImageButton):
         print(f'self.opacity {self.opacity}')
         print(f'parent.warning_display_volume {parent.warning_display_volume}')
         #Warning Volume
-        self.pos_hint = {'center_x':.3, 'center_y':self.button_height}
+        self.pos_hint = {'center_x':.3, 'center_y':parent.button_height}
 
 class BasicImageButtonGrey(BasicImageButton):
 
@@ -616,11 +621,11 @@ class BasicImageButtonGrey(BasicImageButton):
             parent = self.parent
             if not parent.warning_variable:
                 # Event Before
-                writer.write_data(parent.score, parent.quarter, parent.clicks, "before", not parent.button_right.disabled) 
+                writer.write_data(parent.score, parent.quarter, parent.clicks, "before", not parent.button_red.disabled) 
                 pass 
             else:    
                 # Event After
-                writer.write_data(parent.score, parent.quarter, parent.clicks, "after", not parent.button_right.disabled) 
+                writer.write_data(parent.score, parent.quarter, parent.clicks, "after", not parent.button_red.disabled) 
                 pass
 
     def disable_button_100(self):
@@ -642,18 +647,19 @@ class BasicImageButtonGrey(BasicImageButton):
         self.pos_hint = {'center_x':.3, 'center_y':self.parent.button_height}
 
 class MainApp(App):
-    def __init__(self,  my_arg1=None, my_arg2=None, my_arg3=None, my_arg4=None, my_arg5=None, **kwargs):
+    def __init__(self,  my_arg1=None, my_arg2=None, my_arg3=None, my_arg4=None, my_arg5=None, my_arg6=None,**kwargs):
         self.my_arg1 = my_arg1
         self.my_arg2 = my_arg2
         self.my_arg3 = my_arg3
         self.my_arg4 = my_arg4
         self.my_arg5 = my_arg5
+        self.my_arg6 = my_arg6
 
         super(MainApp, self).__init__(**kwargs)
 
     def build(self):
         Builder.load_file("self_control.kv")
-        layout = ExperimentLayout(my_arg1=self.my_arg1, my_arg2=self.my_arg2, my_arg3=self.my_arg3, my_arg4=self.my_arg4, my_arg5=self.my_arg5 )
+        layout = ExperimentLayout(my_arg1=self.my_arg1, my_arg2=self.my_arg2, my_arg3=self.my_arg3, my_arg4=self.my_arg4, my_arg5=self.my_arg5, my_arg6=self.my_arg6  )
         return layout
 
 if __name__ == "__main__":

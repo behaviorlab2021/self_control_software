@@ -27,7 +27,7 @@ def start_kivy_app():
         messagebox.showerror("Error", "Please enter number of trials.")
         return
 
-    subprocess.Popen(["python", "c:/Users/SKINNER BOX/Documents/self_control_software/self_control.py", number_argument, trials_argument, dropdown_argument, "false", "100", "true"  ])
+    subprocess.Popen(["python", "c:/Users/SKINNER BOX/Documents/self_control_software/self_control.py", number_argument, trials_argument, dropdown_argument, "false", "100", "True"  ])
     root.destroy()
 
 Config.set('graphics', 'fullscreen', 'auto')
