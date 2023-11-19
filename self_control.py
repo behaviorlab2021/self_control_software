@@ -50,7 +50,11 @@ constant_data =  {
     'subject' :"Pigeon",
     'is_spot_on' :False,
     'random_warning' :False,
-    'miliseconds_after_touch': 1000
+    'miliseconds_after_touch': 1000,
+    'regular_rounds_before_punishment_training': 5,
+    'warning_signal_presence_duration': 5,
+    'time_before_warning_signal': 5,
+    
 }
 
 
