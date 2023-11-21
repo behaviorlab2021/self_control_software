@@ -466,6 +466,9 @@ class ExperimentLayout(FloatLayout):
             writer.write_data(self.score, self.quarter, self.clicks, "gratis-red-"+str(self.warning_quarter), not self.button_red.disabled)
             if self.button_red.disabled == False :
                 self.negative_reinforcement()
+                if self.warning_signal_training_running:
+                    self.stop_warning_signal_training()
+                
 
         return True
 
