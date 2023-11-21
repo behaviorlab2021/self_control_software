@@ -52,7 +52,7 @@ constant_data =  {
     'random_warning' :False,
     'miliseconds_after_touch': 1000,
     'in_warning_signal_training': False,
-    'regular_rounds_before_warning_signal_training': 5,
+    'regular_rounds_before_warning_signal_training': 2,
     'warning_signal_presence_duration': 5,
     'time_before_warning_signal': 5,
     
@@ -93,6 +93,8 @@ class ExperimentLayout(FloatLayout):
     regular_rounds_before_punishment_training = constant_data["regular_rounds_before_warning_signal_training"]
     warning_signal_presence_duration = constant_data["warning_signal_presence_duration"]
     time_before_warning_signal = constant_data["time_before_warning_signal"]
+    warning_signal_training_running = False
+    warning_signal_scheduled_event = None
 
     buzzer_file = "assets/audio/buzzer.mp3"
     sound = SoundLoader.load(buzzer_file) 
@@ -168,14 +170,36 @@ class ExperimentLayout(FloatLayout):
         pass
     def check_if_warning_signal_training(self):
         print("self.in_warning_signal_training",self.in_warning_signal_training)
-        if self.in_warning_signal_training:
+        if self.in_warning_signal_training and self.score % self.regular_rounds_before_punishment_training == 0:
+            self.warning_signal_training_running = True
+            self.warning_signal_scheduled_event = Clock.schedule_once(self.start_warning_signal_training, self.time_before_warning_signal)
+            
+
+
+    def start_warning_signal_training(self, dt):
+        if self.warning_signal_training_running:
+            print("In start_warning_signal_training")
             self.play_sound()
             self.buzzer = Clock.schedule_interval(self.sound_buzzer, 0.5)
             self.button_red.enable_button()
             self.button_red_shadow.disable_button_100()
-            # self.button_green.di
-            self.update_warning_quarter()
-            #Event warning
+            self.button_green.disable_button()
+            self.warning_signal_scheduled_event = Clock.schedule_once(self.warning_signal_training_punishment, self.warning_signal_presence_duration)
+        # self.button_green.di
+        self.update_warning_quarter()
+        #Event warning
+        pass
+    def stop_warning_signal_training(self):
+        self.warning_signal_training_running = False
+        Clock.unschedule(self.warning_signal_scheduled_event)
+        self.button_green.enable_button()
+        print("In stop_warning_signal_training")
+        pass
+
+    def warning_signal_training_punishment(self, dt):
+        self.warning_signal_training_running = False
+        self.punish()
+        pass
 
     def check_if_red(self):
         if not self.was_warned and self.button_green.button_count in self.warning_signal_points:
@@ -268,6 +292,8 @@ class ExperimentLayout(FloatLayout):
         writer.write_data(self.score, self.quarter, self.clicks, "punishment", not self.button_red.disabled)
 
     def un_punish(self, dt):
+        Clock.unschedule(self.warning_signal_scheduled_event)
+        self.stop_warning_signal_training()
         houseLight.activate()
         self.turn_on_screen()
         self.used_tries = 0
@@ -288,7 +314,6 @@ class ExperimentLayout(FloatLayout):
         self.update_used_tries()
         self.check_if_punishment()
         self.check_reinforcement_condition()
-        self.check_if_warning_signal_training()
         self.check_if_red()
         self.update_quarter()
         self.update_labels()
@@ -446,6 +471,7 @@ class ExperimentLayout(FloatLayout):
 
 
     def positive_reinforcement(self):
+        self.stop_warning_signal_training()
         self.score = self.score + 1
         self.feed()
         self.subsequent_punishments = 0
@@ -538,6 +564,7 @@ class BasicImageButtonGreen(BasicImageButton):
                     self.green_button_changed = True
                     Clock.unschedule(self.green_button_scheduled_event)
                     
+
                 self.green_button_scheduled_event = Clock.schedule_once(self.change_button_image, .3)
                 clicker.click()
                 self.disabled = True
@@ -596,6 +623,8 @@ class BasicImageButtonRed(BasicImageButton):
             # Event Red
             writer.write_data(parent.score, parent.quarter, parent.clicks, "red-"+str(parent.warning_quarter), not parent.button_red.disabled) 
             parent.negative_reinforcement()
+            if parent.warning_signal_training_running: 
+                parent.stop_warning_signal_training()
 
     def disable_button(self):
         parent = self.parent
