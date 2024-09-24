@@ -12,13 +12,27 @@ def is_number(input):
         return True
     except ValueError:
         return False
+# def toggle_warning_level(*args):
+#     if punishment_var.get():
+#         sound_warning_level_entry.config(state="normal")
+#         visual_warning_level_entry.config(state="normal")
+#         highlight_warning_checkbutton.config(state="normal")
 
 
+#     else:
+#         sound_warning_level_entry.config(state="disabled")
+#         visual_warning_level_entry.config(state="disabled")
+#         highlight_warning_checkbutton.config(state="disabled")
 def start_kivy_app():
     number_argument = number_entry.get()  # Get the input value for the number
     trials_argument = trials_entry.get()  # Get the input value for the trials
     dropdown_argument = dropdown_var.get()  # Get the input value for the string
+    visual_warning_level_argument = visual_warning_level_entry.get()  # Get the input value for the warning level
+    sound_warning_level_argument = sound_warning_level_entry.get()  # Get the input value for the warning level
+    highlight_warning = highlight_warning_var.get()  # Get the input value for the warning level
+    warning_signal_horizontal_position_argument = warning_signal_horizontal_position_entry.get()
 
+    print( "Hey! ", warning_signal_horizontal_position_argument)
     # Check if the number input is empty
     if number_argument.strip() == "":
         messagebox.showerror("Error", "Please enter number of reinforcers.")
@@ -26,8 +40,17 @@ def start_kivy_app():
     if trials_argument.strip() == "":
         messagebox.showerror("Error", "Please enter number of trials.")
         return
+    if visual_warning_level_argument.strip() =="" and  visual_warning_level_entry.cget("state") != "disabled":
+        messagebox.showerror("Error", "Please enter visual warning level %.")
+        return
+    if sound_warning_level_argument.strip() =="" and  sound_warning_level_entry.cget("state") != "disabled":
+        messagebox.showerror("Error", "Please enter sound warning level %.")
+        return
+    if (float(warning_signal_horizontal_position_argument) < 0.3 or float(warning_signal_horizontal_position_argument) > 0.6):
+        messagebox.showerror("Error", "The value if the warning signal hosrizontal positon should be between 0.3 and 0.6.")
+        return
 
-    subprocess.Popen(["python", "c:/Users/SKINNER BOX/Documents/self_control_software/self_control.py", number_argument, trials_argument, dropdown_argument, "false", "100", "True"  ])
+    subprocess.Popen(["python", "c:/Users/SKINNER BOX/Documents/self_control_software/self_control.py", number_argument, trials_argument, dropdown_argument, "2", visual_warning_level_argument, sound_warning_level_argument, str(highlight_warning), warning_signal_horizontal_position_argument ])
     root.destroy()
 
 Config.set('graphics', 'fullscreen', 'auto')
@@ -37,7 +60,7 @@ root.title("Open experiment")
 root.iconbitmap("g220.ico")
 
 # Set the default size of the application
-root.geometry("300x350")
+root.geometry("300x400")
 
 
 # REINFORCING RATIO
@@ -49,7 +72,7 @@ number_label.pack()
 validate_number = (root.register(is_number), '%P')
 
 # Create an Entry widget for the number input with the validation command and centered input text
-number_entry = tk.Entry(root, validate="key", validatecommand=validate_number, justify='center')
+number_entry = tk.Entry(root, validate="key", validatecommand=validate_number, justify='center', textvariable=tk.StringVar(value="60"))
 number_entry.pack()
 
 
@@ -93,7 +116,79 @@ dropdown.pack()
 
 dropdown.set(options[0])
 
+# # WARNING CHECKBOX
+# # Create a label for the punishment checkbox
+# punishment_label = tk.Label(root, text="Punishment:", font=("Helvetica", 14), justify='center')
+# punishment_label.pack()
+
+# # Create a BooleanVar to hold the state of the checkbox
+# punishment_var = tk.BooleanVar()
+# punishment_var.trace("w", toggle_warning_level)
+# # Create a Checkbutton for the punishment option
+
+# punishment_checkbutton = tk.Checkbutton(root, text="Enable", variable=punishment_var)
+# punishment_checkbutton.pack()
 margin = tk.Label(root, height=2)
+
+# VISUAL SIGNAL LEVEL
+# Create a label for the warning level input
+visual_warning_level_label = tk.Label(root, text="Enter visual warning level %:", font=("Helvetica", 10), justify='center')
+visual_warning_level_label.pack()
+
+# Create a validation command
+visual_validate_warning_level = (root.register(is_number), '%P')
+
+# Create an Entry widget for the warning level input with the validation command and centered input text
+visual_warning_level_entry = tk.Entry(root, validate="key", validatecommand=visual_validate_warning_level, justify='center', state='normal', textvariable=tk.StringVar(value="100"))
+visual_warning_level_entry.pack()
+# Add a margin before the button
+margin = tk.Label(root, height=2)
+
+# SOUND SIGNAL LEVEL
+# Create a label for the warning level input
+sound_warning_level_label = tk.Label(root, text="Enter sound warning level %:", font=("Helvetica", 10), justify='center')
+sound_warning_level_label.pack()
+
+# Create a validation command
+sound_validate_warning_level = (root.register(is_number), '%P')
+
+validate_warning_signal_horizontal_position = (root.register(is_number), '%P')
+
+# Create an Entry widget for the warning level input with the validation command and centered input text
+sound_warning_level_entry = tk.Entry(root, validate="key", validatecommand=sound_validate_warning_level, justify='center', state='normal', textvariable=tk.StringVar(value="10"))
+sound_warning_level_entry.pack()
+
+
+# WARNING SIGNAL HORIZONTAL POSITION
+# Create a label for the warning level input
+warning_signal_horizontal_position_label = tk.Label(root, text="Enter Warning Signal Horizontal Position (.3 < x <.6) :", font=("Helvetica", 10), justify='center')
+warning_signal_horizontal_position_label.pack()
+
+# Create a validation command
+warning_signal_horizontal_position_value = (root.register(is_number), '%P')
+
+# Create an Entry widget for the warning level input with the validation command and centered input text
+warning_signal_horizontal_position_entry = tk.Entry(root, validate="key", validatecommand=validate_warning_signal_horizontal_position, justify='center', state='normal', textvariable=tk.StringVar(value=0.3))
+warning_signal_horizontal_position_entry.pack()
+
+
+
+
+# HOUSELIGHT WITH WARNING CHECKBOXs
+# Create a label for the punishment checkbox
+highlight_warning_label = tk.Label(root, text="Highlight warning:", font=("Helvetica", 14), justify='center')
+highlight_warning_label.pack()
+
+# Create a BooleanVar to hold the state of the checkbox
+highlight_warning_var = tk.BooleanVar()
+# Create a Checkbutton for the punishment option
+
+highlight_warning_checkbutton = tk.Checkbutton(root, text="Enable", variable=highlight_warning_var, state='normal')
+highlight_warning_checkbutton.pack()
+
+
+
+# Add a margin before the button
 margin.pack()
 
 start_button = tk.Button(root, text="Open", command=start_kivy_app, justify='center')

@@ -14,16 +14,26 @@ def is_number(input):
         return False
 def toggle_warning_level(*args):
     if punishment_var.get():
-        warning_level_entry.config(state="normal")
-    else:
-        warning_level_entry.config(state="disabled")
+        sound_warning_level_entry.config(state="normal")
+        visual_warning_level_entry.config(state="normal")
+        highlight_warning_checkbutton.config(state="normal")
 
+
+    else:
+        sound_warning_level_entry.config(state="disabled")
+        visual_warning_level_entry.config(state="disabled")
+        highlight_warning_checkbutton.config(state="disabled")
 def start_kivy_app():
     number_argument = number_entry.get()  # Get the input value for the number
     trials_argument = trials_entry.get()  # Get the input value for the trials
     dropdown_argument = dropdown_var.get()  # Get the input value for the string
+    
     punishment_argument = punishment_var.get()  # Get the state of the punishment checkbox
-    warning_level_argument = warning_level_entry.get()  # Get the input value for the warning level
+    punishment_argument = "1" if punishment_var.get()  else "0"
+
+    visual_warning_level_argument = visual_warning_level_entry.get()  # Get the input value for the warning level
+    sound_warning_level_argument = sound_warning_level_entry.get()  # Get the input value for the warning level
+    highlight_warning = highlight_warning_var.get()  # Get the input value for the warning level
 
     # Check if the number input is empty
     if number_argument.strip() == "":
@@ -32,10 +42,13 @@ def start_kivy_app():
     if trials_argument.strip() == "":
         messagebox.showerror("Error", "Please enter number of trials.")
         return
-    if warning_level_argument.strip() =="" and  warning_level_entry.cget("state") != "disabled":
-        messagebox.showerror("Error", "Please enter warning level %.")
-        return    
-    subprocess.Popen(["python", "c:/Users/SKINNER BOX/Documents/self_control_software/self_control.py", number_argument, trials_argument, dropdown_argument, str(punishment_argument), warning_level_argument ])
+    if visual_warning_level_argument.strip() =="" and  visual_warning_level_entry.cget("state") != "disabled":
+        messagebox.showerror("Error", "Please enter visual warning level %.")
+        return
+    if sound_warning_level_argument.strip() =="" and  sound_warning_level_entry.cget("state") != "disabled":
+        messagebox.showerror("Error", "Please enter sound warning level %.")
+        return        
+    subprocess.Popen(["python", "c:/Users/SKINNER BOX/Documents/self_control_software/self_control.py", number_argument, trials_argument, dropdown_argument, punishment_argument, visual_warning_level_argument, sound_warning_level_argument, str(highlight_warning) ])
     root.destroy()
 
 Config.set('graphics', 'fullscreen', 'auto')
@@ -45,7 +58,7 @@ root.title("Open experiment")
 root.iconbitmap("g220.ico")
 
 # Set the default size of the application
-root.geometry("300x350")
+root.geometry("300x400")
 
 
 # REINFORCING RATIO
@@ -57,7 +70,7 @@ number_label.pack()
 validate_number = (root.register(is_number), '%P')
 
 # Create an Entry widget for the number input with the validation command and centered input text
-number_entry = tk.Entry(root, validate="key", validatecommand=validate_number, justify='center')
+number_entry = tk.Entry(root, validate="key", validatecommand=validate_number, justify='center', textvariable=tk.StringVar(value="60"))
 number_entry.pack()
 
 
@@ -114,21 +127,45 @@ punishment_var.trace("w", toggle_warning_level)
 punishment_checkbutton = tk.Checkbutton(root, text="Enable", variable=punishment_var)
 punishment_checkbutton.pack()
 
-# SIGNAL LEVEL
+# VISUAL SIGNAL LEVEL
 # Create a label for the warning level input
-warning_level_label = tk.Label(root, text="Enter warning level %:", font=("Helvetica", 14), justify='center')
-warning_level_label.pack()
+visual_warning_level_label = tk.Label(root, text="Enter visual warning level %:", font=("Helvetica", 10), justify='center')
+visual_warning_level_label.pack()
 
 # Create a validation command
-validate_warning_level = (root.register(is_number), '%P')
+visual_validate_warning_level = (root.register(is_number), '%P')
 
 # Create an Entry widget for the warning level input with the validation command and centered input text
-warning_level_entry = tk.Entry(root, validate="key", validatecommand=validate_warning_level, justify='center', state='disabled')
-warning_level_entry.pack()
+visual_warning_level_entry = tk.Entry(root, validate="key", validatecommand=visual_validate_warning_level, justify='center', state='disabled', textvariable=tk.StringVar(value="100"))
+visual_warning_level_entry.pack()
+
+# SOUND SIGNAL LEVEL
+# Create a label for the warning level input
+sound_warning_level_label = tk.Label(root, text="Enter sound warning level %:", font=("Helvetica", 10), justify='center')
+sound_warning_level_label.pack()
+
+# Create a validation command
+sound_validate_warning_level = (root.register(is_number), '%P')
+
+# Create an Entry widget for the warning level input with the validation command and centered input text
+sound_warning_level_entry = tk.Entry(root, validate="key", validatecommand=sound_validate_warning_level, justify='center', state='disabled', textvariable=tk.StringVar(value="20"))
+sound_warning_level_entry.pack()
+
+
+# HOUSELIGHT WITH WARNING CHECKBOX
+# Create a label for the punishment checkbox
+highlight_warning_label = tk.Label(root, text="Hightlight warning:", font=("Helvetica", 14), justify='center')
+highlight_warning_label.pack()
+
+# Create a BooleanVar to hold the state of the checkbox
+highlight_warning_var = tk.BooleanVar()
+# Create a Checkbutton for the punishment option
+
+highlight_warning_checkbutton = tk.Checkbutton(root, text="Enable", variable=highlight_warning_var, state='disabled')
+highlight_warning_checkbutton.pack()
+
 # Add a margin before the button
-
-
-margin = tk.Label(root, height=2)
+margin = tk.Label(root, height=1)
 margin.pack()
 
 start_button = tk.Button(root, text="Open", command=start_kivy_app, justify='center')

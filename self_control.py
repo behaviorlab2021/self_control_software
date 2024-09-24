@@ -6,6 +6,7 @@ Config.set('graphics', 'position', 'custom')
 Config.set('graphics', 'top', '0')
 Config.set('graphics', 'left', '-1440')
 Config.set('graphics', 'fullscreen', 'auto')
+import subprocess
 
 from kivy.core.window import Window
 from xml.dom.pulldom import parseString
@@ -21,7 +22,7 @@ from kivy.clock import Clock
 from numpy import True_
 from experiment import Experiment
 from feeder import Feeder
-from functions import distance_from_center
+from functions import distance_from
 from kivy.properties import ObjectProperty
 from kivy.properties import StringProperty
 from kivy.graphics.vertex_instructions import Rectangle
@@ -47,15 +48,15 @@ constant_data =  {
     'warning_alarm_volume' :100,
     'warning_display_volume' :100,
     'punishment_condition' :0,
-    'subject' :"Pigeon",
-    'is_spot_on' :False,
+    'subject' :"Hi",
+    'is_spot_on' :True,
     'random_warning' :False,
     'miliseconds_after_touch': 1000,
     'in_warning_signal_training': False,
-    'regular_rounds_before_warning_signal_training': 2,
-    'warning_signal_presence_duration': 5,
+    'regular_rounds_before_warning_signal_training': 1,
+    'warning_signal_presence_duration': 30,
     'time_before_warning_signal': 5,
-    
+    'highlight_warning_signal': False
 }
 
 
@@ -77,7 +78,9 @@ class ExperimentLayout(FloatLayout):
     subject = constant_data["subject"]
     is_spot_on = constant_data["is_spot_on"]
     random_warning = constant_data["random_warning"]
-    button_height = 0.5
+    button_height = 0.6
+    red_button_x = 0.6
+
     feeding_condition = False
     score = 0
     used_tries = 0
@@ -91,10 +94,12 @@ class ExperimentLayout(FloatLayout):
     warning_variable = False
     in_warning_signal_training = constant_data["in_warning_signal_training"]
     regular_rounds_before_punishment_training = constant_data["regular_rounds_before_warning_signal_training"]
+    random_rounds_before_punishment_training = regular_rounds_before_punishment_training
     warning_signal_presence_duration = constant_data["warning_signal_presence_duration"]
     time_before_warning_signal = constant_data["time_before_warning_signal"]
     warning_signal_training_running = False
     warning_signal_scheduled_event = None
+    highlight_warning_signal = constant_data["highlight_warning_signal"]
 
     buzzer_file = "assets/audio/buzzer.mp3"
     sound = SoundLoader.load(buzzer_file) 
@@ -106,7 +111,6 @@ class ExperimentLayout(FloatLayout):
     label_left = ObjectProperty(None)
     label_right = ObjectProperty(None)
     panel_connected_label = ObjectProperty(None)
-    button_red_shadow = ObjectProperty(None)
     spot = ObjectProperty(None)
     was_warned = False
 
@@ -167,29 +171,37 @@ class ExperimentLayout(FloatLayout):
         #Event End of Experiment
         writer.write_data(self.score, self.quarter, self.clicks, "end_of_experiment", False)
 
+
         pass
     def check_if_warning_signal_training(self):
         print("self.in_warning_signal_training",self.in_warning_signal_training)
-        if self.in_warning_signal_training and self.score % self.regular_rounds_before_punishment_training == 0:
+        if self.in_warning_signal_training and self.score % self.random_rounds_before_punishment_training == 0:
             self.warning_signal_training_running = True
             self.warning_signal_scheduled_event = Clock.schedule_once(self.start_warning_signal_training, self.time_before_warning_signal)
+            self.random_rounds_before_punishment_training = self.regular_rounds_before_punishment_training
             
 
 
     def start_warning_signal_training(self, dt):
         if self.warning_signal_training_running:
+
             print("In start_warning_signal_training")
             self.play_sound()
+            if self.highlight_warning_signal:
+                houseLight.deactivate()  
             self.buzzer = Clock.schedule_interval(self.sound_buzzer, 0.5)
             self.button_red.enable_button()
-            self.button_red_shadow.disable_button_100()
             self.button_green.disable_button()
             self.warning_signal_scheduled_event = Clock.schedule_once(self.warning_signal_training_punishment, self.warning_signal_presence_duration)
+            writer.write_data(self.score, self.quarter, self.clicks, "warning-"+str(int(self.warning_quarter)), not self.button_red.disabled)
+
         # self.button_green.di
         self.update_warning_quarter()
         #Event warning
         pass
+
     def stop_warning_signal_training(self):
+        houseLight.activate()
         self.warning_signal_training_running = False
         Clock.unschedule(self.warning_signal_scheduled_event)
         self.button_green.enable_button()
@@ -206,12 +218,11 @@ class ExperimentLayout(FloatLayout):
             self.play_sound()
             self.buzzer = Clock.schedule_interval(self.sound_buzzer, 0.5)
             self.button_red.enable_button()
-            self.button_red_shadow.disable_button_100()
             self.was_warned = True
             self.warning_variable = True
             self.update_warning_quarter()
             #Event warning
-            writer.write_data(self.score, self.quarter, self.clicks, "warning-"+str(self.warning_quarter), not self.button_red.disabled)
+            writer.write_data(self.score, self.quarter, self.clicks, "warning-"+str(int(self.warning_quarter)), not self.button_red.disabled)
         
     def sound_buzzer(self, dt):
         self.play_sound()
@@ -219,7 +230,7 @@ class ExperimentLayout(FloatLayout):
         
     def play_sound(self):
         if self.sound:
-            self.sound.volume = self.warning_alarm_volume ** 3 / 1000000
+            self.sound.volume = self.warning_alarm_volume / 100
             self.sound.play()
         pass
         
@@ -256,7 +267,7 @@ class ExperimentLayout(FloatLayout):
             feeder.create_deactivate_feeder_event(self.feed_time)
             Clock.schedule_once(self.turn_feeding_condition_off, self.feed_time)
             #Event Reinforcement
-            writer.write_data(self.score, self.quarter, self.clicks, "reinforcement", not self.button_red.disabled)
+            writer.write_data(self.score, self.quarter, self.clicks, "feeding", not self.button_red.disabled)
 
     def check_if_punishment(self):
         if self.used_tries > self.warning_pecks:
@@ -266,7 +277,6 @@ class ExperimentLayout(FloatLayout):
         self.rect.source ="assets/images/black_panel.png"
         self.button_red.disable_button()
         self.button_green.disable_button()
-        self.button_red_shadow.disable_button_0()
         self.spot.opacity = 0
         self.label_left.opacity = 0
         self.panel_connected_label.opacity = 0.3
@@ -275,7 +285,7 @@ class ExperimentLayout(FloatLayout):
     def turn_on_screen(self):
         self.rect.source ="assets/images/panel.png"
         self.button_green.enable_button()
-        self.button_red_shadow.enable_button()
+        # self.button_red_shadow.enable_button()
         self.spot.opacity = 1
         self.label_left.opacity = 1
         self.panel_connected_label.opacity = 1
@@ -297,7 +307,7 @@ class ExperimentLayout(FloatLayout):
         houseLight.activate()
         self.turn_on_screen()
         self.used_tries = 0
-        self.button_red_shadow.enable_button()
+        # self.button_red_shadow.enable_button()
         self.label_right.text = "00"
         self.was_warned = True
         self.reset_quarters()
@@ -310,6 +320,7 @@ class ExperimentLayout(FloatLayout):
         writer.write_data(self.score, self.quarter, self.clicks, "starting-over", not self.button_red.disabled) 
 
     def update_score(self):
+        writer.write_data(self.score, self.quarter, self.clicks, "score_updated", not self.button_red.disabled)
         self.clicks = self.button_green.button_count
         self.update_used_tries()
         self.check_if_punishment()
@@ -346,10 +357,9 @@ class ExperimentLayout(FloatLayout):
             self.panel_connected_label.text = "Touch Pannel is RECONNECTED"
             self.panel_connected_label.color = [0.2, 0.2, 0.2, 0.2]
     
-    def __init__(self, my_arg1=None, my_arg2=None, my_arg3=None, my_arg4=None , my_arg5=None , my_arg6=None, **kwargs):
+    def __init__(self, my_arg1=None, my_arg2=None, my_arg3=None, my_arg4=None , my_arg5=None , my_arg6=None, my_arg7=None, my_arg8=None, **kwargs):
 
 
-        self.score_label = "77"
         Clock.schedule_once(self.prepare_buttons, 0.8)
         self._keyboard = Window.request_keyboard(self._keyboard_closed, self)
         self._keyboard.bind(on_key_down=self._on_keyboard_down)
@@ -363,31 +373,53 @@ class ExperimentLayout(FloatLayout):
             self.reinforcement_ratio = int(my_arg1)
         if my_arg2:
             self.total_reinforcements = int(my_arg2)
+        if my_arg8:
+            print("my_arg8",my_arg8)
+            self.red_button_x = float(my_arg8)
+                        
         if my_arg3:
             self.subject = str(my_arg3)
 
+            print("self.subject", self.subject)
+
             if self.subject == ERMIS:
                 print("Here is ERMIS !!!!!!!!")
-                self.button_height = 0.45
+                self.button_height = 0.75
+            if self.subject == MOSES:
+                print("Here is Moses !!!!!!!!")
+                self.button_height = 0.65            
+            if self.subject == SNIK:
+                print("Here is snik !!!!!!!!")
+                self.button_height = 0.85
             else:
-                self.button_height = 0.55 
+                # self.button_height = 0.55 
+                pass
+        else :
+            print("NO SUBJECT!!!!!")
             
-        if my_arg4 == "True":
-            self.random_warning = True
-            print("T self.random_warning" , self.random_warning)        
-        elif my_arg4 == "False":
+        if my_arg4 == "0":
             self.random_warning = False
-            print("F self.random_warning" , self.random_warning)        
-        if my_arg5:
-            self.warning_alarm_volume= int(my_arg5)
-            self.warning_display_volume= int(my_arg5)
-        print("my_arg6",my_arg6)
-        if my_arg6 == "True":
-            self.in_warning_signal_training = True
-            print("T self.in_warning_signal_training" , self.in_warning_signal_training)        
-        elif my_arg6 == "False":
             self.in_warning_signal_training = False
-            print("F self.in_warning_signal_training" , self.in_warning_signal_training)
+            print("In normal mode")
+
+        elif my_arg4 == "1":
+            self.random_warning = True
+            self.in_warning_signal_training = False
+            print("In random warning mode")
+        elif my_arg4 == "2":
+            self.random_warning = False
+            self.in_warning_signal_training = True
+            print("In warning signal training mode")
+        if my_arg5:
+            self.warning_display_volume= int(my_arg5)
+        if my_arg6:
+            self.warning_alarm_volume= int(my_arg6)
+            print("my_arg6",my_arg6, "int", self.warning_alarm_volume,"HERE")
+
+        if my_arg7 == "True":
+            self.highlight_warning_signal = True
+        else :
+            self.highlight_warning_signal = False
 
 
    
@@ -401,6 +433,12 @@ class ExperimentLayout(FloatLayout):
         else:
             print("Application started with Touch Pannel DISCONNECTED")
             self.is_panel_connected = False
+
+        experiment_data = constant_data
+        experiment_data["subject"] = self.subject
+        writer.writer_update(
+            constant_data
+        )
 
 
         #Event Start
@@ -436,9 +474,9 @@ class ExperimentLayout(FloatLayout):
         else:
             self.spot.pos_hint = {'center_x': 3, 'center_y':.75}
 
-        self.button_red_shadow.source = "assets/images/grey_light.png"
-        self.button_red_shadow.source_file = "assets/images/grey_light.png"
-        self.button_red_shadow.source_file_press = "assets/images/grey_dark.png"
+        # self.button_red_shadow.source = "assets/images/grey_light.png"
+        # self.button_red_shadow.source_file = "assets/images/grey_light.png"
+        # self.button_red_shadow.source_file_press = "assets/images/grey_dark.png"
         houseLight.activate()
 
     def _keyboard_closed(self):
@@ -463,7 +501,7 @@ class ExperimentLayout(FloatLayout):
         elif keycode[1] == 'enter':
             print("enter")
             # Event gratis-red
-            writer.write_data(self.score, self.quarter, self.clicks, "gratis-red-"+str(self.warning_quarter), not self.button_red.disabled)
+            writer.write_data(self.score, self.quarter, self.clicks, "gratis-red-"+str(int(self.warning_quarter)), not self.button_red.disabled)
             if self.button_red.disabled == False :
                 self.negative_reinforcement()
                 if self.warning_signal_training_running:
@@ -481,20 +519,28 @@ class ExperimentLayout(FloatLayout):
         self.button_green.button_count = 0
         self.update_quarter()
         self.update_labels()
+        self.update_score()
+        writer.write_data(self.score, self.quarter, self.clicks, "reinforcement", not self.button_red.disabled)
+
         pass
 
     def negative_reinforcement(self):
         self.button_red.source = self.button_red.source_file
         self.button_red.disable_button()
         self.buzzer.cancel()
-        Clock.schedule_once(self.button_red_shadow.enable_button_delayed, 0.2)
+        # Clock.schedule_once(self.button_red_shadow.enable_button_delayed, 0.2)
 
 class BasicImageButton(ButtonBehavior, Image):
 
     button_count = 0
     last_seen_outside = datetime.datetime.strptime('26 Aug 2023', '%d %b %Y')
+    touch_start_x = None
+    touch_start_y = None
+
 
     def on_touch_down(self, touch):
+        self.touch_start_x = touch.sx
+        self.touch_start_y = touch.sy
         if self.touch_on_button(touch) and not self.disabled:
             # self.parent.ids.label.text ...
             pass
@@ -525,22 +571,22 @@ class BasicImageButton(ButtonBehavior, Image):
         window_y = Window.size[1]
         button_center_x = self.pos_hint['center_x']
         button_center_y = self.pos_hint['center_y']
-        button_radius = float(self.size_hint[0] / 2)       
+        button_radius = float(self.size_hint[0] / 2) + 0.01
         aspect_ratio = float(window_x/window_y)
 
         # touch.sx and touch.sy are the relative coordinates of tfhe touch to the window, between 0 and 1 
-        dist_from_center  = distance_from_center(touch.sx, touch.sy, button_center_x, button_center_y, aspect_ratio)
+        dist_from_center  = distance_from(touch.sx, touch.sy, button_center_x, button_center_y, aspect_ratio)
         return  dist_from_center < button_radius
     def touch_close_to_button(self, touch):
         window_x = Window.size[0]
         window_y = Window.size[1]
         button_center_x = self.pos_hint['center_x']
         button_center_y = self.pos_hint['center_y']
-        button_radius = float(self.size_hint[0] / 2)       
+        button_radius = float(self.size_hint[0] / 2) + 0.01   
         aspect_ratio = float(window_x/window_y)
 
         # touch.sx and touch.sy are the relative coordinates of tfhe touch to the window, between 0 and 1 
-        dist_from_center  = distance_from_center(touch.sx, touch.sy, button_center_x, button_center_y, aspect_ratio)
+        dist_from_center  = distance_from(touch.sx, touch.sy, button_center_x, button_center_y, aspect_ratio)
         return  dist_from_center < (button_radius + (button_radius / 3))
 
 class BasicImageButtonGreen(BasicImageButton):
@@ -548,7 +594,10 @@ class BasicImageButtonGreen(BasicImageButton):
     green_button_changed = False
     green_button_scheduled_event = None  # To keep track of the scheduled event
 
+
     def on_touch_down(self, touch):
+
+        
         if self.touch_on_button(touch) and not self.disabled:
         # self.parent.ids.label.text ...
             pass
@@ -557,30 +606,29 @@ class BasicImageButtonGreen(BasicImageButton):
 
         if self.touch_on_button(touch):
             print("IN", end=", ")
-            if  not self.disabled and (datetime.datetime.now()-self.last_seen_outside > datetime.timedelta(milliseconds=300)):
-                print("VALID")
-                if not self.green_button_changed:
-                    self.green_button_changed = True
-                    self.source = self.source_file_press
-                
-                else:
-                    self.green_button_changed = True
-                    Clock.unschedule(self.green_button_scheduled_event)
-                    
-
-                self.green_button_scheduled_event = Clock.schedule_once(self.change_button_image, .3)
-                clicker.click()
-                self.disabled = True
-                parent = self.parent
-                # self.source = self.source_file
-                parent.was_warned = False
-                self.button_count = self.button_count + 1
-                #Event Green
-                writer.write_data(parent.score, parent.quarter, self.button_count, "green", not parent.button_red.disabled)
-                parent.update_score()
-                self.disabled = False
+            # if  not self.disabled and (datetime.datetime.now()-self.last_seen_outside > datetime.timedelta(milliseconds=300)):
+            print("VALID")
+            if not self.green_button_changed:
+                self.green_button_changed = True
+                self.source = self.source_file_press
+            
             else:
-                print("INVALID: ", (datetime.datetime.now()-self.last_seen_outside).total_seconds())   
+                self.green_button_changed = True
+                Clock.unschedule(self.green_button_scheduled_event)
+
+            self.green_button_scheduled_event = Clock.schedule_once(self.change_button_image, .3)
+            clicker.click()
+            self.disabled = True
+            parent = self.parent
+            # self.source = self.source_file
+            parent.was_warned = False
+            self.button_count = self.button_count + 1
+            #Event Green
+            writer.write_data(parent.score, parent.quarter, self.button_count, "green", not parent.button_red.disabled)
+            parent.update_score()
+            self.disabled = False
+            # else:
+            #     print("INVALID: ", (datetime.datetime.now()-self.last_seen_outside).total_seconds())   
    
         else:
             if self.touch_close_to_button(touch):
@@ -619,21 +667,80 @@ class BasicImageButtonGreen(BasicImageButton):
 
 class BasicImageButtonRed(BasicImageButton):
 
+    red_button_changed = False
+    red_button_scheduled_event = None  # To keep track of the scheduled event
+
     def on_touch_up(self, touch):
-        if self.touch_on_button(touch) and not self.disabled:
-            self.button_count = self.button_count + 1
-            parent = self.parent
-            # Event Red
-            writer.write_data(parent.score, parent.quarter, parent.clicks, "red-"+str(parent.warning_quarter), not parent.button_red.disabled) 
-            parent.negative_reinforcement()
-            if parent.warning_signal_training_running: 
-                parent.stop_warning_signal_training()
+        window_x = Window.size[0]
+        window_y = Window.size[1]
+        aspect_ratio = float(window_x/window_y)
+
+        if self.touch_start_x:
+            slide = distance_from(self.touch_start_x, self.touch_start_y, touch.sx, touch.sy, aspect_ratio)
+            if slide>0.05:
+                print("Feather")
+                return
+            else:
+                if self.touch_on_button(touch) and not self.disabled:
+                    self.button_count = self.button_count + 1
+                    parent = self.parent
+                    # Event Red
+                    writer.write_data(parent.score, parent.quarter, parent.clicks, "red-"+str(int(parent.warning_quarter)), not parent.button_red.disabled) 
+                    parent.negative_reinforcement()
+                    if parent.warning_signal_training_running: 
+                        parent.stop_warning_signal_training()
+            # touch_start_x = None
+            # touch_start_y = None
+
+
+
+    def on_touch_up(self, touch):
+        
+        window_x = Window.size[0]
+        window_y = Window.size[1]
+        aspect_ratio = float(window_x/window_y)
+        if self.touch_start_x:
+            slide = distance_from(self.touch_start_x, self.touch_start_y, touch.sx, touch.sy, aspect_ratio)
+            if slide>0.05:
+                print("Feather")
+                return
+            else: 
+                if self.touch_on_button(touch):
+                    if  not self.disabled and (datetime.datetime.now()-self.last_seen_outside > datetime.timedelta(milliseconds=300)):
+                        print("VALID")
+                        if not self.red_button_changed:
+                            self.red_button_changed = True
+                            self.source = self.source_file_press
+                        
+                        else:
+                            self.red_button_changed = True
+                            Clock.unschedule(self.red_button_scheduled_event)
+            
+                        self.red_button_scheduled_event = Clock.schedule_once(self.change_button_image, .3)
+                        clicker.click()
+                        self.button_count = self.button_count + 1
+                        parent = self.parent
+                        # Event Red
+                        writer.write_data(parent.score, parent.quarter, parent.clicks, "red-"+str(int(parent.warning_quarter)), not parent.button_red.disabled) 
+                        parent.negative_reinforcement()
+                        if parent.warning_signal_training_running: 
+                            parent.stop_warning_signal_training()
+                    else:
+                        print("INVALID: ", (datetime.datetime.now()-self.last_seen_outside).total_seconds())   
+        
+                else:
+                    if self.touch_close_to_button(touch):
+                        pass
+                    else:
+                        self.last_seen_outside = datetime.datetime.now()
+
+            
 
     def disable_button(self):
         parent = self.parent
         self.disabled = True
         self.opacity= 0
-        self.pos_hint = {'center_x': .3, 'center_y':parent.button_height}
+        self.pos_hint = {'center_x': parent.red_button_x, 'center_y':parent.button_height}
             
     def enable_button(self):
         
@@ -643,7 +750,7 @@ class BasicImageButtonRed(BasicImageButton):
         print(f'self.opacity {self.opacity}')
         print(f'parent.warning_display_volume {parent.warning_display_volume}')
         #Warning Volume
-        self.pos_hint = {'center_x':.3, 'center_y':parent.button_height}
+        self.pos_hint = {'center_x':parent.red_button_x, 'center_y':parent.button_height}
 
 class BasicImageButtonGrey(BasicImageButton):
 
@@ -679,19 +786,21 @@ class BasicImageButtonGrey(BasicImageButton):
         self.pos_hint = {'center_x':.3, 'center_y':self.parent.button_height}
 
 class MainApp(App):
-    def __init__(self,  my_arg1=None, my_arg2=None, my_arg3=None, my_arg4=None, my_arg5=None, my_arg6=None,**kwargs):
+    def __init__(self,  my_arg1=None, my_arg2=None, my_arg3=None, my_arg4=None, my_arg5=None, my_arg6=None, my_arg7=None, my_arg8=None, **kwargs):
         self.my_arg1 = my_arg1
         self.my_arg2 = my_arg2
         self.my_arg3 = my_arg3
         self.my_arg4 = my_arg4
         self.my_arg5 = my_arg5
         self.my_arg6 = my_arg6
+        self.my_arg7 = my_arg7
+        self.my_arg8 = my_arg8
 
         super(MainApp, self).__init__(**kwargs)
 
     def build(self):
         Builder.load_file("self_control.kv")
-        layout = ExperimentLayout(my_arg1=self.my_arg1, my_arg2=self.my_arg2, my_arg3=self.my_arg3, my_arg4=self.my_arg4, my_arg5=self.my_arg5, my_arg6=self.my_arg6  )
+        layout = ExperimentLayout(my_arg1=self.my_arg1, my_arg2=self.my_arg2, my_arg3=self.my_arg3, my_arg4=self.my_arg4, my_arg5=self.my_arg5, my_arg6=self.my_arg6, my_arg7=self.my_arg7, my_arg8=self.my_arg8)
         return layout
 
 if __name__ == "__main__":
@@ -701,6 +810,8 @@ if __name__ == "__main__":
   my_arg4 = sys.argv[4] if len(sys.argv) > 4 else None
   my_arg5 = sys.argv[5] if len(sys.argv) > 5 else None
   my_arg6 = sys.argv[6] if len(sys.argv) > 6 else None
+  my_arg7 = sys.argv[7] if len(sys.argv) > 7 else None
+  my_arg8 = sys.argv[8] if len(sys.argv) > 8 else None
 
   feeder = Feeder()
   clicker = Clicker()
@@ -711,5 +822,5 @@ if __name__ == "__main__":
   if my_arg3: subject_name = my_arg3 
   writer = Writer(constant_data, subject_name)
   print("my_arg5", my_arg5) 
-  mainApp = MainApp(my_arg1, my_arg2, my_arg3, my_arg4, my_arg5, my_arg6)
+  mainApp = MainApp(my_arg1, my_arg2, my_arg3, my_arg4, my_arg5, my_arg6, my_arg7, my_arg8)
   mainApp.run()

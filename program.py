@@ -10,7 +10,7 @@ from kivy.core.window import Window
 from kivy.clock import Clock
 from experiment import Experiment
 from feeder import Feeder
-from functions import distance_from_center
+from functions import distance_from
 from kivy.uix.widget import Widget
 from kivy.properties import StringProperty
 
@@ -70,7 +70,7 @@ class ImageButton(ButtonBehavior, Image):
 
         # touch.sx and touch.sy are the relative coordinates of tfhe touch to the window, between 0 and 1 
 
-        dist_from_center  = distance_from_center(touch.sx, touch.sy, button_center_x, button_center_y, aspect_ratio)
+        dist_from_center  = distance_from(touch.sx, touch.sy, button_center_x, button_center_y, aspect_ratio)
 
         return  dist_from_center < button_radius
     

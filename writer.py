@@ -7,25 +7,30 @@ import os
 class Writer:
 
     def __init__(self, constant_data, subject):
+
         self.cd_values = list(constant_data.values())
         self.header =  list(constant_data.keys()) + ['Time', 
                 'Reinforcers',
                 'Quarter', 
                 'Pecks', 
                 'Event', 
-                'x', 
-                'y'
+                'x_pos', 
+                'y_pos',
+                'warning_present'
                 ]
 
         self.start_time = get_time_now()
 
         self.filename =  "c:/Users/SKINNER BOX/Documents/self_control_software/" + "data/" + get_timestamp_for_filename()+ "_"+ subject + "_Data.csv"
-        with open(self.filename, 'w') as csvfile:
+        with open(self.filename, 'w', newline='') as csvfile:
             cwriter = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
             cwriter.writerow(self.header)
+    def writer_update(self, constant_data):
+        self.cd_values = list(constant_data.values())
+
 
     def write_to_file(self, data):
-        with open(self.filename, 'a') as csvfile:
+        with open(self.filename, 'a', newline='') as csvfile:
             cwriter = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
 
             cwriter.writerow(self.cd_values + data)

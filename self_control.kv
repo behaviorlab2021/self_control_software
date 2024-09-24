@@ -4,7 +4,6 @@
 
     button_green: button_green
     button_red: button_red
-    button_red_shadow: button_red_shadow
     spot: spot
     label_right: label_right
     label_left: label_left
@@ -17,17 +16,12 @@
         size_hint: .15, .15
         pos_hint:  {'center_x':.7, 'center_y': self.parent.button_height}
 
-    BasicImageButtonGrey:  
-        id: button_red_shadow
-        source: 'assets/images/grey_light.png'
-        size_hint: .15, .15
-        pos_hint:  {'center_x':.3, 'center_y': self.parent.button_height} 
-    
+
     BasicImageButtonRed:  
         id: button_red
         source: 'assets/images/red_light.png'
         size_hint: .15, .15
-        pos_hint:  {'center_x':.3, 'center_y': self.parent.button_height} 
+        pos_hint:  {'center_x':.6, 'center_y': self.parent.button_height} 
 
     Label:
         id: label_right
