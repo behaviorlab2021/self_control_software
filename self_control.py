@@ -65,19 +65,30 @@ constant_data =  {
 class ExperimentLayout(FloatLayout):
 
 
-    reinforcement_ratio = constant_data["reinforcement_ratio"]
-    warning_signal_points = constant_data['warning_signal_points']
-    warning_pecks = constant_data["warning_pecks"]
-    punishment_period = constant_data["punishment_period"]
-    feed_time = constant_data["feed_time"]
-    total_reinforcements = constant_data["total_reinforcements"]
-    skip_to_next_value = constant_data["skip_to_next_value"]
-    warning_alarm_volume = constant_data["warning_alarm_volume"]
-    warning_display_volume = constant_data["warning_display_volume"]
-    punishment_condition = constant_data["punishment_condition"]
-    subject = constant_data["subject"]
-    is_spot_on = constant_data["is_spot_on"]
-    random_warning = constant_data["random_warning"]
+    experiment_data = constant_data
+
+
+    # warning_pecks = constant_data["warning_pecks"]
+    # punishment_period = constant_data["punishment_period"]
+    # feed_time = constant_data["feed_time"]
+    # total_reinforcements = constant_data["total_reinforcements"]
+    # skip_to_next_value = constant_data["skip_to_next_value"]
+    # warning_alarm_volume = constant_data["warning_alarm_volume"]
+    # warning_display_volume = constant_data["warning_display_volume"]
+    # punishment_condition = constant_data["punishment_condition"]
+    # subject = constant_data["subject"]
+    # is_spot_on = constant_data["is_spot_on"]
+    # random_warning = constant_data["random_warning"]
+    # miliseconds_after_touch = constant_data["miliseconds_after_touch"]
+    # in_warning_signal_training = constant_data["in_warning_signal_training"]
+    # regular_rounds_before_warning_signal_training = constant_data["regular_rounds_before_warning_signal_training"]
+    # warning_signal_presence_duration = constant_data["warning_signal_presence_duration"]
+    # time_before_warning_signal = constant_data["time_before_warning_signal"]
+    # highlight_warning_signal = constant_data["highlight_warning_signal"]
+
+
+
+
     button_height = 0.6
     red_button_x = 0.6
 
@@ -92,14 +103,11 @@ class ExperimentLayout(FloatLayout):
     quarter = 1
     warning_quarter = 0
     warning_variable = False
-    in_warning_signal_training = constant_data["in_warning_signal_training"]
-    regular_rounds_before_punishment_training = constant_data["regular_rounds_before_warning_signal_training"]
-    random_rounds_before_punishment_training = regular_rounds_before_punishment_training
-    warning_signal_presence_duration = constant_data["warning_signal_presence_duration"]
-    time_before_warning_signal = constant_data["time_before_warning_signal"]
+
+    random_rounds_before_punishment_training = experiment_data["regular_rounds_before_warning_signal_training"]
+
     warning_signal_training_running = False
     warning_signal_scheduled_event = None
-    highlight_warning_signal = constant_data["highlight_warning_signal"]
 
     buzzer_file = "assets/audio/buzzer.mp3"
     sound = SoundLoader.load(buzzer_file) 
@@ -130,10 +138,10 @@ class ExperimentLayout(FloatLayout):
 
 
     def update_quarter(self):
-        if self.clicks>= self.reinforcement_ratio:
+        if self.clicks>= self.experiment_data["reinforcement_ratio"]:
             self.quarter = 0
         else:
-            self.quarter = (self.clicks//( self.reinforcement_ratio/4))+1
+            self.quarter = (self.clicks//( self.experiment_data["reinforcement_ratio"]/4))+1
 
     def update_warning_quarter(self):
         self.warning_quarter = self.quarter
@@ -144,10 +152,10 @@ class ExperimentLayout(FloatLayout):
 
 
     def randomize_array(self):
-        if self.random_warning:
-            self.warning_signal_points = [random.randint(1, self.reinforcement_ratio - self.warning_pecks - 1)]
+        if self.experiment_data["random_warning"]:
+            self.experiment_data["warning_signal_points"] = [random.randint(1, self.experiment_data["reinforcement_ratio"] - self.experiment_data["warning_pecks"] - 1)]
         else:
-            self.warning_signal_points = []
+            self.experiment_data["warning_signal_points"] = []
 
     def on_touch_down(self,touch):
         #Event Touch
@@ -156,13 +164,13 @@ class ExperimentLayout(FloatLayout):
         else:
             writer.write_peck_data( self.score, self.quarter, self.clicks, touch.sx, touch.sy,  not self.button_red.disabled)
 
-        if self.is_spot_on:
+        if self.experiment_data["is_spot_on"]:
             self.spot.pos_hint = {'center_x':touch.sx, 'center_y':touch.sy}
         return super(FloatLayout, self).on_touch_down(touch)
 
     def check_reinforcement_condition(self):
 
-        if (self.button_green.button_count >= self.reinforcement_ratio):
+        if (self.button_green.button_count >= self.experiment_data["reinforcement_ratio"]):
             self.positive_reinforcement()
 
     def end_experiment(self):
@@ -174,11 +182,10 @@ class ExperimentLayout(FloatLayout):
 
         pass
     def check_if_warning_signal_training(self):
-        print("self.in_warning_signal_training",self.in_warning_signal_training)
-        if self.in_warning_signal_training and self.score % self.random_rounds_before_punishment_training == 0:
+        if self.experiment_data["in_warning_signal_training"] and self.score % self.random_rounds_before_punishment_training == 0:
             self.warning_signal_training_running = True
-            self.warning_signal_scheduled_event = Clock.schedule_once(self.start_warning_signal_training, self.time_before_warning_signal)
-            self.random_rounds_before_punishment_training = self.regular_rounds_before_punishment_training
+            self.warning_signal_scheduled_event = Clock.schedule_once(self.start_warning_signal_training, self.experiment_data["time_before_warning_signal"])
+            self.random_rounds_before_punishment_training = self.experiment_data["regular_rounds_before_warning_signal_training"]
             
 
 
@@ -187,12 +194,12 @@ class ExperimentLayout(FloatLayout):
 
             print("In start_warning_signal_training")
             self.play_sound()
-            if self.highlight_warning_signal:
+            if self.experiment_data["highlight_warning_signal"]:
                 houseLight.deactivate()  
             self.buzzer = Clock.schedule_interval(self.sound_buzzer, 0.5)
             self.button_red.enable_button()
             self.button_green.disable_button()
-            self.warning_signal_scheduled_event = Clock.schedule_once(self.warning_signal_training_punishment, self.warning_signal_presence_duration)
+            self.warning_signal_scheduled_event = Clock.schedule_once(self.warning_signal_training_punishment, self.experiment_data["warning_signal_presence_duration"])
             writer.write_data(self.score, self.quarter, self.clicks, "warning-"+str(int(self.warning_quarter)), not self.button_red.disabled)
 
         # self.button_green.di
@@ -214,7 +221,7 @@ class ExperimentLayout(FloatLayout):
         pass
 
     def check_if_red(self):
-        if not self.was_warned and self.button_green.button_count in self.warning_signal_points:
+        if not self.was_warned and self.button_green.button_count in self.experiment_data["warning_signal_points"]:
             self.play_sound()
             self.buzzer = Clock.schedule_interval(self.sound_buzzer, 0.5)
             self.button_red.enable_button()
@@ -230,12 +237,12 @@ class ExperimentLayout(FloatLayout):
         
     def play_sound(self):
         if self.sound:
-            self.sound.volume = self.warning_alarm_volume / 100
+            self.sound.volume = self.experiment_data["warning_alarm_volume"] / 100
             self.sound.play()
         pass
         
     def check_if_end(self):
-        if (self.score >= self.total_reinforcements):
+        if (self.score >= self.experiment_data["total_reinforcements"]):
             self.end_experiment()
             return True
         else: 
@@ -264,13 +271,13 @@ class ExperimentLayout(FloatLayout):
             self.turn_off_screen() 
             houseLight.deactivate()
             feeder.activate()
-            feeder.create_deactivate_feeder_event(self.feed_time)
-            Clock.schedule_once(self.turn_feeding_condition_off, self.feed_time)
+            feeder.create_deactivate_feeder_event(self.experiment_data["feed_time"])
+            Clock.schedule_once(self.turn_feeding_condition_off, self.experiment_data["feed_time"])
             #Event Reinforcement
             writer.write_data(self.score, self.quarter, self.clicks, "feeding", not self.button_red.disabled)
 
     def check_if_punishment(self):
-        if self.used_tries > self.warning_pecks:
+        if self.used_tries > self.experiment_data["warning_pecks"]:
             self.punish()
     
     def turn_off_screen(self):
@@ -297,7 +304,7 @@ class ExperimentLayout(FloatLayout):
         self.turn_off_screen()
         self.subsequent_punishments += 1 
         self.button_green.zeroing()
-        Clock.schedule_once(self.un_punish, self.punishment_period)
+        Clock.schedule_once(self.un_punish, self.experiment_data["punishment_period"])
         #Event Punishment
         writer.write_data(self.score, self.quarter, self.clicks, "punishment", not self.button_red.disabled)
 
@@ -313,7 +320,7 @@ class ExperimentLayout(FloatLayout):
         self.reset_quarters()
         self.warning_variable = False
         #Event Staring Over
-        if self.subsequent_punishments >= self.skip_to_next_value:
+        if self.subsequent_punishments >= self.experiment_data["skip_to_next_value"]:
             self.randomize_array()
             self.subsequent_punishments = 0
 
@@ -370,25 +377,24 @@ class ExperimentLayout(FloatLayout):
 
         self.reset_quarters()
         if my_arg1:
-            self.reinforcement_ratio = int(my_arg1)
+            self.experiment_data["reinforcement_ratio"] = int(my_arg1)
         if my_arg2:
-            self.total_reinforcements = int(my_arg2)
+            self.experiment_data["total_reinforcements"] = int(my_arg2)
         if my_arg8:
             print("my_arg8",my_arg8)
             self.red_button_x = float(my_arg8)
                         
         if my_arg3:
-            self.subject = str(my_arg3)
+            self.experiment_data["subject"] = str(my_arg3)
 
-            print("self.subject", self.subject)
 
-            if self.subject == ERMIS:
+            if self.experiment_data["subject"] == ERMIS:
                 print("Here is ERMIS !!!!!!!!")
                 self.button_height = 0.75
-            if self.subject == MOSES:
+            if self.experiment_data["subject"] == MOSES:
                 print("Here is Moses !!!!!!!!")
                 self.button_height = 0.65            
-            if self.subject == SNIK:
+            if self.experiment_data["subject"] == SNIK:
                 print("Here is snik !!!!!!!!")
                 self.button_height = 0.85
             else:
@@ -398,28 +404,28 @@ class ExperimentLayout(FloatLayout):
             print("NO SUBJECT!!!!!")
             
         if my_arg4 == "0":
-            self.random_warning = False
-            self.in_warning_signal_training = False
+            self.experiment_data["random_warning"] = False
+            self.experiment_data["in_warning_signal_training"] = False
             print("In normal mode")
 
         elif my_arg4 == "1":
-            self.random_warning = True
-            self.in_warning_signal_training = False
+            self.experiment_data["random_warning"] = True
+            self.experiment_data["in_warning_signal_training"] = False
             print("In random warning mode")
         elif my_arg4 == "2":
-            self.random_warning = False
-            self.in_warning_signal_training = True
+            self.experiment_data["random_warning"] = False
+            self.experiment_data["in_warning_signal_training"] = True
             print("In warning signal training mode")
         if my_arg5:
-            self.warning_display_volume= int(my_arg5)
+            self.experiment_data["warning_display_volume"]= int(my_arg5)
         if my_arg6:
-            self.warning_alarm_volume= int(my_arg6)
-            print("my_arg6",my_arg6, "int", self.warning_alarm_volume,"HERE")
+            self.experiment_data["warning_alarm_volume"]= int(my_arg6)
+            print("my_arg6",my_arg6, "int", self.experiment_data["warning_alarm_volume"],"HERE")
 
         if my_arg7 == "True":
-            self.highlight_warning_signal = True
+            self.experiment_data["highlight_warning_signal"] = True
         else :
-            self.highlight_warning_signal = False
+            self.experiment_data["highlight_warning_signal"] = False
 
 
    
@@ -434,10 +440,9 @@ class ExperimentLayout(FloatLayout):
             print("Application started with Touch Pannel DISCONNECTED")
             self.is_panel_connected = False
 
-        experiment_data = constant_data
-        experiment_data["subject"] = self.subject
+
         writer.writer_update(
-            constant_data
+            self.experiment_data
         )
 
 
@@ -469,7 +474,7 @@ class ExperimentLayout(FloatLayout):
         self.button_red.source_file = "assets/images/red_light.png"
         self.button_red.source_file_press = "assets/images/red_dark.png"
         self.button_red.disable_button()
-        if self.is_spot_on:
+        if self.experiment_data["is_spot_on"]:
             self.spot.pos_hint = {'center_x':.3, 'center_y':.75}
         else:
             self.spot.pos_hint = {'center_x': 3, 'center_y':.75}
