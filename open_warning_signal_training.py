@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import messagebox
 from kivy.config import Config
 import subprocess
+import json
 from tkinter import ttk
 
 def is_number(input):
@@ -49,8 +50,24 @@ def start_kivy_app():
     if (float(warning_signal_horizontal_position_argument) < 0.3 or float(warning_signal_horizontal_position_argument) > 0.6):
         messagebox.showerror("Error", "The value if the warning signal hosrizontal positon should be between 0.3 and 0.6.")
         return
+    
 
-    subprocess.Popen(["python", "c:/Users/SKINNER BOX/Documents/self_control_software/self_control.py", number_argument, trials_argument, dropdown_argument, "2", visual_warning_level_argument, sound_warning_level_argument, str(highlight_warning), warning_signal_horizontal_position_argument ])
+    # Create the Arguments object
+    experiment_arguments = {
+        'reinforcement_ratio': number_argument,
+        'total_reinforcements': trials_argument,
+        'subject': dropdown_argument,
+        'mode': "2",
+        'warning_display_volume': visual_warning_level_argument,
+        'warning_alarm_volume': sound_warning_level_argument,
+        'highlight_warning_signal': str(highlight_warning),
+        'warning_signal_position': warning_signal_horizontal_position_argument
+    }
+    
+    experiment_arguments = json.dumps(experiment_arguments)
+
+
+    subprocess.Popen(["python", "c:/Users/SKINNER BOX/Documents/self_control_software/self_control.py", experiment_arguments])
     root.destroy()
 
 Config.set('graphics', 'fullscreen', 'auto')

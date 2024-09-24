@@ -35,6 +35,7 @@ from usbmonitor.attributes import ID_MODEL, ID_MODEL_ID, ID_VENDOR_ID
 from clicker import Clicker
 import datetime
 from kivy.properties import NumericProperty
+import json
 
 
 constant_data =  {
@@ -48,7 +49,7 @@ constant_data =  {
     'warning_alarm_volume' :100,
     'warning_display_volume' :100,
     'punishment_condition' :0,
-    'subject' :"Hi",
+    'subject' :"Pigeon",
     'is_spot_on' :True,
     'random_warning' :False,
     'miliseconds_after_touch': 1000,
@@ -56,7 +57,8 @@ constant_data =  {
     'regular_rounds_before_warning_signal_training': 1,
     'warning_signal_presence_duration': 30,
     'time_before_warning_signal': 5,
-    'highlight_warning_signal': False
+    'highlight_warning_signal': False,
+    'warning_signal_position': 0.4
 }
 
 
@@ -87,10 +89,7 @@ class ExperimentLayout(FloatLayout):
     # highlight_warning_signal = constant_data["highlight_warning_signal"]
 
 
-
-
     button_height = 0.6
-    red_button_x = 0.6
 
     feeding_condition = False
     score = 0
@@ -364,96 +363,115 @@ class ExperimentLayout(FloatLayout):
             self.panel_connected_label.text = "Touch Pannel is RECONNECTED"
             self.panel_connected_label.color = [0.2, 0.2, 0.2, 0.2]
     
-    def __init__(self, my_arg1=None, my_arg2=None, my_arg3=None, my_arg4=None , my_arg5=None , my_arg6=None, my_arg7=None, my_arg8=None, **kwargs):
+    def __init__(self, experiment_arguments, **kwargs):
 
+        # Use the renamed experiment_arguments object
+        self.experiment_arguments = experiment_arguments
 
+        # Clock scheduling
         Clock.schedule_once(self.prepare_buttons, 0.8)
+
+        # Keyboard event binding
         self._keyboard = Window.request_keyboard(self._keyboard_closed, self)
         self._keyboard.bind(on_key_down=self._on_keyboard_down)
         
         # USB MONITORING
         self.usb_monitor = USBMonitor()
         self.usb_monitor.start_monitoring(on_connect=self.usb_add_callback, on_disconnect=self.usb_remove_callback)
-
+        
+        # Initialize experiment data
         self.reset_quarters()
-        if my_arg1:
-            self.experiment_data["reinforcement_ratio"] = int(my_arg1)
-        if my_arg2:
-            self.experiment_data["total_reinforcements"] = int(my_arg2)
-        if my_arg8:
-            print("my_arg8",my_arg8)
-            self.red_button_x = float(my_arg8)
-                        
-        if my_arg3:
-            self.experiment_data["subject"] = str(my_arg3)
 
 
-            if self.experiment_data["subject"] == ERMIS:
-                print("Here is ERMIS !!!!!!!!")
-                self.button_height = 0.75
-            if self.experiment_data["subject"] == MOSES:
-                print("Here is Moses !!!!!!!!")
-                self.button_height = 0.65            
-            if self.experiment_data["subject"] == SNIK:
-                print("Here is snik !!!!!!!!")
-                self.button_height = 0.85
-            else:
-                # self.button_height = 0.55 
-                pass
-        else :
-            print("NO SUBJECT!!!!!")
-            
-        if my_arg4 == "0":
-            self.experiment_data["random_warning"] = False
-            self.experiment_data["in_warning_signal_training"] = False
-            print("In normal mode")
+  # Create a mapping of argument attributes to experiment data fields
+        experiment_data_mapping_int = {
+            'reinforcement_ratio': 'reinforcement_ratio',
+            'total_reinforcements': 'total_reinforcements',
+            'warning_display_volume': 'warning_display_volume',
+            'warning_alarm_volume': 'warning_alarm_volume',
+        }
 
-        elif my_arg4 == "1":
-            self.experiment_data["random_warning"] = True
-            self.experiment_data["in_warning_signal_training"] = False
-            print("In random warning mode")
-        elif my_arg4 == "2":
-            self.experiment_data["random_warning"] = False
-            self.experiment_data["in_warning_signal_training"] = True
-            print("In warning signal training mode")
-        if my_arg5:
-            self.experiment_data["warning_display_volume"]= int(my_arg5)
-        if my_arg6:
-            self.experiment_data["warning_alarm_volume"]= int(my_arg6)
-            print("my_arg6",my_arg6, "int", self.experiment_data["warning_alarm_volume"],"HERE")
+        # Populate experiment_data using the mapping
+        for arg_attr, exp_data_key in experiment_data_mapping_int.items():
+            value = getattr(self.experiment_arguments, arg_attr, None)
+            if value is not None:
 
-        if my_arg7 == "True":
-            self.experiment_data["highlight_warning_signal"] = True
-        else :
-            self.experiment_data["highlight_warning_signal"] = False
+                self.experiment_data[exp_data_key] = int(value)  # assuming values can be integers
 
+        experiment_data_mapping_float = {
+            'warning_signal_position' : 'warning_signal_position',
+        }
 
-   
+        # Populate experiment_data using the mapping
+        for arg_attr, exp_data_key in experiment_data_mapping_float.items():
+            value = getattr(self.experiment_arguments, arg_attr, None)
+            if value is not None:
+                print("MY VALUE IS_", value)
+
+                self.experiment_data[exp_data_key] = float(value)  # assuming values can be float
+                print("MY VALUE IS", self.experiment_data[exp_data_key])
+
+        # Handle the special case for highlight_warning_signal
+        self.experiment_data["highlight_warning_signal"] = self.experiment_arguments.highlight_warning_signal == "True"
+
+        # Handle subject-specific logic
+        if self.experiment_arguments.subject:
+            self.experiment_data["subject"] = str(self.experiment_arguments.subject)
+            self.adjust_button_height_based_on_subject()
+
+        # Handle mode-specific logic
+        self.handle_mode(self.experiment_arguments.mode)
+
+        # USB device check
         devices_dict = self.usb_monitor.get_available_devices()
         if any(device.split("\\")[1] == "VID_0C45&PID_8419" for device in devices_dict):
-            print("Application started with Touch Pannel Connected")
-            self.is_panel_connected = True  
-
-            # self.panel_connected_label.text = "Application started with Touch Pannel Connected"
-            # self.panel_connected_label.color = [0.2, 0.2, 0.2, 0.2]
+            print("Application started with Touch Panel Connected")
+            self.is_panel_connected = True
         else:
-            print("Application started with Touch Pannel DISCONNECTED")
+            print("Application started with Touch Panel DISCONNECTED")
             self.is_panel_connected = False
 
+        # Writer update
+        writer.writer_update(self.experiment_data)
 
-        writer.writer_update(
-            self.experiment_data
-        )
+        # Event Start
+        writer.write_data(self.score, self.quarter, 0, "Start", False)
 
-
-        #Event Start
-        writer.write_data(self.score, self.quarter, 0, "Start", False) 
+        # Inherit initialization
         super(FloatLayout, self).__init__(**kwargs)
         with self.canvas.before:
             self.rect = Rectangle(source="assets/images/panel.png")
         
         
-    
+    def adjust_button_height_based_on_subject(self):
+        """Adjust button height based on the subject."""
+        if self.experiment_data["subject"] == "ERMIS":
+            print("Here is ERMIS !!!!!!!!")
+            self.button_height = 0.75
+        elif self.experiment_data["subject"] == "MOSES":
+            print("Here is Moses !!!!!!!!")
+            self.button_height = 0.65
+        elif self.experiment_data["subject"] == "SNIK":
+            print("Here is Snik !!!!!!!!")
+            self.button_height = 0.85
+        else:
+            print("No specific subject found.")
+
+    def handle_mode(self, mode):
+        """Handle the experiment mode (normal, random warning, training)."""
+        if mode == "0":
+            self.experiment_data["random_warning"] = False
+            self.experiment_data["in_warning_signal_training"] = False
+            print("In normal mode")
+        elif mode == "1":
+            self.experiment_data["random_warning"] = True
+            self.experiment_data["in_warning_signal_training"] = False
+            print("In random warning mode")
+        elif mode == "2":
+            self.experiment_data["random_warning"] = False
+            self.experiment_data["in_warning_signal_training"] = True
+            print("In warning signal training mode")    
+            
     def on_pos(self, *args):
         # update Rectangle position when MazeSolution position changes
         self.rect.pos = self.pos
@@ -739,23 +757,19 @@ class BasicImageButtonRed(BasicImageButton):
                     else:
                         self.last_seen_outside = datetime.datetime.now()
 
-            
-
     def disable_button(self):
         parent = self.parent
         self.disabled = True
         self.opacity= 0
-        self.pos_hint = {'center_x': parent.red_button_x, 'center_y':parent.button_height}
+        self.pos_hint = {'center_x': parent.experiment_data["warning_signal_position"], 'center_y':parent.button_height}
             
     def enable_button(self):
         
         parent = self.parent
         self.disabled = False
-        self.opacity= (parent.warning_display_volume / 100)
-        print(f'self.opacity {self.opacity}')
-        print(f'parent.warning_display_volume {parent.warning_display_volume}')
+        self.opacity= (parent.experiment_data["warning_display_volume"] / 100)
         #Warning Volume
-        self.pos_hint = {'center_x':parent.red_button_x, 'center_y':parent.button_height}
+        self.pos_hint = {'center_x':parent.experiment_data["warning_signal_position"], 'center_y':parent.button_height}
 
 class BasicImageButtonGrey(BasicImageButton):
 
@@ -790,42 +804,54 @@ class BasicImageButtonGrey(BasicImageButton):
         self.opacity= 1
         self.pos_hint = {'center_x':.3, 'center_y':self.parent.button_height}
 
+class ExperimentArguments:
+    def __init__(self, reinforcement_ratio=None, total_reinforcements=None, subject=None, mode=None, 
+                 warning_display_volume=None, warning_alarm_volume=None, highlight_warning_signal=None, 
+                 warning_signal_position=None):
+        self.reinforcement_ratio = reinforcement_ratio
+        self.total_reinforcements = total_reinforcements
+        self.subject = subject
+        self.mode = mode
+        self.warning_display_volume = warning_display_volume
+        self.warning_alarm_volume = warning_alarm_volume
+        self.highlight_warning_signal = highlight_warning_signal
+        self.warning_signal_position = warning_signal_position
+        
+    @classmethod
+    def from_json(cls, json_str):
+        data = json.loads(json_str)
+        return cls(**data)
+    
 class MainApp(App):
-    def __init__(self,  my_arg1=None, my_arg2=None, my_arg3=None, my_arg4=None, my_arg5=None, my_arg6=None, my_arg7=None, my_arg8=None, **kwargs):
-        self.my_arg1 = my_arg1
-        self.my_arg2 = my_arg2
-        self.my_arg3 = my_arg3
-        self.my_arg4 = my_arg4
-        self.my_arg5 = my_arg5
-        self.my_arg6 = my_arg6
-        self.my_arg7 = my_arg7
-        self.my_arg8 = my_arg8
-
+    def __init__(self, experiment_arguments, **kwargs):
+        self.my_experiment_arguments = experiment_arguments
         super(MainApp, self).__init__(**kwargs)
 
     def build(self):
         Builder.load_file("self_control.kv")
-        layout = ExperimentLayout(my_arg1=self.my_arg1, my_arg2=self.my_arg2, my_arg3=self.my_arg3, my_arg4=self.my_arg4, my_arg5=self.my_arg5, my_arg6=self.my_arg6, my_arg7=self.my_arg7, my_arg8=self.my_arg8)
+        layout = ExperimentLayout(experiment_arguments=self.my_experiment_arguments)
         return layout
 
 if __name__ == "__main__":
-  my_arg1 = sys.argv[1] if len(sys.argv) > 1 else None
-  my_arg2 = sys.argv[2] if len(sys.argv) > 2 else None
-  my_arg3 = sys.argv[3] if len(sys.argv) > 3 else None
-  my_arg4 = sys.argv[4] if len(sys.argv) > 4 else None
-  my_arg5 = sys.argv[5] if len(sys.argv) > 5 else None
-  my_arg6 = sys.argv[6] if len(sys.argv) > 6 else None
-  my_arg7 = sys.argv[7] if len(sys.argv) > 7 else None
-  my_arg8 = sys.argv[8] if len(sys.argv) > 8 else None
+    # Expecting a JSON string as the first argument from the command line
+    if len(sys.argv) > 1:
+        json_str = sys.argv[1]
+        experiment_arguments = ExperimentArguments.from_json(json_str)
+    else:
+        experiment_arguments = ExperimentArguments()
+    feeder = Feeder()
+    clicker = Clicker()
+    houseLight = HouseLight()
+    feeder.deactivate()
+    houseLight.activate()
 
-  feeder = Feeder()
-  clicker = Clicker()
-  houseLight = HouseLight()
-  feeder.deactivate()
-  houseLight.activate()
-  subject_name = "None" 
-  if my_arg3: subject_name = my_arg3 
-  writer = Writer(constant_data, subject_name)
-  print("my_arg5", my_arg5) 
-  mainApp = MainApp(my_arg1, my_arg2, my_arg3, my_arg4, my_arg5, my_arg6, my_arg7, my_arg8)
-  mainApp.run()
+    # Get subject name and print specific argument values
+    subject_name = experiment_arguments.subject or "None"
+    writer = Writer(constant_data, subject_name)
+    
+    # Log the warning display volume
+    print("Warning display volume:", experiment_arguments.warning_display_volume)
+    
+    # Pass the experiment_arguments object to the main application
+    mainApp = MainApp(experiment_arguments=experiment_arguments)
+    mainApp.run()

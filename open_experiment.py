@@ -3,7 +3,7 @@ from tkinter import messagebox
 from kivy.config import Config
 import subprocess
 from tkinter import ttk
-
+import json 
 def is_number(input):
     if input == "":
         return True  # Allow empty input
@@ -47,8 +47,22 @@ def start_kivy_app():
         return
     if sound_warning_level_argument.strip() =="" and  sound_warning_level_entry.cget("state") != "disabled":
         messagebox.showerror("Error", "Please enter sound warning level %.")
-        return        
-    subprocess.Popen(["python", "c:/Users/SKINNER BOX/Documents/self_control_software/self_control.py", number_argument, trials_argument, dropdown_argument, punishment_argument, visual_warning_level_argument, sound_warning_level_argument, str(highlight_warning) ])
+        return
+    experiment_args = {
+    "reinforcement_ratio": number_argument,
+    "total_reinforcements": trials_argument,
+    "subject": dropdown_argument,
+    "mode": punishment_argument,
+    "warning_display_volume": visual_warning_level_argument,
+    "warning_alarm_volume": sound_warning_level_argument,
+    "highlight_warning_signal": str(highlight_warning)  # Convert to string if necessary
+}        
+
+    # Convert the dictionary to a JSON string
+    json_str = json.dumps(experiment_args)
+
+    # Call the subprocess with the JSON string as the first argument
+    subprocess.Popen(["python", "c:/Users/SKINNER BOX/Documents/self_control_software/self_control.py", json_str])    
     root.destroy()
 
 Config.set('graphics', 'fullscreen', 'auto')
