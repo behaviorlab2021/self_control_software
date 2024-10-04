@@ -55,10 +55,10 @@ constant_data =  {
     'miliseconds_after_touch': 1000,
     'in_warning_signal_training': False,
     'regular_rounds_before_warning_signal_training': 1,
-    'warning_signal_presence_duration': 30,
+    'warning_duration': 30,
     'time_before_warning_signal': 5,
     'highlight_warning_signal': False,
-    'warning_signal_position': 0.4
+    'warning_signal_position': 0.4,
 }
 
 
@@ -84,7 +84,7 @@ class ExperimentLayout(FloatLayout):
     # miliseconds_after_touch = constant_data["miliseconds_after_touch"]
     # in_warning_signal_training = constant_data["in_warning_signal_training"]
     # regular_rounds_before_warning_signal_training = constant_data["regular_rounds_before_warning_signal_training"]
-    # warning_signal_presence_duration = constant_data["warning_signal_presence_duration"]
+    # warning_duration = constant_data["warning_duration"]
     # time_before_warning_signal = constant_data["time_before_warning_signal"]
     # highlight_warning_signal = constant_data["highlight_warning_signal"]
 
@@ -168,18 +168,24 @@ class ExperimentLayout(FloatLayout):
         return super(FloatLayout, self).on_touch_down(touch)
 
     def check_reinforcement_condition(self):
-
         if (self.button_green.button_count >= self.experiment_data["reinforcement_ratio"]):
             self.positive_reinforcement()
 
     def end_experiment(self):
         houseLight.deactivate()
         self.turn_off_screen()
+        self.create_results_pdf()
         #Event End of Experiment
         writer.write_data(self.score, self.quarter, self.clicks, "end_of_experiment", False)
-
-
+    
+    def create_results_pdf(self):
+        # Call the R script
+        result = subprocess.run(['Rscript', 'create_pdf.R', writer.filename], capture_output=True, text=True)
+        # Print the output from the R script
+        print("Output from R script:")
+        print(result.stdout)
         pass
+
     def check_if_warning_signal_training(self):
         if self.experiment_data["in_warning_signal_training"] and self.score % self.random_rounds_before_punishment_training == 0:
             self.warning_signal_training_running = True
@@ -198,7 +204,7 @@ class ExperimentLayout(FloatLayout):
             self.buzzer = Clock.schedule_interval(self.sound_buzzer, 0.5)
             self.button_red.enable_button()
             self.button_green.disable_button()
-            self.warning_signal_scheduled_event = Clock.schedule_once(self.warning_signal_training_punishment, self.experiment_data["warning_signal_presence_duration"])
+            self.warning_signal_scheduled_event = Clock.schedule_once(self.warning_signal_training_punishment, self.experiment_data["warning_duration"])
             writer.write_data(self.score, self.quarter, self.clicks, "warning-"+str(int(self.warning_quarter)), not self.button_red.disabled)
 
         # self.button_green.di
@@ -389,6 +395,7 @@ class ExperimentLayout(FloatLayout):
             'total_reinforcements': 'total_reinforcements',
             'warning_display_volume': 'warning_display_volume',
             'warning_alarm_volume': 'warning_alarm_volume',
+            'warning_duration': 'warning_duration',
         }
 
         # Populate experiment_data using the mapping
@@ -509,6 +516,7 @@ class ExperimentLayout(FloatLayout):
     def _on_keyboard_down(self, keyboard, keycode, text, modifiers):
 
         if keycode[1] == 'escape':
+            # self.end_experiment()
             houseLight.deactivate()
             App.get_running_app().stop()
 
@@ -807,7 +815,7 @@ class BasicImageButtonGrey(BasicImageButton):
 class ExperimentArguments:
     def __init__(self, reinforcement_ratio=None, total_reinforcements=None, subject=None, mode=None, 
                  warning_display_volume=None, warning_alarm_volume=None, highlight_warning_signal=None, 
-                 warning_signal_position=None):
+                 warning_signal_position=None, warning_duration=None):
         self.reinforcement_ratio = reinforcement_ratio
         self.total_reinforcements = total_reinforcements
         self.subject = subject
@@ -816,6 +824,7 @@ class ExperimentArguments:
         self.warning_alarm_volume = warning_alarm_volume
         self.highlight_warning_signal = highlight_warning_signal
         self.warning_signal_position = warning_signal_position
+        self.warning_duration =  warning_duration
         
     @classmethod
     def from_json(cls, json_str):

@@ -32,6 +32,7 @@ def start_kivy_app():
     sound_warning_level_argument = sound_warning_level_entry.get()  # Get the input value for the warning level
     highlight_warning = highlight_warning_var.get()  # Get the input value for the warning level
     warning_signal_horizontal_position_argument = warning_signal_horizontal_position_entry.get()
+    warning_duration_argument = warning_duration_entry.get()
 
     print( "Hey! ", warning_signal_horizontal_position_argument)
     # Check if the number input is empty
@@ -50,7 +51,9 @@ def start_kivy_app():
     if (float(warning_signal_horizontal_position_argument) < 0.3 or float(warning_signal_horizontal_position_argument) > 0.6):
         messagebox.showerror("Error", "The value if the warning signal hosrizontal positon should be between 0.3 and 0.6.")
         return
-    
+    if (int(warning_duration_argument) < 1 or int(warning_duration_argument) > 30):
+        messagebox.showerror("Error", "Warning duration should be between 1 and 30 sec.")
+        return
 
     # Create the Arguments object
     experiment_arguments = {
@@ -61,7 +64,8 @@ def start_kivy_app():
         'warning_display_volume': visual_warning_level_argument,
         'warning_alarm_volume': sound_warning_level_argument,
         'highlight_warning_signal': str(highlight_warning),
-        'warning_signal_position': warning_signal_horizontal_position_argument
+        'warning_signal_position': warning_signal_horizontal_position_argument,
+        'warning_duration': warning_duration_argument,
     }
     
     experiment_arguments = json.dumps(experiment_arguments)
@@ -77,7 +81,7 @@ root.title("Open experiment")
 root.iconbitmap("g220.ico")
 
 # Set the default size of the application
-root.geometry("300x400")
+root.geometry("300x500")
 
 
 # REINFORCING RATIO
@@ -171,10 +175,11 @@ sound_validate_warning_level = (root.register(is_number), '%P')
 
 validate_warning_signal_horizontal_position = (root.register(is_number), '%P')
 
+validate_warning_signal_duration = (root.register(is_number), '%P')
+
 # Create an Entry widget for the warning level input with the validation command and centered input text
 sound_warning_level_entry = tk.Entry(root, validate="key", validatecommand=sound_validate_warning_level, justify='center', state='normal', textvariable=tk.StringVar(value="10"))
 sound_warning_level_entry.pack()
-
 
 # WARNING SIGNAL HORIZONTAL POSITION
 # Create a label for the warning level input
@@ -187,6 +192,21 @@ warning_signal_horizontal_position_value = (root.register(is_number), '%P')
 # Create an Entry widget for the warning level input with the validation command and centered input text
 warning_signal_horizontal_position_entry = tk.Entry(root, validate="key", validatecommand=validate_warning_signal_horizontal_position, justify='center', state='normal', textvariable=tk.StringVar(value=0.3))
 warning_signal_horizontal_position_entry.pack()
+
+
+
+
+# WARNING SIGNAL HORIZONTAL POSITION
+# Create a label for the warning level input
+warning_duration_label = tk.Label(root, text="Enter Warning Duration :", font=("Helvetica", 10), justify='center')
+warning_duration_label.pack()
+
+# Create a validation command
+wwarning_duration_value = (root.register(is_number), '%P')
+
+# Create an Entry widget for the warning level input with the validation command and centered input text
+warning_duration_entry = tk.Entry(root, validate="key", validatecommand=validate_warning_signal_horizontal_position, justify='center', state='normal', textvariable=tk.StringVar(value=30))
+warning_duration_entry.pack()
 
 
 

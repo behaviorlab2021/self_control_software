@@ -21,8 +21,9 @@ class Writer:
 
         self.start_time = get_time_now()
 
-        self.filename =  "c:/Users/SKINNER BOX/Documents/self_control_software/" + "data/" + get_timestamp_for_filename()+ "_"+ subject + "_Data.csv"
-        with open(self.filename, 'w', newline='') as csvfile:
+        self.filename =  get_timestamp_for_filename()+ "_"+ subject + "_Data.csv"
+        self.filepath =  "c:/Users/SKINNER BOX/Documents/self_control_software/" + "data/" + self.filename
+        with open(self.filepath, 'w', newline='') as csvfile:
             cwriter = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
             cwriter.writerow(self.header)
     def writer_update(self, constant_data):
@@ -30,7 +31,7 @@ class Writer:
 
 
     def write_to_file(self, data):
-        with open(self.filename, 'a', newline='') as csvfile:
+        with open(self.filepath, 'a', newline='') as csvfile:
             cwriter = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
 
             cwriter.writerow(self.cd_values + data)
