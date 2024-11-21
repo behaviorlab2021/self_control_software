@@ -220,7 +220,7 @@ file.remove(stats_pdf_name)
 
 library(mailR)
 sender <- "behaviorlab2021@gmail.com"
-recipients <- c("mellon.robert@gmail.com", "smanoliadis@gmail.com", "minosntinas@gmail.com" )
+recipients <- c("mellon.robert@gmail.com", "smanoliadis@gmail.com", "minosntinas@gmail.com", "alexandrostsiok@gmail.com" )
 
 send.mail(from = sender,
           to = recipients,

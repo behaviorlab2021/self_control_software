@@ -90,7 +90,8 @@ class ExperimentLayout(FloatLayout):
 
 
     button_height = 0.6
-
+    consecutive_warnings = 0
+    consecutive_warnings_limit = 2
     feeding_condition = False
     score = 0
     used_tries = 0
@@ -187,16 +188,19 @@ class ExperimentLayout(FloatLayout):
         pass
 
     def check_if_warning_signal_training(self):
-        if self.experiment_data["in_warning_signal_training"] and self.score % self.random_rounds_before_punishment_training == 0:
-            self.warning_signal_training_running = True
-            self.warning_signal_scheduled_event = Clock.schedule_once(self.start_warning_signal_training, self.experiment_data["time_before_warning_signal"])
-            self.random_rounds_before_punishment_training = self.experiment_data["regular_rounds_before_warning_signal_training"]
-            
+        if self.experiment_data["in_warning_signal_training"] and self.score % self.random_rounds_before_punishment_training == 0:  
+            if self.consecutive_warnings < self.consecutive_warnings_limit:    
+
+                self.warning_signal_training_running = True
+                self.warning_signal_scheduled_event = Clock.schedule_once(self.start_warning_signal_training, self.experiment_data["time_before_warning_signal"])
+                self.random_rounds_before_punishment_training = self.experiment_data["regular_rounds_before_warning_signal_training"]
+            else :
+                self.consecutive_warnings = 0
 
 
     def start_warning_signal_training(self, dt):
-        if self.warning_signal_training_running:
-
+        if self.warning_signal_training_running :
+            self.consecutive_warnings = self.consecutive_warnings + 1
             print("In start_warning_signal_training")
             self.play_sound()
             if self.experiment_data["highlight_warning_signal"]:
@@ -206,6 +210,8 @@ class ExperimentLayout(FloatLayout):
             self.button_green.disable_button()
             self.warning_signal_scheduled_event = Clock.schedule_once(self.warning_signal_training_punishment, self.experiment_data["warning_duration"])
             writer.write_data(self.score, self.quarter, self.clicks, "warning-"+str(int(self.warning_quarter)), not self.button_red.disabled)
+        
+        
 
         # self.button_green.di
         self.update_warning_quarter()
@@ -276,6 +282,7 @@ class ExperimentLayout(FloatLayout):
             self.turn_off_screen() 
             houseLight.deactivate()
             feeder.activate()
+
             feeder.create_deactivate_feeder_event(self.experiment_data["feed_time"])
             Clock.schedule_once(self.turn_feeding_condition_off, self.experiment_data["feed_time"])
             #Event Reinforcement
@@ -316,6 +323,8 @@ class ExperimentLayout(FloatLayout):
     def un_punish(self, dt):
         Clock.unschedule(self.warning_signal_scheduled_event)
         self.stop_warning_signal_training()
+
+        self.check_if_warning_signal_training()
         houseLight.activate()
         self.turn_on_screen()
         self.used_tries = 0
@@ -544,6 +553,7 @@ class ExperimentLayout(FloatLayout):
 
     def positive_reinforcement(self):
         self.stop_warning_signal_training()
+        self.consecutive_warnings = 0
         self.score = self.score + 1
         self.feed()
         self.subsequent_punishments = 0
