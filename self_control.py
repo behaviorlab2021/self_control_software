@@ -356,7 +356,7 @@ class ExperimentLayout(FloatLayout):
         self.clicks_label = str(self.clicks).zfill(2)
         self.label_right.text = self.clicks_label
         self.label_left.text = self.score_label
-
+#test
 
     def update_used_tries(self):
         if self.button_red.disabled == False:
