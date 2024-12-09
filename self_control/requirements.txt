@@ -1,0 +1,32 @@
+# Core Dependencies
+kivy==2.1.0               # Core framework for the experiment UI
+kivy-garden==0.1.4        # Kivy extensions
+
+# Database
+psycopg2-binary==2.9.6    # PostgreSQL connector for Python
+
+# USB Device Monitoring
+usbmonitor==0.9.3         # USB monitor to track touch panel device connections
+
+# PDF Generation (if required for report generation)
+reportlab==3.6.12         # To create PDF reports from experiment data
+
+# Scientific Libraries
+numpy==1.26.0             # For mathematical computations
+scipy==1.11.2             # For any scientific calculations (optional)
+
+# Utilities & Extras
+Pillow==9.4.0             # Image processing (used by Kivy)
+python-decouple==3.8     # To load environment variables
+python-dateutil==2.8.2   # For better date and time handling
+loguru==0.6.0            # For better logging than the default logger
+
+# Tkinter (Standard Library)
+# No need to install Tkinter separately as it comes with Python.
+
+# Testing
+pytest==7.4.2            # For running unit tests
+pytest-cov==4.1.0        # Test coverage tool
+
+
+# pip install -r requirements.txt
