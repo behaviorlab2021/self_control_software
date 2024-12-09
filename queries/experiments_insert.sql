@@ -5,16 +5,13 @@ INSERT INTO experiments (
     punishment_period,
     feed_time,
     total_reinforcements,
-    skip_to_next_value,
+    consecutive_warnings_limit,
     warning_alarm_volume,
     warning_display_volume,
-    punishment_condition,
-    subject,
+    subject_id,
+    mode_id,
     is_spot_on,
-    random_warning,
-    miliseconds_after_touch,
-    in_warning_signal_training,
-    regular_rounds_before_warning_signal_training,
+    rounds_before_warning,
     warning_duration,
     time_before_warning_signal,
     highlight_warning_signal,
@@ -27,16 +24,56 @@ INSERT INTO experiments (
     60,                -- punishment_period (in seconds)
     120,               -- feed_time (in seconds)
     15,                -- total_reinforcements
-    1,                 -- skip_to_next_value
+    1,                 -- consecutive_warnings_limit
     0.75,              -- warning_alarm_volume
     0.80,              -- warning_display_volume
-    1,                 -- punishment_condition
-    'Subject_001',     -- subject
+    1,                 -- subject_id (example value)
+    1,                 -- mode_id (example value)
     TRUE,              -- is_spot_on
-    FALSE,             -- random_warning
-    250,               -- miliseconds_after_touch
-    TRUE,              -- in_warning_signal_training
-    10,                -- regular_rounds_before_warning_signal_training
+    10,                -- rounds_before_warning
+    30,                -- warning_duration (in seconds)
+    10,                -- time_before_warning_signal (in seconds)
+    TRUE,              -- highlight_warning_signal
+    2.34567,           -- warning_signal_position
+    'First experiment run' -- comments
+);
+
+
+INSERT INTO experiments (
+	experiment_id,
+    reinforcement_ratio,
+    warning_signal_points,
+    warning_pecks,
+    punishment_period,
+    feed_time,
+    total_reinforcements,
+    consecutive_warnings_limit,
+    warning_alarm_volume,
+    warning_display_volume,
+    subject_id,
+    mode_id,
+    is_spot_on,
+    rounds_before_warning,
+    warning_duration,
+    time_before_warning_signal,
+    highlight_warning_signal,
+    warning_signal_position,
+    comments
+) VALUES (
+	'fde42ce6-5d6e-402d-ac02-aae568e80a46', -- uuid
+    10,                -- reinforcement_ratio
+    5,                 -- warning_signal_points
+    3,                 -- warning_pecks
+    60,                -- punishment_period (in seconds)
+    120,               -- feed_time (in seconds)
+    15,                -- total_reinforcements
+    1,                 -- consecutive_warnings_limit
+    0.75,              -- warning_alarm_volume
+    0.80,              -- warning_display_volume
+    1,                 -- subject_id (example value)
+    1,                 -- mode_id (example value)
+    TRUE,              -- is_spot_on
+    10,                -- rounds_before_warning
     30,                -- warning_duration (in seconds)
     10,                -- time_before_warning_signal (in seconds)
     TRUE,              -- highlight_warning_signal
