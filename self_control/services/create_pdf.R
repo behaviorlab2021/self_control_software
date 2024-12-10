@@ -109,7 +109,7 @@ pdf(curve_pdf_name, width = dynamic_width, height = pdf_height)  # Change the fi
 # Plot the data without the default x-axis (xaxt = "n")
 line = data %>% filter(Event != "score_updated")
 
-plot(line$Time, line$Pecks, type = "l", col = "black",
+plot(line$Time, line$hit_count, type = "l", col = "black",
      xlab = "Time (mm:ss)", ylab = "Cumulative Events",
      main = "Cumulative Record",
      lwd = 2, xaxt = "n")  # Suppress the x-axis
@@ -129,10 +129,10 @@ feeding = data[data$Event == "feeding",]
 warning = data[grepl("^warning", data$Event), ]
 red = data[grepl("^red-", data$Event), ]
 
-points(punishment$Time, punishment$Pecks, pch = 16, col = "red")  # pch = 16 for solid circle
-points(feeding$Time, feeding$Pecks, pch = 12, col = "blue")  # pch = 12 for square
-points(warning$Time, warning$Pecks, pch = 1, col = "red")  # pch = 1 for circle
-points(red$Time, red$Pecks, pch = 2, col = "red")  # pch = 1 for circle
+points(punishment$Time, punishment$hit_count, pch = 16, col = "red")  # pch = 16 for solid circle
+points(feeding$Time, feeding$hit_count, pch = 12, col = "blue")  # pch = 12 for square
+points(warning$Time, warning$hit_count, pch = 1, col = "red")  # pch = 1 for circle
+points(red$Time, red$hit_count, pch = 2, col = "red")  # pch = 1 for circle
 
 # Close the PDF device to save the plot
 dev.off()
@@ -171,7 +171,7 @@ reinforcer_summary <- peck_counts_per_reinforcer %>%
 # Replace NA values with 0 for Red_Counts
 reinforcer_summary$Red_Counts[is.na(reinforcer_summary$Red_Counts)] <- 0
 
-# Step 5: Add a column for the ratio of reinforcers to pecks with rounded decimals
+# Step 5: Add a column for the ratio of reinforcers to hit_count with rounded decimals
 reinforcer_summary <- reinforcer_summary %>%
   mutate(Ratio_Reinforcers_to_Pecks = ifelse(Peck_Counts > 0, 
                                              round((Green_Counts) / Peck_Counts, 2), 

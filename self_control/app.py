@@ -10,6 +10,8 @@ from self_control_software.self_control.services.feeder import Feeder
 from self_control_software.self_control.services.clicker import Clicker
 from self_control_software.self_control.services.house_light import HouseLight  
 from self_control_software.self_control.services.writer import Writer
+from self_control_software.self_control.services.injector import Injector
+
 from self_control_software.self_control.main import MainApp
 
 
@@ -37,7 +39,8 @@ if __name__ == "__main__":
     houseLight.activate()
 
     writer = Writer(experiment_dict, subject_name)
+    injector = Injector(experiment_dict)
     
     # Pass the experiment_arguments object to the main application
-    mainApp = MainApp(experiment_arguments=experiment_dict, feeder=feeder, clicker=clicker, houseLight=houseLight, writer=writer)
+    mainApp = MainApp(experiment_arguments=experiment_dict, feeder=feeder, clicker=clicker, houseLight=houseLight, writer=writer, injector=injector)
     mainApp.run()

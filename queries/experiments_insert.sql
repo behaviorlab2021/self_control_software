@@ -1,6 +1,6 @@
 INSERT INTO experiments (
     reinforcement_ratio,
-    warning_pecks,
+    warning_hits,
     punishment_duration,
     feed_time,
     total_reinforcements,
@@ -18,7 +18,7 @@ INSERT INTO experiments (
     comments
 ) VALUES (
     10,                -- reinforcement_ratio
-    3,                 -- warning_pecks
+    3,                 -- warning_hits
     60,                -- punishment_duration (in seconds)
     120,               -- feed_time (in seconds)
     15,                -- total_reinforcements
@@ -40,7 +40,7 @@ INSERT INTO experiments (
 INSERT INTO experiments (
 	experiment_id,
     reinforcement_ratio,
-    warning_pecks,
+    warning_hits,
     punishment_duration,
     feed_time,
     total_reinforcements,
@@ -59,7 +59,7 @@ INSERT INTO experiments (
 ) VALUES (
 	'fde42ce6-5d6e-402d-ac02-aae568e80a46', -- uuid
     10,                -- reinforcement_ratio
-    3,                 -- warning_pecks
+    3,                 -- warning_hits
     60,                -- punishment_duration (in seconds)
     120,               -- feed_time (in seconds)
     15,                -- total_reinforcements

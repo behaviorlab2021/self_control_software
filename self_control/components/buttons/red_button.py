@@ -6,8 +6,7 @@ from kivy.properties import ObjectProperty
 import datetime
 from self_control_software.self_control.components.buttons.basic_image_button import BasicImageButton
 from self_control_software.self_control.utils.functions import distance_from
-from self_control_software.self_control.services.clicker import Clicker
-from self_control_software.self_control.services.writer import Writer
+
 
 class BasicImageButtonRed(BasicImageButton):
 
@@ -18,12 +17,16 @@ class BasicImageButtonRed(BasicImageButton):
         super().__init__(**kwargs)
         self.clicker = None  # Initialize clicker
         self.writer = None  # Initialize writer
+        self.injector = None  # Initialize injector
 
     def set_clicker(self, clicker):
         self.clicker = clicker
 
     def set_writer(self, writer):
         self.writer = writer
+    
+    def set_injector(self, injector):
+        self.injector = injector   
 
     def on_touch_up(self, touch):
         window_x = Window.size[0]
@@ -40,7 +43,8 @@ class BasicImageButtonRed(BasicImageButton):
                     self.button_count = self.button_count + 1
                     parent = self.parent
                     # Event Red
-                    self.writer.write_data(parent.score, parent.quarter, parent.clicks, "red-"+str(int(parent.warning_quarter)), not parent.button_red.disabled) 
+                    self.writer.write_data(parent.score, parent.quarter, parent.clicks, "red-"+str(int(parent.warning_quarter)), not parent.button_red.disabled, parent.warning_signal_index) 
+                    self.injector.write_data(parent.score, parent.quarter, parent.clicks, "red-"+str(int(parent.warning_quarter)), not parent.button_red.disabled, parent.warning_signal_index) 
                     parent.negative_reinforcement()
                     if parent.warning_signal_training_running: 
                         parent.stop_warning_signal_training()
@@ -76,7 +80,8 @@ class BasicImageButtonRed(BasicImageButton):
                         self.button_count = self.button_count + 1
                         parent = self.parent
                         # Event Red
-                        self.writer.write_data(parent.score, parent.quarter, parent.clicks, "red-"+str(int(parent.warning_quarter)), not parent.button_red.disabled) 
+                        self.writer.write_data(parent.score, parent.quarter, parent.clicks, "red-"+str(int(parent.warning_quarter)), not parent.button_red.disabled, parent.warning_signal_index) 
+                        self.injector.inject_data(parent.score, parent.quarter, parent.clicks, "red-"+str(int(parent.warning_quarter)), not parent.button_red.disabled, parent.warning_signal_index) 
                         parent.negative_reinforcement()
                         if parent.warning_signal_training_running: 
                             parent.stop_warning_signal_training()

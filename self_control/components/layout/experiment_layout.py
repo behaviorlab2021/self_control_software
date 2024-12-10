@@ -24,6 +24,7 @@ from usbmonitor import USBMonitor
 from usbmonitor.attributes import ID_MODEL, ID_MODEL_ID, ID_VENDOR_ID
 from self_control_software.self_control.services.house_light import HouseLight
 from self_control_software.self_control.services.writer import Writer
+from self_control_software.self_control.services.injector import Injector
 from self_control_software.self_control.services.feeder import Feeder
 from self_control_software.self_control.utils.functions import distance_from
 from self_control_software.self_control.services.clicker import Clicker
@@ -70,19 +71,22 @@ class ExperimentLayout(FloatLayout):
     spot = ObjectProperty(None)
     was_warned = False
 
-    warning_signal_points = []
+    warning_signal_index = None
 
-    def __init__(self, experiment_arguments, writer, clicker, houseLight, feeder, **kwargs):
+    def __init__(self, experiment_arguments, writer, injector, clicker, houseLight, feeder, **kwargs):
 
         # Use the renamed experiment_arguments object
         self.experiment_data = experiment_arguments
         self.writer = writer  # Store writer as an instance variable
+        self.injector = injector  # Store injector as an instance variable
         self.houseLight = houseLight  # Store houseLight as an instance variable
         self.feeder = feeder  # Store feeder as an instance variable
 
 
         # Clock scheduling
         Clock.schedule_once(self.prepare_buttons, 0.8)
+
+        Clock.schedule_interval(self.add_cumulative_record, 0.5)  
 
         # Keyboard event binding
         self._keyboard = Window.request_keyboard(self._keyboard_closed, self)
@@ -112,10 +116,12 @@ class ExperimentLayout(FloatLayout):
 
         # Writer update
         self.writer.writer_update(self.experiment_data)
+        self.injector.injector_update(self.experiment_data)
 
 
         # Event Start
-        self.writer.write_data(self.score, self.quarter, 0, "Start", False)
+        self.writer.write_data(self.score, self.quarter, 0, "Start", False,  -1)
+        self.injector.inject_data(self.score, self.quarter, 0, "Start", False,  -1)
 
         # Inherit initialization
         super(FloatLayout, self).__init__(**kwargs)
@@ -153,16 +159,18 @@ class ExperimentLayout(FloatLayout):
 
     def randomize_array(self):
         if self.experiment_data["mode_id"] == 4:
-            self.warning_signal_points = [random.randint(1, self.experiment_data["reinforcement_ratio"] - self.experiment_data["warning_pecks"] - 1)]
+            self.warning_signal_index = random.randint(1, self.experiment_data["reinforcement_ratio"] - self.experiment_data["warning_hits"] - 1)
         else:
-            self.warning_signal_points = []
+            self.warning_signal_index = None
 
     def on_touch_down(self,touch):
         #Event Touch
         if self.button_green.opacity == 0:
-            self.writer.write_peck_data_blind( self.score, self.quarter, self.clicks, touch.sx, touch.sy, "blind-peck", not self.button_red.disabled)
+            self.writer.write_peck_data_blind( self.score, self.quarter, self.clicks, touch.sx, touch.sy, "blind-peck", not self.button_red.disabled, self.warning_signal_index)
+            self.injector.inject_peck_data_blind( self.score, self.quarter, self.clicks, touch.sx, touch.sy, "blind-peck", not self.button_red.disabled, self.warning_signal_index)
         else:
-            self.writer.write_peck_data( self.score, self.quarter, self.clicks, touch.sx, touch.sy,  not self.button_red.disabled)
+            self.writer.write_peck_data( self.score, self.quarter, self.clicks, touch.sx, touch.sy,  not self.button_red.disabled, self.warning_signal_index)
+            self.injector.inject_peck_data( self.score, self.quarter, self.clicks, touch.sx, touch.sy,  not self.button_red.disabled, self.warning_signal_index)
 
         if self.experiment_data["is_spot_on"]:
             self.spot.pos_hint = {'center_x':touch.sx, 'center_y':touch.sy}
@@ -177,8 +185,9 @@ class ExperimentLayout(FloatLayout):
         self.turn_off_screen()
         self.create_results_pdf()
         #Event End of Experiment
-        self.writer.write_data(self.score, self.quarter, self.clicks, "end_of_experiment", False)
-    
+        self.writer.write_data(self.score, self.quarter, self.clicks, "end_of_experiment", False, self.warning_signal_index)
+        self.injector.inject_data(self.score, self.quarter, self.clicks, "end_of_experiment", False, self.warning_signal_index)    
+
     def create_results_pdf(self):
         # Call the R script
         result = subprocess.run(['Rscript', 'create_pdf.R', self.writer.filename], capture_output=True, text=True)
@@ -208,7 +217,8 @@ class ExperimentLayout(FloatLayout):
             self.button_red.enable_button()
             self.button_green.disable_button()
             self.warning_signal_scheduled_event = Clock.schedule_once(self.warning_signal_training_punishment, self.experiment_data["warning_duration"])
-            self.writer.write_data(self.score, self.quarter, self.clicks, "warning-"+str(int(self.warning_quarter)), not self.button_red.disabled)
+            self.writer.write_data(self.score, self.quarter, self.clicks, "warning-"+str(int(self.warning_quarter)), not self.button_red.disabled, self.warning_signal_index)
+            self.injector.inject_data(self.score, self.quarter, self.clicks, "warning-"+str(int(self.warning_quarter)), not self.button_red.disabled, self.warning_signal_index)
         
         
 
@@ -231,7 +241,7 @@ class ExperimentLayout(FloatLayout):
         pass
 
     def check_if_red(self):
-        if not self.was_warned and self.button_green.button_count in self.warning_signal_points:
+        if not self.was_warned and self.button_green.button_count == self.warning_signal_index:
             self.play_sound()
             self.buzzer = Clock.schedule_interval(self.sound_buzzer, 0.5)
             self.button_red.enable_button()
@@ -239,7 +249,8 @@ class ExperimentLayout(FloatLayout):
             self.warning_variable = True
             self.update_warning_quarter()
             #Event warning
-            self.writer.write_data(self.score, self.quarter, self.clicks, "warning-"+str(int(self.warning_quarter)), not self.button_red.disabled)
+            self.writer.write_data(self.score, self.quarter, self.clicks, "warning-"+str(int(self.warning_quarter)), not self.button_red.disabled, self.warning_signal_index)
+            self.injector.inject_data(self.score, self.quarter, self.clicks, "warning-"+str(int(self.warning_quarter)), not self.button_red.disabled, self.warning_signal_index)
         
     def sound_buzzer(self, dt):
         self.play_sound()
@@ -271,7 +282,8 @@ class ExperimentLayout(FloatLayout):
             self.reset_quarters()
             self.warning_variable = False
             #Event Starting after reinforcement
-            self.writer.write_data(self.score, self.quarter, self.clicks, "starting-again", not self.button_red.disabled)
+            self.writer.write_data(self.score, self.quarter, self.clicks, "starting-again", not self.button_red.disabled, self.warning_signal_index)
+            self.injector.inject_data(self.score, self.quarter, self.clicks, "starting-again", not self.button_red.disabled, self.warning_signal_index)
         pass
 
 
@@ -285,10 +297,11 @@ class ExperimentLayout(FloatLayout):
             self.feeder.create_deactivate_feeder_event(self.experiment_data["feed_time"])
             Clock.schedule_once(self.turn_feeding_condition_off, self.experiment_data["feed_time"])
             #Event Reinforcement
-            self.writer.write_data(self.score, self.quarter, self.clicks, "feeding", not self.button_red.disabled)
+            self.writer.write_data(self.score, self.quarter, self.clicks, "feeding", not self.button_red.disabled, self.warning_signal_index)
+            self.injector.inject_data(self.score, self.quarter, self.clicks, "feeding", not self.button_red.disabled, self.warning_signal_index)   
 
     def check_if_punishment(self):
-        if self.used_tries > self.experiment_data["warning_pecks"]:
+        if self.used_tries > self.experiment_data["warning_hits"]:
             self.punish()
     
     def turn_off_screen(self):
@@ -317,7 +330,10 @@ class ExperimentLayout(FloatLayout):
         self.button_green.zeroing()
         Clock.schedule_once(self.un_punish, self.experiment_data["punishment_duration"])
         #Event Punishment
-        self.writer.write_data(self.score, self.quarter, self.clicks, "punishment", not self.button_red.disabled)
+        self.writer.write_data(self.score, self.quarter, self.clicks, "punishment", not self.button_red.disabled, self.warning_signal_index)
+        self.injector.inject_data(self.score, self.quarter, self.clicks, "punishment", not self.button_red.disabled, self.warning_signal_index)
+        self.clicks = 0
+
 
     def un_punish(self, dt):
         Clock.unschedule(self.warning_signal_scheduled_event)
@@ -337,10 +353,12 @@ class ExperimentLayout(FloatLayout):
             self.randomize_array()
             self.subsequent_punishments = 0
 
-        self.writer.write_data(self.score, self.quarter, self.clicks, "starting-over", not self.button_red.disabled) 
+        self.writer.write_data(self.score, self.quarter, self.clicks, "starting-over", not self.button_red.disabled, self.warning_signal_index) 
+        self.injector.inject_data(self.score, self.quarter, self.clicks, "starting-over", not self.button_red.disabled, self.warning_signal_index)
 
     def update_score(self):
-        self.writer.write_data(self.score, self.quarter, self.clicks, "score_updated", not self.button_red.disabled)
+        self.writer.write_data(self.score, self.quarter, self.clicks, "score_updated", not self.button_red.disabled, self.warning_signal_index)
+        self.injector.inject_data(self.score, self.quarter, self.clicks, "score_updated", not self.button_red.disabled, self.warning_signal_index)
         self.clicks = self.button_green.button_count
         self.update_used_tries()
         self.check_if_punishment()
@@ -438,13 +456,15 @@ class ExperimentLayout(FloatLayout):
             print("spacebar")
             if self.button_red.disabled == True :
                 #Event free-food
-                self.writer.write_data(self.score, self.quarter, self.clicks, "free-food", not self.button_red.disabled) 
+                self.writer.write_data(self.score, self.quarter, self.clicks, "free-food", not self.button_red.disabled, self.warning_signal_index) 
+                self.injector.inject_data(self.score, self.quarter, self.clicks, "free-food", not self.button_red.disabled, self.warning_signal_index)
                 self.positive_reinforcement()
             
         elif keycode[1] == 'enter':
             print("enter")
             # Event gratis-red
-            self.writer.write_data(self.score, self.quarter, self.clicks, "gratis-red-"+str(int(self.warning_quarter)), not self.button_red.disabled)
+            self.writer.write_data(self.score, self.quarter, self.clicks, "gratis-red-"+str(int(self.warning_quarter)), not self.button_red.disabled, self.warning_signal_index)
+            self.injector.inject_data(self.score, self.quarter, self.clicks, "gratis-red-"+str(int(self.warning_quarter)), not self.button_red.disabled, self.warning_signal_index)
             if self.button_red.disabled == False :
                 self.negative_reinforcement()
                 if self.warning_signal_training_running:
@@ -463,11 +483,15 @@ class ExperimentLayout(FloatLayout):
         self.update_quarter()
         self.update_labels()
         self.update_score()
-        self.writer.write_data(self.score, self.quarter, self.clicks, "reinforcement", not self.button_red.disabled)
+        self.writer.write_data(self.score, self.quarter, self.clicks, "reinforcement", not self.button_red.disabled, self.warning_signal_index)
+        self.injector.inject_data(self.score, self.quarter, self.clicks, "reinforcement", not self.button_red.disabled, self.warning_signal_index)
         pass
-
     def negative_reinforcement(self):
         self.button_red.source = self.button_red.source_file
         self.button_red.disable_button()
         self.buzzer.cancel()
         # Clock.schedule_once(self.button_red_shadow.enable_button_delayed, 0.2)
+
+    def add_cumulative_record(self, dt):
+        self.injector.inject_cumulative_record(self.clicks)
+        pass

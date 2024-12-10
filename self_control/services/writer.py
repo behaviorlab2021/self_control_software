@@ -12,17 +12,22 @@ class Writer:
         self.header =  list(constant_data.keys()) + ['Time', 
                 'Reinforcers',
                 'Quarter', 
-                'Pecks', 
+                'hit_count', 
                 'Event', 
                 'x_pos', 
                 'y_pos',
-                'warning_present'
+                'warning_present',
+                'warning_signal_index'
                 ]
 
         self.start_time = get_time_now()
 
         self.filename =  get_timestamp_for_filename()+ "_"+ subject + "_Data.csv"
         self.filepath =  main_dir_path + "/data/" + self.filename
+        
+        print("Filepath: ", self.filepath)
+        print("Filename: ", self.filename)
+
         with open(self.filepath, 'w', newline='') as csvfile:
             cwriter = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
             cwriter.writerow(self.header)
@@ -36,20 +41,20 @@ class Writer:
 
             cwriter.writerow(self.cd_values + data)
 
-    def write_peck_data_blind(self, reinforcements, quarter, pecks, click_x, click_y, event, warning_present):
+    def write_peck_data_blind(self, reinforcements, quarter, hit_count, click_x, click_y, event, warning_present, warning_signal_index):
         time = get_time_dif(self.start_time)
-        data = [time, reinforcements, quarter, pecks, event, click_x, click_y, warning_present]
+        data = [time, reinforcements, quarter, hit_count, event, click_x, click_y, warning_present, warning_signal_index]
         self.write_to_file(data)
 
-    def write_peck_data(self, reinforcements, quarter, pecks, click_x, click_y, warning_present):
+    def write_peck_data(self, reinforcements, quarter, hit_count, click_x, click_y, warning_present, warning_signal_index):
         time = get_time_dif(self.start_time)
         event = "peck"
-        data = [time, reinforcements, quarter, pecks, event, click_x, click_y, warning_present]
+        data = [time, reinforcements, quarter, hit_count, event, click_x, click_y, warning_present, warning_signal_index]
         self.write_to_file(data)
 
-    def write_data(self, reinforcements, quarter, pecks, event, warning_present):
+    def write_data(self, reinforcements, quarter, hit_count, event, warning_present, warning_signal_index):
         time = get_time_dif(self.start_time)
-        data = [time, reinforcements, quarter, pecks, event, 0, 0, warning_present]
+        data = [time, reinforcements, quarter, hit_count, event, 0, 0, warning_present, warning_signal_index]
         self.write_to_file(data)
 
 

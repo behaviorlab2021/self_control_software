@@ -116,7 +116,7 @@ class ExperimentDB:
             INSERT INTO experiments (
                 experiment_id,
                 reinforcement_ratio, 
-                warning_pecks, 
+                warning_hits, 
                 punishment_duration, 
                 feed_time, 
                 total_reinforcements, 
@@ -138,7 +138,7 @@ class ExperimentDB:
             cursor.execute(query, (
                 experiment_data['experiment_id'],
                 experiment_data['reinforcement_ratio'], 
-                experiment_data['warning_pecks'], 
+                experiment_data['warning_hits'], 
                 experiment_data['punishment_duration'], 
                 experiment_data['feed_time'], 
                 experiment_data['total_reinforcements'], 
@@ -171,7 +171,7 @@ class ExperimentDB:
             INSERT INTO experiments (
                 experiment_id,
                 reinforcement_ratio, 
-                warning_pecks, 
+                warning_hits, 
                 punishment_duration, 
                 feed_time, 
                 total_reinforcements, 
@@ -193,7 +193,7 @@ class ExperimentDB:
             cursor.execute(query, (
                 experiment_id,
                 experiment_data['reinforcement_ratio'], 
-                experiment_data['warning_pecks'], 
+                experiment_data['warning_hits'], 
                 experiment_data['punishment_duration'], 
                 experiment_data['feed_time'], 
                 experiment_data['total_reinforcements'], 
@@ -222,19 +222,34 @@ class ExperimentDB:
             cursor = self.connection.cursor()
             query = """
             INSERT INTO events (
-                event_time, reinforcers, quarter, pecks, event_type, x_pos, y_pos, warning_present
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                event_time, reinforcers, quarter, hit_count, event_type, x_pos, y_pos, warning_present, warning_signal_index, experiment_id
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """
             cursor.execute(query, (
                 event_data['event_time'], event_data['reinforcers'], event_data['quarter'], 
-                event_data['pecks'], event_data['event_type'], event_data['x_pos'], 
-                event_data['y_pos'], event_data['warning_present']
+                event_data['hit_count'], event_data['event_type'], event_data['x_pos'], 
+                event_data['y_pos'], event_data['warning_present'], event_data['warning_signal_index'], event_data['experiment_id']
             ))
             self.connection.commit()
             cursor.close()
             print("Inserted new event.")
         except Exception as e:
             print(f"Failed to insert event: {e}")
+    def insert_cumulative_recorder(self, hit_count, experiment_id):
+        """Insert a new row into the cumulative_recorder table."""
+        try:
+            cursor = self.connection.cursor()
+            query = """
+            INSERT INTO cumulative_recorder (hit_count, experiment_id)
+            VALUES (%s, %s)
+            """
+            cursor.execute(query, (hit_count, experiment_id))
+            self.connection.commit()
+            cursor.close()
+            print("Inserted new row into cumulative_recorder.")
+        except Exception as e:
+            print(f"Failed to insert into cumulative_recorder: {e}")
+
 
     def select_last_event(self):
         """Fetch the last event from the events table."""
@@ -320,6 +335,7 @@ class ExperimentDB:
             print(f"Failed to find subject: {e}")
             return None
 
+
         
 
 # # Example usage
@@ -329,7 +345,7 @@ class ExperimentDB:
 # # Insert a new experiment
 # experiment_data = {
 #     'reinforcement_ratio': 10,
-#     'warning_pecks': 3,
+#     'warning_hits': 3,
 #     'punishment_duration': 60,
 #     'feed_time': 30,
 #     'total_reinforcements': 100,
@@ -356,7 +372,7 @@ class ExperimentDB:
 #     'event_time': '2023-10-01 12:00:00',
 #     'reinforcers': 2,
 #     'quarter': 1,
-#     'pecks': 10,
+#     'hit_count': 10,
 #     'event_type': 'stimulus',
 #     'x_pos': 1.23456,
 #     'y_pos': 2.34567,

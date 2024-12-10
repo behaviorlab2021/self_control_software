@@ -36,7 +36,7 @@ class MultiStepApp:
         self.consecutive_warnings_limit = tk.StringVar(value="1")
         self.warning_alarm_volume = tk.StringVar(value="0")
         self.warning_display_volume = tk.StringVar(value="0")
-        self.warning_pecks = tk.StringVar(value="1")
+        self.warning_hits = tk.StringVar(value="1")
         self.punishment_periodicity = tk.StringVar(value="1")
         self.warning_duration = tk.StringVar(value="1")
         self.time_before_warning_signal = tk.StringVar(value="1")
@@ -241,7 +241,7 @@ class MultiStepApp:
             new_value = current_value + increment
             if variable == self.reinforcement_ratio and new_value >= 1:
                 variable.set(new_value)
-            elif variable == self.warning_pecks and 1 <= new_value <= 10:
+            elif variable == self.warning_hits and 1 <= new_value <= 10:
                 variable.set(new_value)
             elif variable == self.total_reinforcements and new_value >= 1:
                 variable.set(new_value)
@@ -272,7 +272,7 @@ class MultiStepApp:
             if variable == self.reinforcement_ratio:
                 if current_value > 1:
                     variable.set(max(1, current_value - decrement))
-            elif variable == self.warning_pecks:
+            elif variable == self.warning_hits:
                 if current_value > 1:
                     variable.set(max(1, current_value - decrement))
             elif variable == self.total_reinforcements:
@@ -347,14 +347,14 @@ class MultiStepApp:
             tk.Button(input_frame, text="-", command=lambda: self.decrement_value(self.consecutive_warnings_limit, 1)).grid(row=3, column=3, padx=2)
             self.consecutive_warnings_limit_entry.bind("<FocusOut>", lambda e: self.validate_entry(self.consecutive_warnings_limit, 1, 10))
 
-        # Warning Pecks
+        # Warning Hits
         if not self.is_basic_training_mode() and not self.is_schedule_training_mode() and not self.is_warning_training_mode():
-            tk.Label(input_frame, text="Warning Pecks:", font=("Tahoma", 12)).grid(row=4, column=0, pady=2, sticky="e")
-            self.warning_pecks_entry = tk.Entry(input_frame, textvariable=self.warning_pecks, validate="key", validatecommand=(self.root.register(self.validate_between_1_and_10), '%P'), width=5)
-            self.warning_pecks_entry.grid(row=4, column=1, pady=2, sticky="w")
-            tk.Button(input_frame, text="+", command=lambda: self.increment_value(self.warning_pecks, 1)).grid(row=4, column=2, padx=2)
-            tk.Button(input_frame, text="-", command=lambda: self.decrement_value(self.warning_pecks, 1)).grid(row=4, column=3, padx=2)
-            self.warning_pecks_entry.bind("<FocusOut>", lambda e: self.validate_entry(self.warning_pecks, 1, 10))
+            tk.Label(input_frame, text="Warning Hits:", font=("Tahoma", 12)).grid(row=4, column=0, pady=2, sticky="e")
+            self.warning_hits_entry = tk.Entry(input_frame, textvariable=self.warning_hits, validate="key", validatecommand=(self.root.register(self.validate_between_1_and_10), '%P'), width=5)
+            self.warning_hits_entry.grid(row=4, column=1, pady=2, sticky="w")
+            tk.Button(input_frame, text="+", command=lambda: self.increment_value(self.warning_hits, 1)).grid(row=4, column=2, padx=2)
+            tk.Button(input_frame, text="-", command=lambda: self.decrement_value(self.warning_hits, 1)).grid(row=4, column=3, padx=2)
+            self.warning_hits_entry.bind("<FocusOut>", lambda e: self.validate_entry(self.warning_hits, 1, 10))
 
         # Regular Punishment Periodicity
         if not self.is_basic_training_mode() and not self.is_schedule_training_mode() and not self.is_random_warning_mode():
@@ -385,7 +385,7 @@ class MultiStepApp:
             tk.Button(input_frame, text="-", command=lambda: self.decrement_value(self.time_before_warning_signal, 1)).grid(row=7, column=3, padx=2)
             self.time_before_warning_signal_entry.bind("<FocusOut>", lambda e: self.validate_entry(self.time_before_warning_signal, 1, 10))
 
-        # Warning Signal Position
+        # Warning Signal Index
         if not self.is_basic_training_mode() and not self.is_schedule_training_mode():
             tk.Label(input_frame, text="Warning Signal Position:", font=("Tahoma", 12)).grid(row=8, column=0, pady=2, sticky="e")
             self.warning_signal_position_entry = tk.Entry(input_frame, textvariable=self.warning_signal_position, validate="key", validatecommand=(self.root.register(self.validate_between_0_and_100), '%P'), width=5)
@@ -417,6 +417,7 @@ class MultiStepApp:
 
         # Move Confirm button to the position of the Next button
         self.next_button.config(text="Confirm", command=self.confirm_more_options)
+        self.next_button.pack_forget()  # Hide the confirm button
 
         self.back_button.config(state="normal", command=self.back_to_step_2)
 
@@ -425,11 +426,13 @@ class MultiStepApp:
         self.current_step = 2
         self.update_step()
         self.next_button.config(text="Next", command=self.next_step)
+        self.next_button.pack(side="right", padx=5, pady=5)  # Show the confirm button again
 
     def back_to_step_2(self):
         self.current_step = 2
         self.update_step()
         self.next_button.config(text="Next", command=self.next_step)
+        self.next_button.pack(side="right", padx=5, pady=5)  # Show the confirm button again
 
     def validate_integer(self, value):
         return value.isdigit() or value == ""
@@ -490,7 +493,7 @@ class MultiStepApp:
 
     def confirm_submission(self):
         experiment_data = self.get_experiment_data()
-        required_fields = ['Subject Name', 'Mode', 'Reinforcement Ratio', 'Total Reinforcements', 'Punishment Duration', 'Feed Time', 'Consecutive Warnings Limit', 'Warning Alarm Volume', 'Warning Display Volume', 'Warning Pecks', 'Punishment Periodicity', 'Warning Duration', 'Time Before Warning Signal', 'Warning Signal Position', 'Highlight Warning Signal', 'Is Spot On']
+        required_fields = ['Subject Name', 'Mode', 'Reinforcement Ratio', 'Total Reinforcements', 'Punishment Duration', 'Feed Time', 'Consecutive Warnings Limit', 'Warning Alarm Volume', 'Warning Display Volume', 'Warning Hits', 'Punishment Periodicity', 'Warning Duration', 'Time Before Warning Signal', 'Warning Signal Position', 'Highlight Warning Signal', 'Is Spot On']
         empty_fields = [key for key in required_fields if experiment_data[key] == ""]
         if empty_fields:
             messagebox.showwarning("Warning", f"The following fields must be filled out: {', '.join(empty_fields)}")
@@ -511,7 +514,7 @@ class MultiStepApp:
             'Consecutive Warnings Limit': self.consecutive_warnings_limit.get(),
             'Warning Alarm Volume': self.warning_alarm_volume.get(),
             'Warning Display Volume': self.warning_display_volume.get(),
-            'Warning Pecks': self.warning_pecks.get(),
+            'Warning Hits': self.warning_hits.get(),
             'Punishment Periodicity': self.punishment_periodicity.get(),
             'Warning Duration': self.warning_duration.get(),
             'Time Before Warning Signal': self.time_before_warning_signal.get(),
@@ -562,8 +565,8 @@ class MultiStepApp:
                     self.warning_alarm_volume.set(last_experiment['warning_alarm_volume'])
                 if 'warning_display_volume' in last_experiment:
                     self.warning_display_volume.set(last_experiment['warning_display_volume'])
-                if 'warning_pecks' in last_experiment:
-                    self.warning_pecks.set(last_experiment['warning_pecks'])                  
+                if 'warning_hits' in last_experiment:
+                    self.warning_hits.set(last_experiment['warning_hits'])                  
                 if 'punishment_duration' in last_experiment:
                     self.punishment_duration.set(last_experiment['punishment_duration'])
                 if 'feed_time' in last_experiment:
@@ -601,7 +604,7 @@ class MultiStepApp:
         consecutive_warnings_limit = experiment_data['Consecutive Warnings Limit']
         warning_alarm_volume = experiment_data['Warning Alarm Volume']
         warning_display_volume = experiment_data['Warning Display Volume']
-        warning_pecks = experiment_data['Warning Pecks']
+        warning_hits = experiment_data['Warning Hits']
         punishment_periodicity = experiment_data['Punishment Periodicity']
         warning_duration = experiment_data['Warning Duration']
         time_before_warning_signal = experiment_data['Time Before Warning Signal']
@@ -617,7 +620,7 @@ class MultiStepApp:
         experiment_data = {
             'experiment_id': experiment_id,  # Use the generated UUID
             'reinforcement_ratio': reinforcement_ratio,
-            'warning_pecks': warning_pecks,
+            'warning_hits': warning_hits,
             'punishment_duration': punishment_duration,
             'feed_time': feed_time,
             'total_reinforcements': total_reinforcements,

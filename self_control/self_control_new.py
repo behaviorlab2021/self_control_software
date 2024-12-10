@@ -19,6 +19,8 @@ from kivy.lang import Builder
 from kivy.uix.floatlayout import FloatLayout
 from self_control.services.house_light import HouseLight  
 from self_control.services.writer import Writer
+from self_control.services.injector import Injector
+
 import kivy
 from kivy.app import App
 from kivy.clock import Clock
@@ -81,7 +83,7 @@ class ExperimentLayout(FloatLayout):
     spot = ObjectProperty(None)
     was_warned = False
 
-    warning_signal_points = []
+    warning_signal_index = []
 
 
     def initial_pannel_connected_text(self):
@@ -114,9 +116,9 @@ class ExperimentLayout(FloatLayout):
 
     def randomize_array(self):
         if self.experiment_data["mode_id"] == 4:
-            self.warning_signal_points = [random.randint(1, self.experiment_data["reinforcement_ratio"] - self.experiment_data["warning_pecks"] - 1)]
+            self.warning_signal_index = [random.randint(1, self.experiment_data["reinforcement_ratio"] - self.experiment_data["warning_hits"] - 1)]
         else:
-            self.warning_signal_points = []
+            self.warning_signal_index = []
 
     def on_touch_down(self,touch):
         #Event Touch
@@ -192,7 +194,7 @@ class ExperimentLayout(FloatLayout):
         pass
 
     def check_if_red(self):
-        if not self.was_warned and self.button_green.button_count in self.warning_signal_points:
+        if not self.was_warned and self.button_green.button_count in self.warning_signal_index:
             self.play_sound()
             self.buzzer = Clock.schedule_interval(self.sound_buzzer, 0.5)
             self.button_red.enable_button()
@@ -249,7 +251,7 @@ class ExperimentLayout(FloatLayout):
             writer.write_data(self.score, self.quarter, self.clicks, "feeding", not self.button_red.disabled)
 
     def check_if_punishment(self):
-        if self.used_tries > self.experiment_data["warning_pecks"]:
+        if self.used_tries > self.experiment_data["warning_hits"]:
             self.punish()
     
     def turn_off_screen(self):

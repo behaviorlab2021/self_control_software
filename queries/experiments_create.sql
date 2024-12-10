@@ -1,7 +1,7 @@
 CREATE TABLE experiments (
     experiment_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     reinforcement_ratio INTEGER NOT NULL CHECK (reinforcement_ratio > 0),                                                     -- Integer, not null, greater than zero
-    warning_pecks INTEGER,                     -- Number of pecks
+    warning_hits INTEGER,                     -- Number of hits
     punishment_duration INTEGER NOT NULL,                 -- Duration of punishment in seconds
     feed_time INTEGER NOT NULL,                         -- Feed time in seconds
     total_reinforcements INTEGER NOT NULL,              -- Total reinforcements given

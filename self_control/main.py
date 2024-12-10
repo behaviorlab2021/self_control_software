@@ -15,9 +15,10 @@ from self_control_software.self_control.components.buttons.red_button import Bas
 
 class MainApp(App):
 
-    def __init__(self, experiment_arguments, feeder, clicker, houseLight, writer, **kwargs):
+    def __init__(self, experiment_arguments, feeder, clicker, houseLight, writer, injector, **kwargs):
         self.my_experiment_arguments = experiment_arguments
         self.writer = writer  # Store writer as an instance variable
+        self.injector = injector  # Store injector as an instance variable
         self.clicker = clicker  # Store clicker as an instance variable
         self.houseLight = houseLight  # Store houseLight as an instance variable
         self.feeder = feeder  # Store feeder as an instance variable
@@ -25,10 +26,16 @@ class MainApp(App):
 
     def build(self):
         Builder.load_file("kv/self_control.kv")
-        layout = ExperimentLayout(experiment_arguments=self.my_experiment_arguments, feeder=self.feeder, clicker=self.clicker, houseLight=self.houseLight, writer=self.writer)
+        layout = ExperimentLayout(experiment_arguments=self.my_experiment_arguments, feeder=self.feeder, clicker=self.clicker, houseLight=self.houseLight, writer=self.writer, injector=self.injector)
         return layout
+    
     def set_clicker(self,button):
         button.clicker = self.clicker
     
     def set_writer(self, button):
         button.set_writer(self.writer)
+        
+        
+    def set_injector(self, button):
+        button.set_injector(self.injector)
+

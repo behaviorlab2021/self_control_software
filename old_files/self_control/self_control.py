@@ -16,6 +16,8 @@ from kivy.lang import Builder
 from kivy.uix.floatlayout import FloatLayout
 from house_light import HouseLight  
 from self_control_software.self_control.services.writer import Writer
+from self_control_software.self_control.services.injector import Injector
+
 import kivy
 from kivy.app import App
 from kivy.clock import Clock
@@ -40,8 +42,8 @@ import json
 
 constant_data =  {
     'reinforcement_ratio' :30,
-    'warning_signal_points' :[],
-    'warning_pecks' :3,
+    'warning_signal_index' :[],
+    'warning_hits' :3,
     'punishment_duration' :30,
     'feed_time' :5,
     'total_reinforcements' :35,
@@ -69,7 +71,7 @@ class ExperimentLayout(FloatLayout):
     experiment_data = constant_data
 
 
-    # warning_pecks = constant_data["warning_pecks"]
+    # warning_hits = constant_data["warning_hits"]
     # punishment_duration = constant_data["punishment_duration"]
     # feed_time = constant_data["feed_time"]
     # total_reinforcements = constant_data["total_reinforcements"]
@@ -150,9 +152,9 @@ class ExperimentLayout(FloatLayout):
 
     def randomize_array(self):
         if self.experiment_data["random_warning"]:
-            self.experiment_data["warning_signal_points"] = [random.randint(1, self.experiment_data["reinforcement_ratio"] - self.experiment_data["warning_pecks"] - 1)]
+            self.experiment_data["warning_signal_index"] = [random.randint(1, self.experiment_data["reinforcement_ratio"] - self.experiment_data["warning_hits"] - 1)]
         else:
-            self.experiment_data["warning_signal_points"] = []
+            self.experiment_data["warning_signal_index"] = []
 
     def on_touch_down(self,touch):
         #Event Touch
@@ -229,7 +231,7 @@ class ExperimentLayout(FloatLayout):
         pass
 
     def check_if_red(self):
-        if not self.was_warned and self.button_green.button_count in self.experiment_data["warning_signal_points"]:
+        if not self.was_warned and self.button_green.button_count in self.experiment_data["warning_signal_index"]:
             self.play_sound()
             self.buzzer = Clock.schedule_interval(self.sound_buzzer, 0.5)
             self.button_red.enable_button()
@@ -286,7 +288,7 @@ class ExperimentLayout(FloatLayout):
             writer.write_data(self.score, self.quarter, self.clicks, "feeding", not self.button_red.disabled)
 
     def check_if_punishment(self):
-        if self.used_tries > self.experiment_data["warning_pecks"]:
+        if self.used_tries > self.experiment_data["warning_hits"]:
             self.punish()
     
     def turn_off_screen(self):
