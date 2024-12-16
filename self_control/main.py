@@ -25,7 +25,7 @@ class MainApp(App):
         super(MainApp, self).__init__(**kwargs)
 
     def build(self):
-        Builder.load_file("kv/self_control.kv")
+        Builder.load_file("kv/experiment.kv")
         layout = ExperimentLayout(experiment_arguments=self.my_experiment_arguments, feeder=self.feeder, clicker=self.clicker, houseLight=self.houseLight, writer=self.writer, injector=self.injector)
         return layout
     

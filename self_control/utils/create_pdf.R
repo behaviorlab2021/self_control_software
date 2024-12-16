@@ -1,4 +1,3 @@
-
 # Load required libraries
 library(grDevices)
 
@@ -7,15 +6,18 @@ args <- commandArgs(trailingOnly = TRUE)
 
 # Access the string argument
 string_arg <- args[1]
+cat("String argument:", string_arg, "\n")
 
 # Create the directory path for the PDF file
-output_dir <- "data/"  # Directory to store the PDF (relative path)
+output_dir <- "../data/"  # Relative path to store the PDF
 
 # Ensure the directory exists (create it if it doesn't)
 if (!dir.exists(output_dir)) {
-  dir.create(output_dir)
+  dir.create(output_dir, recursive = TRUE)
+  cat("Created directory:", output_dir, "\n")
+} else {
+  cat("Directory already exists:", output_dir, "\n")
 }
-
 
 library(ggplot2)
 library(lubridate)
@@ -29,14 +31,11 @@ library(gridExtra)
 library(tidyr)
 
 
-folder <- "data/"
-
 file_name <- string_arg
-file_path <- paste0(folder, file_name)
+file_path <- paste0(output_dir, file_name)
+cat("Reading data from file:", file_path, "\n")
 data <- read.csv(file_path)
-
-
-
+cat("Data read successfully. Number of rows:", nrow(data), "\n")
 
 data$Time <- hms(data$Time)
 subject_name <- data$subject[1]
@@ -55,6 +54,7 @@ df <- data %>%
   mutate(Event = str_replace(Event, "warning-0", "Warning Signal Presented in Quarter no.1")) %>%
   count(Event)
 
+cat("Generating stats PDF:", stats_pdf_name, "\n")
 pdf(stats_pdf_name, height=2, width=4)
 # Create the table without row numbering
 table_plot <- tableGrob(df, rows = NULL)  # Set rows = NULL to remove row numbers
@@ -89,7 +89,6 @@ time_range <- max(data$Time, na.rm = TRUE) - min(data$Time, na.rm = TRUE)
 
 print(paste("time range, ", time_range))
 
-
 # Set dynamic width based on the range of 'Time', with a scaling factor
 scaling_factor <- 0.01  # Adjust this scaling factor as needed for proportionality
 dynamic_width <- time_range * scaling_factor
@@ -103,6 +102,7 @@ print(paste("time dynamic_width, ", dynamic_width))
 # Set the fixed height for the PDF
 pdf_height <- 4
 
+cat("Generating curve PDF:", curve_pdf_name, "\n")
 # Open a PDF device to save the plot
 pdf(curve_pdf_name, width = dynamic_width, height = pdf_height)  # Change the file name and path as needed
 
@@ -123,7 +123,6 @@ print(x_ticks)
 # Add custom x-axis with formatted labels
 axis(1, at = x_ticks, labels = x_labels)
 
-
 punishment = data[data$Event == "punishment",]
 feeding = data[data$Event == "feeding",]
 warning = data[grepl("^warning", data$Event), ]
@@ -136,8 +135,6 @@ points(red$Time, red$hit_count, pch = 2, col = "red")  # pch = 1 for circle
 
 # Close the PDF device to save the plot
 dev.off()
-
-
 
 # Step 2: Filter rows where the event is "peck", "green", and events starting with "red-"
 peck_events <- data %>%
@@ -198,6 +195,7 @@ row_count <- nrow(reinforcer_summary)
 page_height <- max(6, row_count * 0.3)  # Adjust page height based on rows
 page_width <- 8  # You can adjust width similarly if needed
 
+cat("Generating table PDF:", table_pdf_name, "\n")
 # Step 8: Export the table to a PDF with dynamic size
 pdf(table_pdf_name, width = page_width, height = page_height)
 
@@ -208,19 +206,20 @@ grid.draw(table_plot)
 # Close the PDF
 dev.off()
 
-
+cat("Combining PDFs into:", pdf_name, "\n")
 # qpdf::pdf_combine(c(stats_pdf_name, curve_pdf_name), pdf_name)
 qpdf::pdf_combine(input = c(stats_pdf_name, curve_pdf_name, table_pdf_name),
                   output = pdf_name)
 
-            
+cat("Removing temporary PDFs\n")
 file.remove(curve_pdf_name)
 file.remove(table_pdf_name)
 file.remove(stats_pdf_name)
 
+cat("Sending email with attachment:", pdf_name, "\n")
 library(mailR)
 sender <- "behaviorlab2021@gmail.com"
-recipients <- c("mellon.robert@gmail.com", "smanoliadis@gmail.com", "minosntinas@gmail.com", "alexandrostsiok@gmail.com" )
+recipients <- c( "smanoliadis@gmail.com",  "smanoliadis@gmail.com")
 
 send.mail(from = sender,
           to = recipients,

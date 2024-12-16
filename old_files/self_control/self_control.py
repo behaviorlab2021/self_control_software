@@ -688,14 +688,12 @@ class BasicImageButtonGreen(BasicImageButton):
         self.pos_hint = {'center_x': 4, 'center_y':self.parent.button_height}
 
     def enable_button_delayed(self, dt):
-        print("Enabling Button delayed")
         self.disabled = False
         self.opacity= 1
         self.pos_hint = {'center_x': .7, 'center_y':self.parent.button_height}
 
 
     def enable_button(self):
-        print("Enabling Button ")
 
         self.disabled = False
         self.opacity= 1

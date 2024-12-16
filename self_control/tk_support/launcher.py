@@ -643,14 +643,16 @@ class MultiStepApp:
         received_experiment_id = self.db.insert_experiment(experiment_data)
         print("Received experiment ID:", received_experiment_id)
         if received_experiment_id:
+            self.db.close()
+            self.root.destroy()
             # Call the subprocess with the experiment ID as the first argument
             subprocess.Popen(["python", "self_control_software/self_control/app.py", str(received_experiment_id)])
-
         else:
             print("Failed to insert experiment.")
 
+        print()
+        
         self.db.close()
-        self.root.destroy()
 
 if __name__ == "__main__":
     root = tk.Tk()

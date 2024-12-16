@@ -51,7 +51,7 @@ class BasicImageButtonGreen(BasicImageButton):
             #Event Green
             self.writer.write_data(parent.score, parent.quarter, self.button_count, "green", not parent.button_red.disabled, parent.warning_signal_index)
             self.injector.inject_data(parent.score, parent.quarter, self.button_count, "green", not parent.button_red.disabled, parent.warning_signal_index)
-            parent.update_score()
+            parent.update_experiment_conditions()
             self.disabled = False
 
    
@@ -73,14 +73,12 @@ class BasicImageButtonGreen(BasicImageButton):
         self.pos_hint = {'center_x': 4, 'center_y':self.parent.button_height}
 
     def enable_button_delayed(self, dt):
-        print("Enabling Button delayed")
         self.disabled = False
         self.opacity= 1
         self.pos_hint = {'center_x': .7, 'center_y':self.parent.button_height}
 
 
     def enable_button(self):
-        print("Enabling Button ")
 
         self.disabled = False
         self.opacity= 1

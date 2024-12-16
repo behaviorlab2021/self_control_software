@@ -45,8 +45,7 @@ class ExperimentLayout(FloatLayout):
     feeding_condition = False
     score = 0
     used_tries = 0
-    clicks_label = StringProperty()
-    score_label = StringProperty()
+
     is_panel_connected = False
     subsequent_punishments = 0
     clicks = 0
@@ -60,8 +59,9 @@ class ExperimentLayout(FloatLayout):
     canvas_picture = ObjectProperty(None)
     button_green = ObjectProperty(None)
     button_red = ObjectProperty(None)
-    label_left = ObjectProperty(None)
-    label_right = ObjectProperty(None)
+    label_top_left = ObjectProperty(None)
+    label_top_right = ObjectProperty(None)
+    label_bottom_left = ObjectProperty(None)
     panel_connected_label = ObjectProperty(None)
     spot = ObjectProperty(None)
     was_warned = False
@@ -190,17 +190,16 @@ class ExperimentLayout(FloatLayout):
 
     def end_experiment(self):
         self.houseLight.deactivate()
-        self.turn_off_screen()
         self.create_results_pdf()
         #Event End of Experiment
         self.writer.write_data(self.score, self.quarter, self.clicks, "end_of_experiment", False, self.warning_signal_index)
         self.injector.inject_data(self.score, self.quarter, self.clicks, "end_of_experiment", False, self.warning_signal_index)    
+        self.turn_off_screen()
+        self.update_experiment_conditions()
 
     def create_results_pdf(self):
-        #Debugging print
-        print("$$$$$$$$$$$$$$$$$$$    Creating PDF")
         # Call the R script
-        result = subprocess.run(['Rscript', 'create_pdf.R', self.writer.filename], capture_output=True, text=True)
+        result = subprocess.run(['Rscript', 'self_control_software/self_control/utils/create_pdf.R', self.writer.filename], capture_output=True, text=True)
         # Print the output from the R script
         print("Output from R script:")
         print(result.stdout)
@@ -219,7 +218,6 @@ class ExperimentLayout(FloatLayout):
     def start_warning_signal_training(self, dt):
         if self.warning_signal_training_running :
             self.consecutive_warnings = self.consecutive_warnings + 1
-            print("In start_warning_signal_training")
             self.play_sound()
             if self.experiment_data["highlight_warning_signal"]:
                 self.houseLight.deactivate()  
@@ -288,7 +286,6 @@ class ExperimentLayout(FloatLayout):
             self.houseLight.activate()
             self.turn_on_screen()
             self.feeding_condition = False
-            self.label_right.text = "00"
             self.reset_quarters()
             self.warning_variable = False
             #Event Starting after reinforcement
@@ -300,7 +297,6 @@ class ExperimentLayout(FloatLayout):
     def feed(self):
         if not self.feeding_condition:
             self.feeding_condition = True
-            self.turn_off_screen() 
             self.houseLight.deactivate()
             self.feeder.activate()
 
@@ -309,19 +305,24 @@ class ExperimentLayout(FloatLayout):
             #Event Reinforcement
             self.writer.write_data(self.score, self.quarter, self.clicks, "feeding", not self.button_red.disabled, self.warning_signal_index)
             self.injector.inject_data(self.score, self.quarter, self.clicks, "feeding", not self.button_red.disabled, self.warning_signal_index)   
+            self.turn_off_screen()
+            self.update_experiment_conditions()
 
     def check_if_punishment(self):
         if self.used_tries > self.experiment_data["warning_hits"]:
             self.punish()
     
     def turn_off_screen(self):
+
         self.rect.source ="assets/images/black_panel.png"
         self.button_red.disable_button()
         self.button_green.disable_button()
         self.spot.opacity = 0
-        self.label_left.opacity = 0
         self.panel_connected_label.opacity = 0.3
-        self.label_right.opacity = 0
+        self.label_top_left.opacity = 0
+        self.label_top_right.opacity = 0
+        self.label_bottom_left.opacity = 0
+
 
     def turn_on_screen(self):
         self.rect.source ="assets/images/panel.png"
@@ -329,15 +330,15 @@ class ExperimentLayout(FloatLayout):
             self.button_green.enable_button()
         # self.button_red_shadow.enable_button()
         self.spot.opacity = 1
-        self.label_left.opacity = 1
         self.panel_connected_label.opacity = 1
-        self.label_right.opacity = 1
         self.round += 1
+        self.label_top_left.opacity = 1
+        self.label_top_right.opacity = 1
+        self.label_bottom_left.opacity = 1
 
     def punish(self):
         self.houseLight.deactivate()
         self.buzzer.cancel() 
-        self.turn_off_screen()
         self.subsequent_punishments += 1 
         self.button_green.zeroing()
         Clock.schedule_once(self.un_punish, self.experiment_data["punishment_duration"])
@@ -345,6 +346,9 @@ class ExperimentLayout(FloatLayout):
         self.writer.write_data(self.score, self.quarter, self.clicks, "punishment", not self.button_red.disabled, self.warning_signal_index)
         self.injector.inject_data(self.score, self.quarter, self.clicks, "punishment", not self.button_red.disabled, self.warning_signal_index)
         self.clicks = 0
+        self.turn_off_screen()
+        self.update_experiment_conditions()
+
 
 
     def un_punish(self, dt):
@@ -356,7 +360,6 @@ class ExperimentLayout(FloatLayout):
         self.turn_on_screen()
         self.used_tries = 0
         # self.button_red_shadow.enable_button()
-        self.label_right.text = "00"
         self.was_warned = True
         self.reset_quarters()
         self.warning_variable = False
@@ -368,24 +371,26 @@ class ExperimentLayout(FloatLayout):
         self.writer.write_data(self.score, self.quarter, self.clicks, "starting-over", not self.button_red.disabled, self.warning_signal_index) 
         self.injector.inject_data(self.score, self.quarter, self.clicks, "starting-over", not self.button_red.disabled, self.warning_signal_index)
 
-    def update_score(self):
+    def update_experiment_conditions(self):
+
+
+        self.clicks = self.button_green.button_count  # Updates the number of clicks the green button has
+        self.update_used_tries() # Updates the number of green clicks while red is enabled.
+        self.check_if_punishment() # Checks if the punishment condition is met
+        self.check_reinforcement_condition() # Checks if the reinforcement condition is met
+        self.check_if_red() # Checks if the red button should be enabled
+        self.update_quarter() # Updates the quarter
+        self.update_labels() # Updates the labels
+
+        # Update the writer and injector
         self.writer.write_data(self.score, self.quarter, self.clicks, "score_updated", not self.button_red.disabled, self.warning_signal_index)
         self.injector.inject_data(self.score, self.quarter, self.clicks, "score_updated", not self.button_red.disabled, self.warning_signal_index)
-        self.clicks = self.button_green.button_count
-        self.update_used_tries()
-        self.check_if_punishment()
-        self.check_reinforcement_condition()
-        self.check_if_red()
-        self.update_quarter()
-        self.update_labels()
 
     def update_labels(self):
 
-        self.score_label = str(self.score).zfill(2)
-        self.clicks_label = str(self.clicks).zfill(2)
-        self.label_right.text = self.clicks_label
-        self.label_left.text = self.score_label
-#test
+        self.label_top_left.text = str(self.score).zfill(2)
+        self.label_top_right.text = str(self.clicks).zfill(2)
+        self.label_bottom_left.text = str(self.round).zfill(2)
 
     def update_used_tries(self):
         if self.button_red.disabled == False:
@@ -489,12 +494,10 @@ class ExperimentLayout(FloatLayout):
         self.stop_warning_signal_training()
         self.consecutive_warnings = 0
         self.score = self.score + 1
-        self.feed()
         self.subsequent_punishments = 0
         self.button_green.button_count = 0
-        self.update_quarter()
-        self.update_labels()
-        self.update_score()
+        self.feed()
+
         self.writer.write_data(self.score, self.quarter, self.clicks, "reinforcement", not self.button_red.disabled, self.warning_signal_index)
         self.injector.inject_data(self.score, self.quarter, self.clicks, "reinforcement", not self.button_red.disabled, self.warning_signal_index)
         pass

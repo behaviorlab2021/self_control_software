@@ -44,3 +44,4 @@ if __name__ == "__main__":
     # Pass the experiment_arguments object to the main application
     mainApp = MainApp(experiment_arguments=experiment_dict, feeder=feeder, clicker=clicker, houseLight=houseLight, writer=writer, injector=injector)
     mainApp.run()
+    sys.exit()  # Ensure the script terminates properly
