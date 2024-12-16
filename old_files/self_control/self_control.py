@@ -649,9 +649,7 @@ class BasicImageButtonGreen(BasicImageButton):
     def on_touch_up(self, touch):
 
         if self.touch_on_button(touch):
-            print("IN", end=", ")
             # if  not self.disabled and (datetime.datetime.now()-self.last_seen_outside > datetime.timedelta(milliseconds=300)):
-            print("VALID")
             if not self.green_button_changed:
                 self.green_button_changed = True
                 self.source = self.source_file_press
@@ -671,14 +669,11 @@ class BasicImageButtonGreen(BasicImageButton):
             writer.write_data(parent.score, parent.quarter, self.button_count, "green", not parent.button_red.disabled)
             parent.update_score()
             self.disabled = False
-            # else:
-            #     print("INVALID: ", (datetime.datetime.now()-self.last_seen_outside).total_seconds())   
    
         else:
             if self.touch_close_to_button(touch):
-                print("MISSED")
+                pass
             else:
-                print("OUT")
                 self.last_seen_outside = datetime.datetime.now()
     
     def change_button_image(self, dt):
@@ -751,7 +746,6 @@ class BasicImageButtonRed(BasicImageButton):
             else: 
                 if self.touch_on_button(touch):
                     if  not self.disabled and (datetime.datetime.now()-self.last_seen_outside > datetime.timedelta(milliseconds=300)):
-                        print("VALID")
                         if not self.red_button_changed:
                             self.red_button_changed = True
                             self.source = self.source_file_press
@@ -770,7 +764,7 @@ class BasicImageButtonRed(BasicImageButton):
                         if parent.warning_signal_training_running: 
                             parent.stop_warning_signal_training()
                     else:
-                        print("INVALID: ", (datetime.datetime.now()-self.last_seen_outside).total_seconds())   
+                        pass
         
                 else:
                     if self.touch_close_to_button(touch):

@@ -53,15 +53,10 @@ class ExperimentLayout(FloatLayout):
     quarter = 1
     warning_quarter = 0
     warning_variable = False
-
-
     warning_signal_training_running = False
     warning_signal_scheduled_event = None
-
     buzzer_file = "assets/audio/buzzer.mp3"
     sound = SoundLoader.load(buzzer_file) 
-
-
     canvas_picture = ObjectProperty(None)
     button_green = ObjectProperty(None)
     button_red = ObjectProperty(None)
@@ -70,8 +65,15 @@ class ExperimentLayout(FloatLayout):
     panel_connected_label = ObjectProperty(None)
     spot = ObjectProperty(None)
     was_warned = False
-
     warning_signal_index = None
+    round = 0
+
+
+    def check_if_hopper_training(self, dt):
+        if (self.experiment_data["mode_id"] == 1):
+            print("-------------------- Mode 1 ----------------------")
+            self.button_green.disable_button()
+            pass
 
     def __init__(self, experiment_arguments, writer, injector, clicker, houseLight, feeder, **kwargs):
 
@@ -85,8 +87,13 @@ class ExperimentLayout(FloatLayout):
 
         # Clock scheduling
         Clock.schedule_once(self.prepare_buttons, 0.8)
+        Clock.schedule_once(self.check_if_hopper_training, 0.8)
 
         Clock.schedule_interval(self.add_cumulative_record, 0.5)  
+
+
+
+
 
         # Keyboard event binding
         self._keyboard = Window.request_keyboard(self._keyboard_closed, self)
@@ -95,9 +102,11 @@ class ExperimentLayout(FloatLayout):
         # USB MONITORING
         self.usb_monitor = USBMonitor()
         self.usb_monitor.start_monitoring(on_connect=self.usb_add_callback, on_disconnect=self.usb_remove_callback)
-        
+
+
         # Initialize experiment data
         self.reset_quarters()
+        
 
         # USB device check
         devices_dict = self.usb_monitor.get_available_devices()
@@ -138,7 +147,6 @@ class ExperimentLayout(FloatLayout):
 
     
     def initial_pannel_connected_color(self):
-
         return [0.2, 0.2, 0.2, 0.2] if self.is_panel_connected  else [1, 0.2, 0.2, 1]
     
 
@@ -189,6 +197,8 @@ class ExperimentLayout(FloatLayout):
         self.injector.inject_data(self.score, self.quarter, self.clicks, "end_of_experiment", False, self.warning_signal_index)    
 
     def create_results_pdf(self):
+        #Debugging print
+        print("$$$$$$$$$$$$$$$$$$$    Creating PDF")
         # Call the R script
         result = subprocess.run(['Rscript', 'create_pdf.R', self.writer.filename], capture_output=True, text=True)
         # Print the output from the R script
@@ -315,12 +325,14 @@ class ExperimentLayout(FloatLayout):
 
     def turn_on_screen(self):
         self.rect.source ="assets/images/panel.png"
-        self.button_green.enable_button()
+        if not self.experiment_data["mode_id"] == 1:
+            self.button_green.enable_button()
         # self.button_red_shadow.enable_button()
         self.spot.opacity = 1
         self.label_left.opacity = 1
         self.panel_connected_label.opacity = 1
         self.label_right.opacity = 1
+        self.round += 1
 
     def punish(self):
         self.houseLight.deactivate()

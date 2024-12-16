@@ -48,6 +48,5 @@ class Injector:
     def inject_cumulative_record(self, hit_count):
         self.db.connect()
         self.db.insert_cumulative_recorder(hit_count,self.experiment_id)
-        print("Cumulative record inserted", hit_count,  self)
         self.db.close()
         pass

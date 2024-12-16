@@ -17,14 +17,12 @@ class ExperimentDB:
     def connect(self):
         try:
             self.connection = psycopg2.connect(**self.db_config)
-            print("Database connection established.")
         except Exception as e:
             print(f"Failed to connect to database: {e}")
 
     def close(self):
         if self.connection:
             self.connection.close()
-            print("Database connection closed.")
 
     def insert_subject(self, subject_name):
         """Insert a new subject into the subjects table."""
@@ -232,7 +230,6 @@ class ExperimentDB:
             ))
             self.connection.commit()
             cursor.close()
-            print("Inserted new event.")
         except Exception as e:
             print(f"Failed to insert event: {e}")
     def insert_cumulative_recorder(self, hit_count, experiment_id):
@@ -246,7 +243,6 @@ class ExperimentDB:
             cursor.execute(query, (hit_count, experiment_id))
             self.connection.commit()
             cursor.close()
-            print("Inserted new row into cumulative_recorder.")
         except Exception as e:
             print(f"Failed to insert into cumulative_recorder: {e}")
 

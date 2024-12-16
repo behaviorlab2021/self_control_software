@@ -66,7 +66,7 @@ class BasicImageButtonRed(BasicImageButton):
             else: 
                 if self.touch_on_button(touch):
                     if  not self.disabled and (datetime.datetime.now()-self.last_seen_outside > datetime.timedelta(milliseconds=300)):
-                        print("VALID")
+                        
                         if not self.red_button_changed:
                             self.red_button_changed = True
                             self.source = self.source_file_press
@@ -86,7 +86,7 @@ class BasicImageButtonRed(BasicImageButton):
                         if parent.warning_signal_training_running: 
                             parent.stop_warning_signal_training()
                     else:
-                        print("INVALID: ", (datetime.datetime.now()-self.last_seen_outside).total_seconds())   
+                        pass
         
                 else:
                     if self.touch_close_to_button(touch):

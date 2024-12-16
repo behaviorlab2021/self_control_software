@@ -9,6 +9,7 @@ const ENDPOINT = "http://localhost:3001";
 function App() {
     const [records, setRecords] = useState([]);
     const chartRef = useRef(null);
+    const videoRef = useRef(null);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -53,7 +54,7 @@ function App() {
             const y = d3.scaleLinear()
                 .domain([0, 20]) // Default domain from 0 to 10
                 .range([height - margin.bottom, margin.top]);
-
+                
             const line = d3.line()
                 .x(d => x(new Date(d.event_time)))
                 .y(d => y(d.hit_count));
@@ -117,6 +118,21 @@ function App() {
         }
     }, [records]);
 
+    useEffect(() => {
+        const startCamera = async () => {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                if (videoRef.current) {
+                    videoRef.current.srcObject = stream;
+                }
+            } catch (error) {
+                console.error('Error accessing camera:', error);
+            }
+        };
+
+        startCamera();
+    }, []);
+
     const columns = useMemo(
         () => [
             {
@@ -152,47 +168,55 @@ function App() {
     return (
         <div className="App" style={{ padding: '0 20px' }}>
             <h1>Cumulative Records</h1>
-            <div style={{ width: '100%', overflowX: 'scroll' }}>
-                <svg ref={chartRef}></svg>
+
+            <div style={{ display: 'flex', marginBottom: '20px' }}>
+                <div style={{ flex: 1, marginRight: '20px' }}>
+                    <h2>Score Updated Records Line Chart</h2>
+                    <div style={{ height: '400px', overflowY: 'scroll' }}>
+                        <table {...getTableProps()} style={{ width: '100%', borderCollapse: 'collapse' }}>
+                            <thead>
+                                {headerGroups.map(headerGroup => (
+                                    <tr {...headerGroup.getHeaderGroupProps()}>
+                                        {headerGroup.headers.map(column => (
+                                            <th {...column.getHeaderProps(column.getSortByToggleProps())} style={{ border: '1px solid black', padding: '5px' }}>
+                                                {column.render('Header')}
+                                                <span>
+                                                    {column.isSorted
+                                                        ? column.isSortedDesc
+                                                            ? ' 🔽'
+                                                            : ' 🔼'
+                                                        : ''}
+                                                </span>
+                                            </th>
+                                        ))}
+                                    </tr>
+                                ))}
+                            </thead>
+                            <tbody {...getTableBodyProps()}>
+                                {rows.map(row => {
+                                    prepareRow(row);
+                                    return (
+                                        <tr {...row.getRowProps()}>
+                                            {row.cells.map(cell => (
+                                                <td {...cell.getCellProps()} style={{ border: '1px solid black', padding: '5px' }}>
+                                                    {cell.render('Cell')}
+                                                </td>
+                                            ))}
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div style={{ flex: 1 }}>
+                    <h2>Live Camera Feed</h2>
+                    <video ref={videoRef} autoPlay style={{ width: '100%', maxHeight: '400px' }}></video>
+                </div>
             </div>
 
-            <h2>Score Updated Records Line Chart</h2>
-
-            <div style={{ height: '400px', overflowY: 'scroll' }}>
-                <table {...getTableProps()} style={{ width: '100%', borderCollapse: 'collapse' }}>
-                    <thead>
-                        {headerGroups.map(headerGroup => (
-                            <tr {...headerGroup.getHeaderGroupProps()}>
-                                {headerGroup.headers.map(column => (
-                                    <th {...column.getHeaderProps(column.getSortByToggleProps())} style={{ border: '1px solid black', padding: '5px' }}>
-                                        {column.render('Header')}
-                                        <span>
-                                            {column.isSorted
-                                                ? column.isSortedDesc
-                                                    ? ' 🔽'
-                                                    : ' 🔼'
-                                                : ''}
-                                        </span>
-                                    </th>
-                                ))}
-                            </tr>
-                        ))}
-                    </thead>
-                    <tbody {...getTableBodyProps()}>
-                        {rows.map(row => {
-                            prepareRow(row);
-                            return (
-                                <tr {...row.getRowProps()}>
-                                    {row.cells.map(cell => (
-                                        <td {...cell.getCellProps()} style={{ border: '1px solid black', padding: '5px' }}>
-                                            {cell.render('Cell')}
-                                        </td>
-                                    ))}
-                                </tr>
-                            );
-                        })}
-                    </tbody>
-                </table>
+            <div style={{ width: '100%', overflowX: 'auto' }}>
+                <svg ref={chartRef}></svg>
             </div>
         </div>
     );
