@@ -122,7 +122,7 @@ class ExperimentLayout(FloatLayout):
     was_warned = False
 
 
-    def initial_pannel_connected_text(self):
+    def initial_panel_connected_text(self):
             # self.panel_connected_label.text = "Application started with Touch Pannel DISCONNECTED"
             # self.panel_connected_label.color = [1, 0.2, 0.2, 0.2]
         return ''
@@ -130,7 +130,7 @@ class ExperimentLayout(FloatLayout):
 
 
     
-    def initial_pannel_connected_color(self):
+    def initial_panel_connected_color(self):
 
         return [0.2, 0.2, 0.2, 0.2] if self.is_panel_connected  else [1, 0.2, 0.2, 1]
     

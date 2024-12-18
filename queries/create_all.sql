@@ -1,12 +1,11 @@
 CREATE TABLE experiment_modes (
     mode_id SERIAL PRIMARY KEY,
-    mode_name VARCHAR(255) NOT NULL
+    mode_name VARCHAR(255) NOT NULL UNIQUE
 );
-
 
 CREATE TABLE subjects (
     subject_id SERIAL PRIMARY KEY,
-    subject_name VARCHAR(255) NOT NULL
+    subject_name VARCHAR(255) NOT NULL UNIQUE
 );
 
 
@@ -42,13 +41,14 @@ CREATE TABLE cumulative_record (
 
 CREATE TABLE rounds (
     session_id UUID REFERENCES sessions(session_id),
-    round_id UUID PRIMARY KEY,
+    round_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     round_index INTEGER NOT NULL,
     warning_index INTEGER NOT NULL,
     warning_quarter INTEGER NOT NULL,
     reinforcers_count INTEGER NOT NULL,
-    started_at TIMESTAMP NOT NULL
+    started_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
 
 CREATE TABLE events (
     round_id UUID REFERENCES rounds(round_id),              -- Round Index
@@ -60,13 +60,14 @@ CREATE TABLE events (
 
 -- Create pecks table
 CREATE TABLE pecks (
-    peck_id UUID PRIMARY KEY,
+    peck_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     x_pos INTEGER NOT NULL,
     y_pos INTEGER NOT NULL,
     screen_on BOOLEAN NOT NULL,
-    peck_time TIMESTAMP NOT NULL,
+    peck_time TIMESTAMP NOT NULL DEFAULT NOW(),
     round_id UUID REFERENCES rounds(round_id)
 );
+
 
 
 CREATE TABLE round_tests (
@@ -103,4 +104,18 @@ CREATE TABLE session_tests (
     total_warnings_test BOOLEAN
 );
 
+
+INSERT INTO subjects (subject_name, subject_id)
+VALUES 
+    ('Adam', 1),
+    ('Moses', 2),
+    ('Snik', 3),
+    ('Ermis', 4);
+
+
+INSERT INTO experiment_modes (mode_name, mode_id) VALUES
+('HOPPER TRAINING', 1),
+('SHEDULE TRAINING', 2),
+('WARNING TRAINING', 3),
+('RANDOM WARNING', 4);
 

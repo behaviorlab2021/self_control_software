@@ -81,7 +81,7 @@ class BasicImageButtonRed(BasicImageButton):
                         parent = self.parent
                         # Event Red
                         self.writer.write_data(parent.score, parent.quarter, parent.clicks, "red-"+str(int(parent.warning_quarter)), not parent.button_red.disabled, parent.warning_signal_index) 
-                        self.injector.inject_data(parent.score, parent.quarter, parent.clicks, "red-"+str(int(parent.warning_quarter)), not parent.button_red.disabled, parent.warning_signal_index) 
+                        self.injector.inject_event(parent.round_id, "red", True)
                         parent.negative_reinforcement()
                         if parent.warning_signal_training_running: 
                             parent.stop_warning_signal_training()
@@ -104,10 +104,11 @@ class BasicImageButtonRed(BasicImageButton):
         
         parent = self.parent
         self.disabled = False
-        self.opacity= (parent.experiment_data["warning_display_volume"] / 100)
+        self.opacity= (parent.session_data["warning_display_volume"] / 100)
         #Warning Volume
         self.pos_hint = self.calculate_warning_signal_position(parent)
 
     def calculate_warning_signal_position(self, parent):
-        return {'center_x':0.3 + parent.experiment_data["warning_signal_position"]/100*0.4, 'center_y':parent.button_height}
+        return {'center_x':0.3 + parent.session_data["warning_signal_position"]/100*0.4, 'center_y':parent.button_height}
+        
         

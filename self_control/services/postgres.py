@@ -57,12 +57,12 @@ class ExperimentDB:
             print(f"Failed to fetch subject: {e}")
             return None
 
-    def find_last_experiment_by_subject(self, subject_id):
-        """Find the last experiment for a specific subject."""
+    def find_last_session_by_subject(self, subject_id):
+        """Find the last session for a specific subject."""
         try:
             cursor = self.connection.cursor(cursor_factory=RealDictCursor)
             query = """
-            SELECT * FROM experiments
+            SELECT * FROM sessions
             WHERE subject_id = %s
             ORDER BY created_at DESC
             LIMIT 1
@@ -71,13 +71,13 @@ class ExperimentDB:
             result = cursor.fetchone()
             cursor.close()
             if result:
-                print("Found last experiment for subject.")
+                print("Found last session for subject.")
                 return result
             else:
-                print("No experiments found for subject.")
+                print("No sessions found for subject.")
                 return None
         except Exception as e:
-            print(f"Failed to find last experiment for subject: {e}")
+            print(f"Failed to find last session for subject: {e}")
             return None
 
     def select_all_subjects(self):
@@ -106,13 +106,13 @@ class ExperimentDB:
             print(f"Failed to fetch modes: {e}")
             return []
 
-    def insert_experiment(self, experiment_data):
-        """Insert a new experiment into the experiments table and return the experiment_id."""
+    def insert_session(self, session_data):
+        """Insert a new session into the sessions table and return the session_id."""
         try:
             cursor = self.connection.cursor()
             query = """
-            INSERT INTO experiments (
-                experiment_id,
+            INSERT INTO sessions (
+                session_id,
                 reinforcement_ratio, 
                 warning_hits, 
                 punishment_duration, 
@@ -131,43 +131,43 @@ class ExperimentDB:
                 warning_signal_position, 
                 comments
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            RETURNING experiment_id
+            RETURNING session_id
             """
             cursor.execute(query, (
-                experiment_data['experiment_id'],
-                experiment_data['reinforcement_ratio'], 
-                experiment_data['warning_hits'], 
-                experiment_data['punishment_duration'], 
-                experiment_data['feed_time'], 
-                experiment_data['total_reinforcements'], 
-                experiment_data['consecutive_warnings_limit'], 
-                experiment_data['warning_alarm_volume'], 
-                experiment_data['warning_display_volume'], 
-                experiment_data['subject_id'], 
-                experiment_data['mode_id'], 
-                experiment_data['is_spot_on'], 
-                experiment_data['punishment_periodicity'], 
-                experiment_data['warning_duration'], 
-                experiment_data['time_before_warning_signal'], 
-                experiment_data['highlight_warning_signal'], 
-                experiment_data['warning_signal_position'], 
-                experiment_data['comments']
+                session_data['session_id'],
+                session_data['reinforcement_ratio'], 
+                session_data['warning_hits'], 
+                session_data['punishment_duration'], 
+                session_data['feed_time'], 
+                session_data['total_reinforcements'], 
+                session_data['consecutive_warnings_limit'], 
+                session_data['warning_alarm_volume'], 
+                session_data['warning_display_volume'], 
+                session_data['subject_id'], 
+                session_data['mode_id'], 
+                session_data['is_spot_on'], 
+                session_data['punishment_periodicity'], 
+                session_data['warning_duration'], 
+                session_data['time_before_warning_signal'], 
+                session_data['highlight_warning_signal'], 
+                session_data['warning_signal_position'], 
+                session_data['comments']
             ))
             self.connection.commit()
             cursor.close()
-            print(f"Inserted new experiment with ID {experiment_data['experiment_id']}.")
-            return experiment_data['experiment_id']
+            print(f"Inserted new session with ID {session_data['session_id']}.")
+            return session_data['session_id']
         except Exception as e:
-            print(f"Failed to insert experiment: {e}")
+            print(f"Failed to insert session: {e}")
             return None
 
-    def insert_experiment_with_uuid(self, experiment_data):
-        """Insert a new experiment into the experiments table with a UUID."""
+    def insert_session_with_uuid(self, session_data):
+        """Insert a new session into the sessions table with a UUID."""
         try:
             cursor = self.connection.cursor()
             query = """
-            INSERT INTO experiments (
-                experiment_id,
+            INSERT INTO sessions (
+                session_id,
                 reinforcement_ratio, 
                 warning_hits, 
                 punishment_duration, 
@@ -187,64 +187,63 @@ class ExperimentDB:
                 comments
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """
-            experiment_id = experiment_data.get('experiment_id', str(uuid.uuid4()))
+            session_id = session_data.get('session_id', str(uuid.uuid4()))
             cursor.execute(query, (
-                experiment_id,
-                experiment_data['reinforcement_ratio'], 
-                experiment_data['warning_hits'], 
-                experiment_data['punishment_duration'], 
-                experiment_data['feed_time'], 
-                experiment_data['total_reinforcements'], 
-                experiment_data['consecutive_warnings_limit'], 
-                experiment_data['warning_alarm_volume'], 
-                experiment_data['warning_display_volume'], 
-                experiment_data['subject_id'], 
-                experiment_data['mode_id'], 
-                experiment_data['is_spot_on'], 
-                experiment_data['punishment_periodicity'], 
-                experiment_data['warning_duration'], 
-                experiment_data['time_before_warning_signal'], 
-                experiment_data['highlight_warning_signal'], 
-                experiment_data['warning_signal_position'], 
-                experiment_data['comments']
+                session_id,
+                session_data['reinforcement_ratio'], 
+                session_data['warning_hits'], 
+                session_data['punishment_duration'], 
+                session_data['feed_time'], 
+                session_data['total_reinforcements'], 
+                session_data['consecutive_warnings_limit'], 
+                session_data['warning_alarm_volume'], 
+                session_data['warning_display_volume'], 
+                session_data['subject_id'], 
+                session_data['mode_id'], 
+                session_data['is_spot_on'], 
+                session_data['punishment_periodicity'], 
+                session_data['warning_duration'], 
+                session_data['time_before_warning_signal'], 
+                session_data['highlight_warning_signal'], 
+                session_data['warning_signal_position'], 
+                session_data['comments']
             ))
             self.connection.commit()
             cursor.close()
-            print(f"Inserted new experiment with UUID {experiment_id}.")
+            print(f"Inserted new session with UUID {session_id}.")
         except Exception as e:
-            print(f"Failed to insert experiment: {e}")
+            print(f"Failed to insert session: {e}")
 
-    def insert_event(self, event_data):
+    def insert_event(self, round_id, event_type, warning_signal_present):
         """Insert a new event into the events table."""
         try:
             cursor = self.connection.cursor()
             query = """
             INSERT INTO events (
-                event_time, reinforcers, quarter, hit_count, event_type, x_pos, y_pos, warning_present, warning_signal_index, experiment_id
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                round_id, event_type, warning_signal_present
+            ) VALUES (%s, %s, %s)
             """
             cursor.execute(query, (
-                event_data['event_time'], event_data['reinforcers'], event_data['quarter'], 
-                event_data['hit_count'], event_data['event_type'], event_data['x_pos'], 
-                event_data['y_pos'], event_data['warning_present'], event_data['warning_signal_index'], event_data['experiment_id']
+                round_id, event_type, warning_signal_present
             ))
             self.connection.commit()
             cursor.close()
         except Exception as e:
             print(f"Failed to insert event: {e}")
-    def insert_cumulative_recorder(self, hit_count, experiment_id):
-        """Insert a new row into the cumulative_recorder table."""
+            
+    def insert_cumulative_record(self, hit_count, session_id):
+        """Insert a new row into the cumulative_record table."""
         try:
             cursor = self.connection.cursor()
             query = """
-            INSERT INTO cumulative_recorder (hit_count, experiment_id)
+            INSERT INTO cumulative_record (hit_count, session_id)
             VALUES (%s, %s)
             """
-            cursor.execute(query, (hit_count, experiment_id))
+            cursor.execute(query, (hit_count, session_id))
             self.connection.commit()
             cursor.close()
         except Exception as e:
-            print(f"Failed to insert into cumulative_recorder: {e}")
+            print(f"Failed to insert into cumulative_record: {e}")
 
 
     def select_last_event(self):
@@ -265,52 +264,52 @@ class ExperimentDB:
             print(f"Failed to fetch the last event: {e}")
             return None
 
-    def select_experiment_by_id(self, experiment_id):
-        """Fetch an experiment by its ID."""
+    def select_session_by_id(self, session_id):
+        """Fetch a session by its ID."""
         try:
             cursor = self.connection.cursor(cursor_factory=RealDictCursor)
-            query = "SELECT * FROM experiments WHERE experiment_id = %s"
-            cursor.execute(query, (experiment_id,))
+            query = "SELECT * FROM sessions WHERE session_id = %s"
+            cursor.execute(query, (session_id,))
             result = cursor.fetchone()
             cursor.close()
             if result:
-                print("Experiment:", result)
+                print("Session:", result)
                 return result
             else:
-                print(f"No experiment found with ID {experiment_id}.")
+                print(f"No session found with ID {session_id}.")
                 return None
         except Exception as e:
-            print(f"Failed to fetch experiment: {e}")
+            print(f"Failed to fetch session: {e}")
             return None
 
-    def edit_experiment_subject(self, experiment_id, new_subject):
-        """Edit the subject of an experiment by its ID."""
+    def edit_session_subject(self, session_id, new_subject):
+        """Edit the subject of an session by its ID."""
         try:
             cursor = self.connection.cursor()
-            query = "UPDATE experiments SET subject = %s, updated_at = NOW() WHERE experiment_id = %s"
-            cursor.execute(query, (new_subject, experiment_id))
+            query = "UPDATE session SET subject = %s, updated_at = NOW() WHERE session_id = %s"
+            cursor.execute(query, (new_subject, session_id))
             self.connection.commit()
             cursor.close()
-            print(f"Updated experiment ID {experiment_id} with new subject: {new_subject}")
+            print(f"Updated session ID {session_id} with new subject: {new_subject}")
         except Exception as e:
-            print(f"Failed to update experiment subject: {e}")
+            print(f"Failed to update session subject: {e}")
 
-    def find_experiment_by_id(self, experiment_id):
-        """Find and return an experiment based on experiment_id."""
+    def find_session_by_id(self, session_id):
+        """Find and return a session based on session_id."""
         try:
             cursor = self.connection.cursor(cursor_factory=RealDictCursor)
-            query = "SELECT * FROM experiments WHERE experiment_id = %s"
-            cursor.execute(query, (experiment_id,))
+            query = "SELECT * FROM sessions WHERE session_id = %s"
+            cursor.execute(query, (session_id,))
             result = cursor.fetchone()
             cursor.close()
             if result:
-                print("Experiment found:", result)
+                print("Session found:", result)
                 return result
             else:
-                print(f"No experiment found with ID {experiment_id}.")
+                print(f"No session found with ID {session_id}.")
                 return None
         except Exception as e:
-            print(f"Failed to find experiment: {e}")
+            print(f"Failed to find session: {e}")
             return None
 
     def find_subject_by_id(self, subject_id):
@@ -330,3 +329,53 @@ class ExperimentDB:
         except Exception as e:
             print(f"Failed to find subject: {e}")
             return None
+
+    def insert_round(self, round_data):
+        """Insert a new round into the rounds table and return the round_id."""
+        try:
+            cursor = self.connection.cursor()
+            round_id = inject_round_data(cursor, round_data)
+            self.connection.commit()
+            cursor.close()
+            print(f"Inserted new round with ID {round_id}.")
+            return round_id
+        except Exception as e:
+            print(f"Failed to insert round: {e}")
+            return None
+
+    def insert_peck(self, peck_data):
+        """Insert a new peck into the pecks table."""
+        try:
+            cursor = self.connection.cursor()
+            query = """
+            INSERT INTO pecks (
+                x_pos, y_pos, screen_on, round_id
+            ) VALUES (%s, %s, %s, %s)
+            """
+            cursor.execute(query, (
+                peck_data['x_pos'],
+                peck_data['y_pos'],
+                peck_data['screen_on'],
+                peck_data['round_id']
+            ))
+            self.connection.commit()
+            cursor.close()
+        except Exception as e:
+            print(f"Failed to insert peck: {e}")
+
+def inject_round_data(cursor, round_data):
+    """Helper function to inject round data into the rounds table."""
+    query = """
+    INSERT INTO rounds (
+        session_id, round_index, warning_index, warning_quarter, reinforcers_count
+    ) VALUES (%s, %s, %s, %s, %s)
+    RETURNING round_id
+    """
+    cursor.execute(query, (
+        round_data['session_id'],
+        round_data['round_index'],
+        round_data['warning_index'],
+        round_data['warning_quarter'],
+        round_data['reinforcers_count']
+    ))
+    return cursor.fetchone()[0]

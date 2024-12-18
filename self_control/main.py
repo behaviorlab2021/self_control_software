@@ -15,8 +15,8 @@ from self_control_software.self_control.components.buttons.red_button import Bas
 
 class MainApp(App):
 
-    def __init__(self, experiment_arguments, feeder, clicker, houseLight, writer, injector, **kwargs):
-        self.my_experiment_arguments = experiment_arguments
+    def __init__(self, session_arguments, feeder, clicker, houseLight, writer, injector, **kwargs):
+        self.session_arguments = session_arguments
         self.writer = writer  # Store writer as an instance variable
         self.injector = injector  # Store injector as an instance variable
         self.clicker = clicker  # Store clicker as an instance variable
@@ -26,7 +26,7 @@ class MainApp(App):
 
     def build(self):
         Builder.load_file("kv/experiment.kv")
-        layout = ExperimentLayout(experiment_arguments=self.my_experiment_arguments, feeder=self.feeder, clicker=self.clicker, houseLight=self.houseLight, writer=self.writer, injector=self.injector)
+        layout = ExperimentLayout(session_arguments=self.session_arguments, feeder=self.feeder, clicker=self.clicker, houseLight=self.houseLight, writer=self.writer, injector=self.injector)
         return layout
     
     def set_clicker(self,button):

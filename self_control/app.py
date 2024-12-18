@@ -17,16 +17,16 @@ from self_control_software.self_control.main import MainApp
 
 if __name__ == "__main__":
     # Expecting a JSON string as the first argument from the command line
-    experiment_id = sys.argv[1]
+    session_id = sys.argv[1]
 
     db = ExperimentDB(dbname='postgres', user='postgres', password='pigeon123!')
     db.connect()
 
-    experiment = db.find_experiment_by_id(experiment_id)
-    experiment_dict = dict(experiment)  # Convert RealDictRow to a regular dictionary
+    session = db.find_session_by_id(session_id)
+    session_dict = dict(session)  # Convert RealDictRow to a regular dictionary
 
     
-    subject_id = experiment['subject_id']
+    subject_id = session['subject_id']
     subject = db.find_subject_by_id(subject_id)
     subject_name = subject['subject_name']
     
@@ -38,10 +38,10 @@ if __name__ == "__main__":
     feeder.deactivate()
     houseLight.activate()
 
-    writer = Writer(experiment_dict, subject_name)
-    injector = Injector(experiment_dict)
+    writer = Writer(session_dict, subject_name)
+    injector = Injector(session_dict)
     
-    # Pass the experiment_arguments object to the main application
-    mainApp = MainApp(experiment_arguments=experiment_dict, feeder=feeder, clicker=clicker, houseLight=houseLight, writer=writer, injector=injector)
+    # Pass the session_arguments object to the main application
+    mainApp = MainApp(session_arguments=session_dict, feeder=feeder, clicker=clicker, houseLight=houseLight, writer=writer, injector=injector)
     mainApp.run()
     sys.exit()  # Ensure the script terminates properly

@@ -50,8 +50,8 @@ class BasicImageButtonGreen(BasicImageButton):
             self.button_count = self.button_count + 1
             #Event Green
             self.writer.write_data(parent.score, parent.quarter, self.button_count, "green", not parent.button_red.disabled, parent.warning_signal_index)
-            self.injector.inject_data(parent.score, parent.quarter, self.button_count, "green", not parent.button_red.disabled, parent.warning_signal_index)
-            parent.update_experiment_conditions()
+            self.injector.inject_event(parent.round_id, "green", not parent.button_red.disabled)
+            parent.update_session_conditions()
             self.disabled = False
 
    

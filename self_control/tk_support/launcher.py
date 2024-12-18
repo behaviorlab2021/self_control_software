@@ -222,7 +222,7 @@ class MultiStepApp:
                 self.inputs_frame.pack_forget()
 
     def is_basic_training_mode(self):
-        return self.mode_id.get() == "BASIC TRAINING"
+        return self.mode_id.get() == "HOPPER TRAINING"
 
     def is_schedule_training_mode(self):
         return self.mode_id.get() == "SCHEDULE TRAINING"

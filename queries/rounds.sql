@@ -1,16 +1,19 @@
+-- Enable the uuid-ossp extension
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
 CREATE TABLE rounds (
     session_id UUID REFERENCES sessions(session_id),
-    round_id UUID PRIMARY KEY,
+    round_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     round_index INTEGER NOT NULL,
     warning_index INTEGER NOT NULL,
     warning_quarter INTEGER NOT NULL,
     reinforcers_count INTEGER NOT NULL,
-    started_at TIMESTAMP NOT NULL
+    started_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Insert a new round
-INSERT INTO rounds (session_id, round_id, round_index, warning_index, warning_quarter, reinforcers_count, started_at)
-VALUES ('123e4567-e89b-12d3-a456-426614174000', '123e4567-e89b-12d3-a456-426614174001', 1, 2, 3, 4, '2023-10-01 10:00:00');
+INSERT INTO rounds (session_id, round_index, warning_index, warning_quarter, reinforcers_count)
+VALUES ('123e4567-e89b-12d3-a456-426614174000', 1, 2, 3, 4);
 
 -- Select the last round
 SELECT * FROM rounds
