@@ -18,7 +18,7 @@ class MultiStepApp:
         self.root = root  # Add this line
         self.root.title("Multi-Step Setup Wizard")
         self.root.geometry("720x480")
-        self.db = ExperimentDB(dbname='postgres', user='postgres', password='pigeon123!')
+        self.db = ExperimentDB()
         self.db.connect()
         self.current_step = 1
         self.session_id = str(uuid.uuid4())
@@ -40,6 +40,7 @@ class MultiStepApp:
         self.time_before_warning_signal = tk.StringVar(value="1")
         self.highlight_warning_signal = tk.BooleanVar(value=False)
         self.warning_signal_position = tk.StringVar(value="0")
+        self.button_height = tk.StringVar(value="0")
         self.comments = tk.StringVar()
         self.inputs_frame = None  # Initialize inputs_frame to None
 
@@ -261,6 +262,8 @@ class MultiStepApp:
                 variable.set(new_value)
             elif variable == self.warning_signal_position and new_value <= 100:
                 variable.set(new_value)
+            elif variable == self.button_height and new_value <= 100:
+                variable.set(new_value)
         except ValueError:
             variable.set(increment)
 
@@ -301,6 +304,9 @@ class MultiStepApp:
                 if current_value > 1:
                     variable.set(max(1, current_value - decrement))
             elif variable == self.warning_signal_position:
+                if current_value > 0:
+                    variable.set(max(0, current_value - decrement))
+            elif variable == self.button_height:
                 if current_value > 0:
                     variable.set(max(0, current_value - decrement))
         except ValueError:
@@ -394,16 +400,27 @@ class MultiStepApp:
             tk.Button(input_frame, text="-10", command=lambda: self.decrement_value(self.warning_signal_position, 10)).grid(row=8, column=5, padx=2)
             self.warning_signal_position_entry.bind("<FocusOut>", lambda e: self.validate_entry(self.warning_signal_position, 0, 100))
 
+        # Button Height
+        if not self.is_basic_training_mode():
+            tk.Label(input_frame, text="Button Height:", font=("Tahoma", 12)).grid(row=9, column=0, pady=2, sticky="e")
+            self.button_height_entry = tk.Entry(input_frame, textvariable=self.button_height, validate="key", validatecommand=(self.root.register(self.validate_between_0_and_100), '%P'), width=5)
+            self.button_height_entry.grid(row=9, column=1, pady=2, sticky="w")
+            tk.Button(input_frame, text="+", command=lambda: self.increment_value(self.button_height, 1)).grid(row=9, column=2, padx=2)
+            tk.Button(input_frame, text="-", command=lambda: self.decrement_value(self.button_height, 1)).grid(row=9, column=3, padx=2)
+            tk.Button(input_frame, text="+10", command=lambda: self.increment_value(self.button_height, 10)).grid(row=9, column=4, padx=2)
+            tk.Button(input_frame, text="-10", command=lambda: self.decrement_value(self.button_height, 10)).grid(row=9, column=5, padx=2)
+            self.button_height_entry.bind("<FocusOut>", lambda e: self.validate_entry(self.button_height, 0, 100))
+
         # Highlight Warning Signal
         if not self.is_basic_training_mode() and not self.is_schedule_training_mode() and not self.is_random_warning_mode():
-            tk.Label(input_frame, text="Highlight Warning Signal:", font=("Tahoma", 12)).grid(row=9, column=0, pady=2, sticky="e")
+            tk.Label(input_frame, text="Highlight Warning Signal:", font=("Tahoma", 12)).grid(row=10, column=0, pady=2, sticky="e")
             self.highlight_warning_signal_check = tk.Checkbutton(input_frame, variable=self.highlight_warning_signal)
-            self.highlight_warning_signal_check.grid(row=9, column=1, pady=2, sticky="w")
+            self.highlight_warning_signal_check.grid(row=10, column=1, pady=2, sticky="w")
 
         # Add Is Spot On to More Options
-        tk.Label(input_frame, text="Is Spot On:", font=("Tahoma", 12)).grid(row=10, column=0, pady=2, sticky="e")
+        tk.Label(input_frame, text="Is Spot On:", font=("Tahoma", 12)).grid(row=11, column=0, pady=2, sticky="e")
         self.is_spot_on_check = tk.Checkbutton(input_frame, variable=self.is_spot_on)
-        self.is_spot_on_check.grid(row=10, column=1, pady=2, sticky="w")
+        self.is_spot_on_check.grid(row=11, column=1, pady=2, sticky="w")
 
         # Configure columns to expand and center-align the grid
         input_frame.grid_columnconfigure(0, weight=1)
@@ -517,6 +534,7 @@ class MultiStepApp:
             'Warning Duration': self.warning_duration.get(),
             'Time Before Warning Signal': self.time_before_warning_signal.get(),
             'Warning Signal Position': self.warning_signal_position.get(),
+            'Button Height': self.button_height.get(),
             'Highlight Warning Signal': self.highlight_warning_signal.get(),
             'Is Spot On': self.is_spot_on.get(),
             'Comments': self.comments.get()
@@ -583,6 +601,8 @@ class MultiStepApp:
                     self.highlight_warning_signal.set(last_session['highlight_warning_signal'])
                 if 'warning_signal_position' in last_session:
                     self.warning_signal_position.set(last_session['warning_signal_position'])
+                if 'button_height' in last_session:
+                    self.button_height.set(last_session['button_height'])
                 if 'mode_id' in last_session:
                     mode_name = next((mode['mode_name'] for mode in self.modes if mode['mode_id'] == last_session['mode_id']), None)
                     if mode_name:
@@ -611,6 +631,7 @@ class MultiStepApp:
         time_before_warning_signal = session_data['Time Before Warning Signal']
         highlight_warning_signal = session_data['Highlight Warning Signal']
         warning_signal_position = session_data['Warning Signal Position']
+        button_height = session_data['Button Height']
         comments = session_data['Comments']
 
         subject = self.db.select_subject_by_name(subject_name)
@@ -636,6 +657,7 @@ class MultiStepApp:
             'time_before_warning_signal': time_before_warning_signal,
             'highlight_warning_signal': highlight_warning_signal,
             'warning_signal_position': warning_signal_position,
+            'button_height': button_height,
             'comments': comments
         }
         # Insert the session into the database and get the session_id

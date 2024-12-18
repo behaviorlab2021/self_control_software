@@ -6,7 +6,7 @@ if __name__ == "__main__":
     experiment_id = sys.argv[1]
     print("experiment_id is:", experiment_id)
     
-    db = ExperimentDB(dbname='postgres', user='postgres', password='pigeon123!')
+    db = ExperimentDB()
     db.connect()
     
     experiment = db.find_experiment_by_id(experiment_id)

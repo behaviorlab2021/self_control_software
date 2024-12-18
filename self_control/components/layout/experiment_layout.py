@@ -65,7 +65,7 @@ class ExperimentLayout(FloatLayout):
     panel_connected_label = ObjectProperty(None)
     spot = ObjectProperty(None)
     was_warned = False
-    warning_signal_index = None
+    warning_signal_index = -1
     round = 0
     round_id = None
 
@@ -117,11 +117,7 @@ class ExperimentLayout(FloatLayout):
         #     self.is_panel_connected = False
 
                 # Handle subject-specific logic
-        print("Subject name: ", subject_name)
-        if subject_name:
-            self.adjust_button_height_based_on_subject()
-
-
+ 
         # Writer update
         self.writer.writer_update(self.session_data)
         self.injector.injector_update(self.session_data)
@@ -298,7 +294,6 @@ class ExperimentLayout(FloatLayout):
             self.feeding_condition = True
             self.houseLight.deactivate()
             self.feeder.activate()
-
             self.feeder.create_deactivate_feeder_event(self.session_data["feed_time"])
             Clock.schedule_once(self.turn_feeding_condition_off, self.session_data["feed_time"])
             #Event Reinforcement
@@ -353,7 +348,6 @@ class ExperimentLayout(FloatLayout):
     def un_punish(self, dt):
         Clock.unschedule(self.warning_signal_scheduled_event)
         self.stop_warning_signal_training()
-
         self.check_if_warning_signal_training()
         self.houseLight.activate()
         self.turn_on_screen()
@@ -408,22 +402,6 @@ class ExperimentLayout(FloatLayout):
             print(f"{device_info[ID_VENDOR_ID]}")
             self.panel_connected_label.text = "Touch Pannel is RECONNECTED"
             self.panel_connected_label.color = [0.2, 0.2, 0.2, 0.2]
-    
-
-    def adjust_button_height_based_on_subject(self):
-        """Adjust button height based on the subject."""
-        if subject_name == ERMIS:
-            self.button_height = 0.75
-        elif subject_name  == MOSES:
-            self.button_height = 0.65
-        elif subject_name == SNIK:
-            self.button_height = 0.85
-        elif subject_name == ADAM:
-            self.button_height = 0.6
-        else:
-            print("No specific subject found.")
-
-
             
     def on_pos(self, *args):
         # update Rectangle position when MazeSolution position changes
@@ -440,7 +418,7 @@ class ExperimentLayout(FloatLayout):
         self.button_green.source = "assets/images/green_light.png"
         self.button_green.source_file = "assets/images/green_light.png"
         self.button_green.source_file_press = "assets/images/green_dark.png"
-
+        self.button_green.enable_button()
         self.button_red.source = "assets/images/red_light.png"
         self.button_red.source_file = "assets/images/red_light.png"
         self.button_red.source_file_press = "assets/images/red_dark.png"

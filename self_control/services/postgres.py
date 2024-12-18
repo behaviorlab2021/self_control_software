@@ -1,16 +1,21 @@
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import uuid
+from dotenv import load_dotenv
+import os
+
+# Load environment variables from .env file
+load_dotenv()
 
 
 class ExperimentDB:
-    def __init__(self, dbname, user, password, host='localhost', port=5432):
+    def __init__(self):
         self.db_config = {
-            'dbname': dbname,
-            'user': user,
-            'password': password,
-            'host': host,
-            'port': port
+            'dbname': os.getenv('DB_NAME'),
+            'user': os.getenv('DB_USER'),
+            'password': os.getenv('DB_PASSWORD'),
+            'host': os.getenv('DB_HOST', 'localhost'),
+            'port': os.getenv('DB_PORT', 5432)
         }
         self.connection = None
 
@@ -129,8 +134,9 @@ class ExperimentDB:
                 time_before_warning_signal, 
                 highlight_warning_signal, 
                 warning_signal_position, 
+                button_height, 
                 comments
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             RETURNING session_id
             """
             cursor.execute(query, (
@@ -151,6 +157,7 @@ class ExperimentDB:
                 session_data['time_before_warning_signal'], 
                 session_data['highlight_warning_signal'], 
                 session_data['warning_signal_position'], 
+                session_data['button_height'], 
                 session_data['comments']
             ))
             self.connection.commit()
@@ -184,8 +191,9 @@ class ExperimentDB:
                 time_before_warning_signal, 
                 highlight_warning_signal, 
                 warning_signal_position, 
+                button_height, 
                 comments
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """
             session_id = session_data.get('session_id', str(uuid.uuid4()))
             cursor.execute(query, (
@@ -206,6 +214,7 @@ class ExperimentDB:
                 session_data['time_before_warning_signal'], 
                 session_data['highlight_warning_signal'], 
                 session_data['warning_signal_position'], 
+                session_data['button_height'], 
                 session_data['comments']
             ))
             self.connection.commit()
@@ -333,15 +342,33 @@ class ExperimentDB:
     def insert_round(self, round_data):
         """Insert a new round into the rounds table and return the round_id."""
         try:
-            cursor = self.connection.cursor()
-            round_id = inject_round_data(cursor, round_data)
+            round_id = self.inject_round_data(round_data)
             self.connection.commit()
-            cursor.close()
             print(f"Inserted new round with ID {round_id}.")
             return round_id
         except Exception as e:
             print(f"Failed to insert round: {e}")
             return None
+
+    def insert_round_data(self, round_data):
+        """Helper function to inject round data into the rounds table."""
+        cursor = self.connection.cursor()
+        query = """
+        INSERT INTO rounds (
+            session_id, round_index, warning_index, warning_quarter, reinforcers_count
+        ) VALUES (%s, %s, %s, %s, %s)
+        RETURNING round_id
+        """
+        cursor.execute(query, (
+            round_data['session_id'],
+            round_data['round_index'],
+            round_data['warning_index'],
+            round_data['warning_quarter'],
+            round_data['reinforcers_count']
+        ))
+        round_id = cursor.fetchone()[0]
+        cursor.close()
+        return round_id
 
     def insert_peck(self, peck_data):
         """Insert a new peck into the pecks table."""
@@ -362,20 +389,3 @@ class ExperimentDB:
             cursor.close()
         except Exception as e:
             print(f"Failed to insert peck: {e}")
-
-def inject_round_data(cursor, round_data):
-    """Helper function to inject round data into the rounds table."""
-    query = """
-    INSERT INTO rounds (
-        session_id, round_index, warning_index, warning_quarter, reinforcers_count
-    ) VALUES (%s, %s, %s, %s, %s)
-    RETURNING round_id
-    """
-    cursor.execute(query, (
-        round_data['session_id'],
-        round_data['round_index'],
-        round_data['warning_index'],
-        round_data['warning_quarter'],
-        round_data['reinforcers_count']
-    ))
-    return cursor.fetchone()[0]

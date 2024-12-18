@@ -19,7 +19,7 @@ if __name__ == "__main__":
     # Expecting a JSON string as the first argument from the command line
     session_id = sys.argv[1]
 
-    db = ExperimentDB(dbname='postgres', user='postgres', password='pigeon123!')
+    db = ExperimentDB()
     db.connect()
 
     session = db.find_session_by_id(session_id)

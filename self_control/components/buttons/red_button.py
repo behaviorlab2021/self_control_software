@@ -109,6 +109,6 @@ class BasicImageButtonRed(BasicImageButton):
         self.pos_hint = self.calculate_warning_signal_position(parent)
 
     def calculate_warning_signal_position(self, parent):
-        return {'center_x':0.3 + parent.session_data["warning_signal_position"]/100*0.4, 'center_y':parent.button_height}
+        return {'center_x':0.3 + parent.session_data["warning_signal_position"]/100*0.4, 'center_y':parent.session_data["button_height"] / 100}
         
         

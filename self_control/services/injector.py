@@ -1,11 +1,11 @@
 from self_control_software.self_control.utils.time_functions import get_time_now, get_time_dif
-from self_control_software.self_control.services.postgres import ExperimentDB, inject_round_data
+from self_control_software.self_control.services.postgres import ExperimentDB
 import psycopg2
 
 class Injector:
 
     def __init__(self, constant_data):
-        self.db = ExperimentDB(dbname='postgres', user='postgres', password='pigeon123!')
+        self.db = ExperimentDB()
         self.session_id = constant_data['session_id']
         self.start_time = get_time_now()
 
@@ -36,10 +36,8 @@ class Injector:
             'reinforcers_count': reinforcers_count
         }
         try:
-            cursor = self.db.connection.cursor()
-            round_id = inject_round_data(cursor, round_data)
+            round_id = self.db.insert_round_data(round_data)
             self.db.connection.commit()
-            cursor.close()
             print(f"Inserted new round with ID {round_id}.")
             return round_id
         except Exception as e:

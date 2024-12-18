@@ -70,19 +70,19 @@ class BasicImageButtonGreen(BasicImageButton):
     def disable_button(self):
         self.disabled = True
         self.opacity= 0
-        self.pos_hint = {'center_x': 4, 'center_y':self.parent.button_height}
+        self.pos_hint = {'center_x': 4, 'center_y':self.parent.session_data["button_height"] / 100}
 
     def enable_button_delayed(self, dt):
         self.disabled = False
         self.opacity= 1
-        self.pos_hint = {'center_x': .7, 'center_y':self.parent.button_height}
+        self.pos_hint = {'center_x': .7, 'center_y':self.parent.session_data["button_height"] / 100}
 
 
     def enable_button(self):
 
         self.disabled = False
         self.opacity= 1
-        self.pos_hint = {'center_x': .7, 'center_y':self.parent.button_height}
+        self.pos_hint = {'center_x': .7, 'center_y':self.parent.session_data["button_height"] / 100}
 
     def zeroing(self):
         self.button_count = 0
