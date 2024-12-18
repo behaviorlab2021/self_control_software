@@ -1,5 +1,0 @@
-INSERT INTO experiment_modes (mode_name) VALUES
-('NORMAL MODE'),
-('RANDOM WARNING'),
-('WARNING TRAINING'),
-('BASIC TRAINING');

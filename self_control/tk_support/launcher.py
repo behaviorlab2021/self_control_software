@@ -1,6 +1,6 @@
 import sys
 import os
-
+import threading
 
 # Add the parent directory of self_control_software to the Python path
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
@@ -18,12 +18,10 @@ class MultiStepApp:
         self.root = root  # Add this line
         self.root.title("Multi-Step Setup Wizard")
         self.root.geometry("720x480")
-
         self.db = ExperimentDB(dbname='postgres', user='postgres', password='pigeon123!')
         self.db.connect()
-
         self.current_step = 1
-        self.experiment_id = str(uuid.uuid4())
+        self.session_id = str(uuid.uuid4())
         self.subject_name = tk.StringVar()
         self.total_reinforcements = tk.StringVar(value="1")
         self.punishment_duration = tk.StringVar(value="0")
@@ -110,7 +108,7 @@ class MultiStepApp:
     def show_step_2(self):
         self.clear_frame()
 
-        tk.Label(self.step_frame, text="Step 2: Enter Experiment Details", font=("Tahoma", 14)).pack(pady=5)
+        tk.Label(self.step_frame, text="Step 2: Enter Session Details", font=("Tahoma", 14)).pack(pady=5)
 
         input_frame = tk.Frame(self.step_frame)
         input_frame.pack(expand=True)
@@ -192,7 +190,7 @@ class MultiStepApp:
         self.comments_entry.grid(row=8, column=0, pady=2, sticky="we", columnspan=6)
 
         # UUID Entry (copyable)
-        self.uuid_entry = tk.Entry(input_frame, textvariable=tk.StringVar(value=self.experiment_id), state="readonly", width=36, justify="center")
+        self.uuid_entry = tk.Entry(input_frame, textvariable=tk.StringVar(value=self.session_id), state="readonly", width=36, justify="center")
         self.uuid_entry.grid(row=9, column=0, pady=2, sticky="we", columnspan=6)
 
         # Center the UUID entry and comments entry horizontally
@@ -468,14 +466,14 @@ class MultiStepApp:
     def show_step_3(self):
         self.clear_frame()
 
-        tk.Label(self.step_frame, text="Step 3: Review Experiment Details", font=("Tahoma", 14)).pack(pady=5)
+        tk.Label(self.step_frame, text="Step 3: Review Session Details", font=("Tahoma", 14)).pack(pady=5)
 
         input_frame = tk.Frame(self.step_frame)
         input_frame.pack(expand=True)
 
-        # Display experiment data in a multiline Text widget with a scrollbar
-        experiment_data = self.get_experiment_data()
-        details = "\n".join(f"{key.replace('_', ' ').title()}: {value}" for key, value in experiment_data.items())
+        # Display session data in a multiline Text widget with a scrollbar
+        session_data = self.get_session_data()
+        details = "\n".join(f"{key.replace('_', ' ').title()}: {value}" for key, value in session_data.items())
 
         self.details_text = tk.Text(input_frame, wrap="word", height=20, width=80)
         self.details_text.insert("1.0", details)
@@ -492,19 +490,19 @@ class MultiStepApp:
         self.next_button.config(text="Submit", command=self.confirm_submission)
 
     def confirm_submission(self):
-        experiment_data = self.get_experiment_data()
+        session_data = self.get_session_data()
         required_fields = ['Subject Name', 'Mode', 'Reinforcement Ratio', 'Total Reinforcements', 'Punishment Duration', 'Feed Time', 'Consecutive Warnings Limit', 'Warning Alarm Volume', 'Warning Display Volume', 'Warning Hits', 'Punishment Periodicity', 'Warning Duration', 'Time Before Warning Signal', 'Warning Signal Position', 'Highlight Warning Signal', 'Is Spot On']
-        empty_fields = [key for key in required_fields if experiment_data[key] == ""]
+        empty_fields = [key for key in required_fields if session_data[key] == ""]
         if empty_fields:
             messagebox.showwarning("Warning", f"The following fields must be filled out: {', '.join(empty_fields)}")
         else:
             if messagebox.askyesno("Confirm Submission", "Are you sure you want to submit?"):
                 self.submit()
 
-    def get_experiment_data(self):
+    def get_session_data(self):
         mode_id = next((mode['mode_id'] for mode in self.modes if mode['mode_name'] == self.mode_id.get()), None)
         return {
-            'experiment_id': self.experiment_id,  # Generate a new UUID for the experiment
+            'session_id': self.session_id,  # Generate a new UUID for the session
             'Subject Name': self.subject_name.get(),
             'Mode': mode_id,
             'Reinforcement Ratio': self.reinforcement_ratio.get(),
@@ -529,7 +527,7 @@ class MultiStepApp:
             if not self.subject_name.get().strip():
                 messagebox.showerror("Error", "Subject name is required.")
                 return
-            self.load_last_experiment_data()
+            self.load_last_session_data()
 
         self.current_step += 1
         self.update_step()
@@ -551,74 +549,77 @@ class MultiStepApp:
         for widget in self.step_frame.winfo_children():
             widget.destroy()
 
-    def load_last_experiment_data(self):
+    def load_last_session_data(self):
         subject_name = self.subject_name.get()
         subject = self.db.select_subject_by_name(subject_name)
         if subject:
-            last_experiment = self.db.find_last_experiment_by_subject(subject['subject_id'])
-            if last_experiment:
-                if 'reinforcement_ratio' in last_experiment:
-                    self.reinforcement_ratio.set(last_experiment['reinforcement_ratio'])
-                if 'total_reinforcements' in last_experiment:
-                    self.total_reinforcements.set(last_experiment['total_reinforcements'])
-                if 'warning_alarm_volume' in last_experiment:
-                    self.warning_alarm_volume.set(last_experiment['warning_alarm_volume'])
-                if 'warning_display_volume' in last_experiment:
-                    self.warning_display_volume.set(last_experiment['warning_display_volume'])
-                if 'warning_hits' in last_experiment:
-                    self.warning_hits.set(last_experiment['warning_hits'])                  
-                if 'punishment_duration' in last_experiment:
-                    self.punishment_duration.set(last_experiment['punishment_duration'])
-                if 'feed_time' in last_experiment:
-                    self.feed_time.set(last_experiment['feed_time'])
-                if 'consecutive_warnings_limit' in last_experiment:
-                    self.consecutive_warnings_limit.set(last_experiment['consecutive_warnings_limit'])
-                if 'is_spot_on' in last_experiment:
-                    self.is_spot_on.set(last_experiment['is_spot_on'])
-                if 'punishment_periodicity' in last_experiment:
-                    self.punishment_periodicity.set(last_experiment['punishment_periodicity'])
-                if 'warning_duration' in last_experiment:
-                    self.warning_duration.set(last_experiment['warning_duration'])
-                if 'time_before_warning_signal' in last_experiment:
-                    self.time_before_warning_signal.set(last_experiment['time_before_warning_signal'])
-                if 'highlight_warning_signal' in last_experiment:
-                    self.highlight_warning_signal.set(last_experiment['highlight_warning_signal'])
-                if 'warning_signal_position' in last_experiment:
-                    self.warning_signal_position.set(last_experiment['warning_signal_position'])
-                if 'mode_id' in last_experiment:
-                    mode_name = next((mode['mode_name'] for mode in self.modes if mode['mode_id'] == last_experiment['mode_id']), None)
+            last_session = self.db.find_last_session_by_subject(subject['subject_id'])
+            if last_session:
+                if 'reinforcement_ratio' in last_session:
+                    self.reinforcement_ratio.set(last_session['reinforcement_ratio'])
+                if 'total_reinforcements' in last_session:
+                    self.total_reinforcements.set(last_session['total_reinforcements'])
+                if 'warning_alarm_volume' in last_session:
+                    self.warning_alarm_volume.set(last_session['warning_alarm_volume'])
+                if 'warning_display_volume' in last_session:
+                    self.warning_display_volume.set(last_session['warning_display_volume'])
+                if 'warning_hits' in last_session:
+                    self.warning_hits.set(last_session['warning_hits'])                  
+                if 'punishment_duration' in last_session:
+                    self.punishment_duration.set(last_session['punishment_duration'])
+                if 'feed_time' in last_session:
+                    self.feed_time.set(last_session['feed_time'])
+                if 'consecutive_warnings_limit' in last_session:
+                    self.consecutive_warnings_limit.set(last_session['consecutive_warnings_limit'])
+                if 'is_spot_on' in last_session:
+                    self.is_spot_on.set(last_session['is_spot_on'])
+                if 'punishment_periodicity' in last_session:
+                    self.punishment_periodicity.set(last_session['punishment_periodicity'])
+                if 'warning_duration' in last_session:
+                    self.warning_duration.set(last_session['warning_duration'])
+                if 'time_before_warning_signal' in last_session:
+                    self.time_before_warning_signal.set(last_session['time_before_warning_signal'])
+                if 'highlight_warning_signal' in last_session:
+                    self.highlight_warning_signal.set(last_session['highlight_warning_signal'])
+                if 'warning_signal_position' in last_session:
+                    self.warning_signal_position.set(last_session['warning_signal_position'])
+                if 'mode_id' in last_session:
+                    mode_name = next((mode['mode_name'] for mode in self.modes if mode['mode_id'] == last_session['mode_id']), None)
                     if mode_name:
                         self.mode_id.set(mode_name)
 
+    def on_subprocess_complete(self):
+        print("Subprocess has completed.")
+
     def submit(self):
-        print("Submitting experiment...", self.get_experiment_data())
-        experiment_data = self.get_experiment_data()
-        experiment_id = experiment_data['experiment_id']
-        subject_name = experiment_data['Subject Name']
-        reinforcement_ratio = experiment_data['Reinforcement Ratio']
-        total_reinforcements = experiment_data['Total Reinforcements']
-        punishment_duration = experiment_data['Punishment Duration']
-        feed_time = experiment_data['Feed Time']
-        is_spot_on = experiment_data['Is Spot On']
-        mode_id = experiment_data['Mode'],
-        consecutive_warnings_limit = experiment_data['Consecutive Warnings Limit']
-        warning_alarm_volume = experiment_data['Warning Alarm Volume']
-        warning_display_volume = experiment_data['Warning Display Volume']
-        warning_hits = experiment_data['Warning Hits']
-        punishment_periodicity = experiment_data['Punishment Periodicity']
-        warning_duration = experiment_data['Warning Duration']
-        time_before_warning_signal = experiment_data['Time Before Warning Signal']
-        highlight_warning_signal = experiment_data['Highlight Warning Signal']
-        warning_signal_position = experiment_data['Warning Signal Position']
-        comments = experiment_data['Comments']
+        print("Submitting session Data...", self.get_session_data())
+        session_data = self.get_session_data()
+        session_id = session_data['session_id']
+        subject_name = session_data['Subject Name']
+        reinforcement_ratio = session_data['Reinforcement Ratio']
+        total_reinforcements = session_data['Total Reinforcements']
+        punishment_duration = session_data['Punishment Duration']
+        feed_time = session_data['Feed Time']
+        is_spot_on = session_data['Is Spot On']
+        mode_id = session_data['Mode'],
+        consecutive_warnings_limit = session_data['Consecutive Warnings Limit']
+        warning_alarm_volume = session_data['Warning Alarm Volume']
+        warning_display_volume = session_data['Warning Display Volume']
+        warning_hits = session_data['Warning Hits']
+        punishment_periodicity = session_data['Punishment Periodicity']
+        warning_duration = session_data['Warning Duration']
+        time_before_warning_signal = session_data['Time Before Warning Signal']
+        highlight_warning_signal = session_data['Highlight Warning Signal']
+        warning_signal_position = session_data['Warning Signal Position']
+        comments = session_data['Comments']
 
         subject = self.db.select_subject_by_name(subject_name)
         if not subject:
             subject_id = self.db.insert_subject(subject_name)
         else:
             subject_id = subject['subject_id']
-        experiment_data = {
-            'experiment_id': experiment_id,  # Use the generated UUID
+        session_data = {
+            'session_id': session_id,  # Use the generated UUID
             'reinforcement_ratio': reinforcement_ratio,
             'warning_hits': warning_hits,
             'punishment_duration': punishment_duration,
@@ -637,22 +638,25 @@ class MultiStepApp:
             'warning_signal_position': warning_signal_position,
             'comments': comments
         }
-        # Insert the experiment into the database and get the experiment_id
+        # Insert the session into the database and get the session_id
 
-
-        received_experiment_id = self.db.insert_experiment(experiment_data)
-        print("Received experiment ID:", received_experiment_id)
-        if received_experiment_id:
+        received_session_id = self.db.insert_session(session_data)
+        print("Received session ID:", received_session_id)
+        if received_session_id:
             self.db.close()
-            self.root.destroy()
-            # Call the subprocess with the experiment ID as the first argument
-            subprocess.Popen(["python", "self_control_software/self_control/app.py", str(received_experiment_id)])
+            self.root.after(100, self.root.destroy)  # Close the Tkinter window after a short delay
+            # Run the subprocess in a new thread and call on_subprocess_complete when done
+            threading.Thread(target=self.run_subprocess, args=(received_session_id,)).start()
         else:
-            print("Failed to insert experiment.")
-
+            print("Failed to insert session.")
         print()
         
         self.db.close()
+
+    def run_subprocess(self, session_id):
+        subprocess.run(["python", "self_control_software/self_control/app.py", str(session_id)])
+        
+        self.on_subprocess_complete()
 
 if __name__ == "__main__":
     root = tk.Tk()
