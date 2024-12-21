@@ -40,7 +40,6 @@ class BasicImageButtonGreen(BasicImageButton):
             else:
                 self.green_button_changed = True
                 Clock.unschedule(self.green_button_scheduled_event)
-
             self.green_button_scheduled_event = Clock.schedule_once(self.change_button_image, .3)
             self.clicker.click()
             self.disabled = True
@@ -49,10 +48,12 @@ class BasicImageButtonGreen(BasicImageButton):
             parent.was_warned = False
             self.button_count = self.button_count + 1
             #Event Green
-            self.writer.write_data(parent.score, parent.quarter, self.button_count, "green", not parent.button_red.disabled, parent.warning_signal_index)
+            parent.update_button_count()
+            parent.update_used_tries() # Updates the number of green clicks while red is enabled.
             self.injector.inject_event(parent.round_id, "green", not parent.button_red.disabled)
-            parent.update_session_conditions()
+            parent.make_checks()
             self.disabled = False
+            self.writer.write_data(parent.score, parent.warning_quarter, self.button_count, "green", not parent.button_red.disabled, parent.warning_signal_index)
 
    
         else:

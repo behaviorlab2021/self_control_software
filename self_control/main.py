@@ -23,6 +23,7 @@ class MainApp(App):
         self.houseLight = houseLight  # Store houseLight as an instance variable
         self.feeder = feeder  # Store feeder as an instance variable
         super(MainApp, self).__init__(**kwargs)
+        self.icon = 'self_control_software/self_control/assets/icons/pigeon.png'  # Set the path to your icon file
 
     def build(self):
         Builder.load_file("kv/experiment.kv")

@@ -58,3 +58,18 @@ class Injector:
         self.db.insert_peck(peck_data)
         self.db.close()
 
+    def trigger_round_results(self, round_id):
+        # Use the database connection to insert the round results
+        self.db.connect()
+        self.db.insert_round_results(round_id)
+        self.db.close()
+
+        pass
+
+    def trigger_check_round(self, round_id):
+        # Use the database connection to insert the round results
+        self.db.connect()
+        self.db.check_round(round_id)
+        self.db.close()
+        pass
+

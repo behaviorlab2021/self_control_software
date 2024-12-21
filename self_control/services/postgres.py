@@ -389,3 +389,31 @@ class ExperimentDB:
             cursor.close()
         except Exception as e:
             print(f"Failed to insert peck: {e}")
+
+    def insert_round_results(self, round_id):
+        """Insert round results for a specific round_id."""
+        try:
+            cursor = self.connection.cursor()
+            query = "SELECT insert_round_results(%s);"
+            cursor.execute(query, (round_id,))
+            self.connection.commit()
+            cursor.close()
+            print(f"Inserted round results for round ID {round_id}.")
+        except Exception as e:
+            print(f"Failed to insert round results: {e}")
+
+    def check_round(self, round_id):
+        """Check round for a specific round_id."""
+        try:
+            cursor = self.connection.cursor()
+            query = "SELECT check_round(%s);"
+            cursor.execute(query, (round_id,))
+            self.connection.commit()
+            cursor.close()
+            print(f"Checked round for round ID {round_id}.")
+        except Exception as e:
+            print(f"Failed to check round: {e}")
+
+
+
+

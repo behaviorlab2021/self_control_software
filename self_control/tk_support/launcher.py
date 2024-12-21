@@ -13,11 +13,14 @@ import uuid
 import subprocess
 import json
 
+
 class MultiStepApp:
     def __init__(self, root):
         self.root = root  # Add this line
         self.root.title("Multi-Step Setup Wizard")
         self.root.geometry("720x480")
+        img = tk.PhotoImage(file='self_control_software/self_control/assets/icons/settings.png')
+        root.iconphoto(False, img)    
         self.db = ExperimentDB()
         self.db.connect()
         self.current_step = 1

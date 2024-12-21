@@ -28,28 +28,6 @@ class BasicImageButtonRed(BasicImageButton):
     def set_injector(self, injector):
         self.injector = injector   
 
-    def on_touch_up(self, touch):
-        window_x = Window.size[0]
-        window_y = Window.size[1]
-        aspect_ratio = float(window_x/window_y)
-
-        if self.touch_start_x:
-            slide = distance_from(self.touch_start_x, self.touch_start_y, touch.sx, touch.sy, aspect_ratio)
-            if slide>0.05:
-                print("Feather")
-                return
-            else:
-                if self.touch_on_button(touch) and not self.disabled:
-                    self.button_count = self.button_count + 1
-                    parent = self.parent
-                    # Event Red
-                    self.writer.write_data(parent.score, parent.quarter, parent.clicks, "red-"+str(int(parent.warning_quarter)), not parent.button_red.disabled, parent.warning_signal_index) 
-                    self.injector.write_data(parent.score, parent.quarter, parent.clicks, "red-"+str(int(parent.warning_quarter)), not parent.button_red.disabled, parent.warning_signal_index) 
-                    parent.negative_reinforcement()
-                    if parent.warning_signal_training_running: 
-                        parent.stop_warning_signal_training()
-            # touch_start_x = None
-            # touch_start_y = None
 
 
 
@@ -79,9 +57,12 @@ class BasicImageButtonRed(BasicImageButton):
                         self.clicker.click()
                         self.button_count = self.button_count + 1
                         parent = self.parent
+
                         # Event Red
-                        self.writer.write_data(parent.score, parent.quarter, parent.clicks, "red-"+str(int(parent.warning_quarter)), not parent.button_red.disabled, parent.warning_signal_index) 
+                        self.writer.write_data(parent.score, parent.warning_quarter, parent.clicks, "red-"+str(int(parent.warning_quarter)), not parent.button_red.disabled, parent.warning_signal_index) 
                         self.injector.inject_event(parent.round_id, "red", True)
+                        parent.used_tries = 0
+
                         parent.negative_reinforcement()
                         if parent.warning_signal_training_running: 
                             parent.stop_warning_signal_training()
