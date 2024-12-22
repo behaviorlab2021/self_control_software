@@ -57,11 +57,19 @@ class ExperimentLayout(FloatLayout):
     label_top_right = ObjectProperty(None)
     label_bottom_left = ObjectProperty(None)
     panel_connected_label = ObjectProperty(None)
+    session_ended_label = ObjectProperty(None)
     spot = ObjectProperty(None)
     was_warned = False
     warning_signal_index = -1
     round = 0
     round_id = None
+    devices_dict = None
+    window_x = None
+    window_y = None
+    aspect_ratio = None
+    touch_start_x = None
+    touch_start_y = None
+    has_ended = False
 
 
     def check_if_hopper_training(self, dt):
@@ -88,7 +96,16 @@ class ExperimentLayout(FloatLayout):
         self.usb_monitor = USBMonitor()
         self.usb_monitor.start_monitoring(on_connect=self.usb_add_callback, on_disconnect=self.usb_remove_callback)
         # USB device check
-        devices_dict = self.usb_monitor.get_available_devices()
+        self.devices_dict = self.usb_monitor.get_available_devices()
+        
+        self.window_x = Window.size[0]
+        self.window_y = Window.size[1]
+        # Print the window size
+        print("Window size: ", self.window_x, self.window_y)
+        
+        self.aspect_ratio = float(self.window_x/self.window_y)
+
+        print("ASPECT RATIO: ", self.aspect_ratio)
         # if any(device.split("\\")[1] == "VID_0C45&PID_8419" for device in devices_dict):
         #     print("Application started with Touch Panel Connected")
         #     self.is_panel_connected = True
@@ -106,7 +123,11 @@ class ExperimentLayout(FloatLayout):
         # Inherit initialization
         super(FloatLayout, self).__init__(**kwargs)
         with self.canvas.before:
-            self.rect = Rectangle(source="assets/images/panel.png")
+            self.rect = Rectangle(source="assets/images/panel.png")\
+    
+    def initial_session_ended_text(self):        
+        return ''
+        # return 'Session ended ' + ('YES' if self.has_ended
         
     def initial_panel_connected_text(self):
             # self.panel_connected_label.text = "Application started with Touch Pannel DISCONNECTED"
@@ -116,6 +137,9 @@ class ExperimentLayout(FloatLayout):
 
     def initial_panel_connected_color(self):
         return [0.2, 0.2, 0.2, 0.2] if self.is_panel_connected  else [1, 0.2, 0.2, 1]
+    
+    def initial_session_ended_color(self):
+        return [0.0, 0.0, 0.0, 0.0]
     
     def update_warning_quarter(self):
         self.warning_quarter = (self.warning_signal_index//( self.session_data["reinforcement_ratio"]/4))+1
@@ -127,16 +151,21 @@ class ExperimentLayout(FloatLayout):
         else:
             self.warning_signal_index = None
 
-    def on_touch_down(self,touch):
+    def on_touch_up(self,touch):
         #Event Touch
         if self.button_green.opacity == 0:
             self.writer.write_peck_data_blind( self.score, self.warning_quarter, self.clicks, touch.sx, touch.sy, "blind-peck", not self.button_red.disabled, self.warning_signal_index)
-            self.injector.inject_peck(touch.sx, touch.sy, False, self.round_id)
+            self.injector.inject_peck(self.touch_start_x, self.touch_start_y, touch.sx, touch.sy, False, not self.button_green.disabled, not self.button_red.disabled, self.round_id)
         else:
             self.writer.write_peck_data( self.score, self.warning_quarter, self.clicks, touch.sx, touch.sy,  not self.button_red.disabled, self.warning_signal_index)
-            self.injector.inject_peck(touch.sx, touch.sy, True, self.round_id)
+            self.injector.inject_peck(self.touch_start_x, self.touch_start_y, touch.sx, touch.sy, True, not self.button_green.disabled, not self.button_red.disabled, self.round_id)
         if self.session_data["is_spot_on"]:
             self.spot.pos_hint = {'center_x':touch.sx, 'center_y':touch.sy}
+        return super(FloatLayout, self).on_touch_up(touch)
+
+    def on_touch_down(self,touch):
+        self.touch_start_x = touch.sx
+        self.touch_start_y = touch.sy
         return super(FloatLayout, self).on_touch_down(touch)
 
     def check_reinforcement_condition(self):
@@ -151,10 +180,14 @@ class ExperimentLayout(FloatLayout):
         self.writer.write_data(self.score, self.warning_quarter, self.clicks, "end_of_session", False, self.warning_signal_index)
         self.injector.inject_event(self.round_id, "end", False)    
         self.turn_off_screen()
+        self.has_ended = True
+        self.session_ended_label.text = "Session ended gracefully."
+        self.session_ended_label.color = [0.2, 0.2, 0.2, 0.6]
+
 
     def create_results_pdf(self):
         # Call the R script
-        result = subprocess.run(['Rscript', 'self_control_software/self_control/utils/create_pdf.R', self.writer.filename], capture_output=True, text=True)
+        result = subprocess.run(['Rscript', 'self_control_software/self_control/r_scripts/create_pdf.R', self.writer.filename], capture_output=True, text=True)
         # Print the output from the R script
         print("Output from R script:")
         print(result.stdout)
@@ -225,6 +258,7 @@ class ExperimentLayout(FloatLayout):
             return False
 
     def turn_feeding_condition_off(self, dt):
+        self.injector.inject_event(self.round_id, "feeding_end", not self.button_red.disabled)
         if not self.check_if_end():
             self.check_if_warning_signal_training()
             self.houseLight.activate()
@@ -232,7 +266,6 @@ class ExperimentLayout(FloatLayout):
             self.warning_variable = False
             #Event Starting after reinforcement
             self.writer.write_data(self.score, self.warning_quarter, self.clicks, "starting-again", not self.button_red.disabled, self.warning_signal_index)
-            self.injector.inject_event(self.round_id, "feeding_end", False)
             self.turn_on_screen()
 
         pass
@@ -333,6 +366,7 @@ class ExperimentLayout(FloatLayout):
             print(f"{device_info[ID_VENDOR_ID]}")
             self.panel_connected_label.text = "Touch Pannel is DISCONNECTED"
             self.panel_connected_label.color = [1, 0.2, 0.2, 1]
+    
 
     def usb_add_callback(self, device_id, device_info):
         if device_info[ID_VENDOR_ID] == "0c45":
@@ -372,7 +406,9 @@ class ExperimentLayout(FloatLayout):
 
     def _on_keyboard_down(self, keyboard, keycode, text, modifiers):
         if keycode[1] == 'escape':
-            self.end_session()
+            
+            if not self.has_ended:    
+                self.end_session()
             self.houseLight.deactivate()
             App.get_running_app().stop()
 
@@ -430,7 +466,7 @@ class ExperimentLayout(FloatLayout):
 
     def close_last_round(self):
         self.injector.inject_event(self.round_id, "round_end", False)
-        self.injector.trigger_check_round(self.round_id)
+        self.injector.trigger_check_round(self.round_id, self.aspect_ratio)
         self.injector.trigger_round_results(self.round_id)
         pass
     

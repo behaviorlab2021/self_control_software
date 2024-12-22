@@ -46,13 +46,17 @@ class Injector:
         finally:
             self.db.close()
 
-    def inject_peck(self, x_pos, y_pos, screen_on, round_id):
+    def inject_peck(self, x_start, y_start, x_pos, y_pos, screen_on, green_on, red_on, round_id):
         """Inject a new peck into the pecks table."""
         self.db.connect()
         peck_data = {
+            'x_start': x_start,
+            'y_start': y_start,
             'x_pos': x_pos,
             'y_pos': y_pos,
             'screen_on': screen_on,
+            'green_on': green_on,
+            'red_on': red_on,
             'round_id': round_id
         }
         self.db.insert_peck(peck_data)
@@ -66,10 +70,10 @@ class Injector:
 
         pass
 
-    def trigger_check_round(self, round_id):
+    def trigger_check_round(self, round_id, aspect_ratio):
         # Use the database connection to insert the round results
         self.db.connect()
-        self.db.check_round(round_id)
+        self.db.check_round(round_id, aspect_ratio)
         self.db.close()
         pass
 

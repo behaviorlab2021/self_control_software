@@ -8,7 +8,7 @@
     label_right: label_right
     label_left: label_left
     panel_connected_label: panel_connected_label
-
+    session_ended_label: session_ended_label
 
     BasicImageButtonGreen:  
         id: button_green
@@ -48,6 +48,14 @@
         font_size: '56sp'
         bold: True
         color: root.initial_panel_connected_color()
+        
+    Label:
+        id: session_ended_label
+        pos_hint:  {'center_x':.5, 'center_y':.15} 
+        text: root.initial_session_ended_text()
+        font_size: '56sp'
+        bold: True
+        color: root.initial_session_ended_color()
         
     Image:
         id: spot

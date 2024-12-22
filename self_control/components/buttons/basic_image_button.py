@@ -3,7 +3,7 @@ from kivy.uix.image import Image
 from kivy.core.window import Window
 from kivy.clock import Clock
 import datetime
-from self_control_software.self_control.utils.functions import distance_from
+from self_control_software.self_control.utils.functions import distance_from, is_within_ellipse
 from self_control_software.self_control.services.clicker import Clicker
 from self_control_software.self_control.services.writer import Writer
 from self_control_software.self_control.services.injector import Injector
@@ -45,25 +45,25 @@ class BasicImageButton(ButtonBehavior, Image):
 
     def touch_on_button(self, touch):
 
-        window_x = Window.size[0]
-        window_y = Window.size[1]
-        button_center_x = self.pos_hint['center_x']
-        button_center_y = self.pos_hint['center_y']
-        button_radius = float(self.size_hint[0] / 2) + 0.01
-        aspect_ratio = float(window_x/window_y)
+        aspect_ratio = float(Window.size[0] / Window.size[1])
+
+        center_x_norm = self.pos_hint['center_x']
+        center_y_norm = self.pos_hint['center_y']
+        radius_norm = float(self.size_hint[0] / 2) 
+
 
         # touch.sx and touch.sy are the relative coordinates of tfhe touch to the window, between 0 and 1 
-        dist_from_center  = distance_from(touch.sx, touch.sy, button_center_x, button_center_y, aspect_ratio)
-        return  dist_from_center < button_radius
+        return  is_within_ellipse(touch.sx, touch.sy, center_x_norm, center_y_norm, radius_norm, aspect_ratio)
+  
+    
     def touch_close_to_button(self, touch):
-        window_x = Window.size[0]
-        window_y = Window.size[1]
-        button_center_x = self.pos_hint['center_x']
-        button_center_y = self.pos_hint['center_y']
-        button_radius = float(self.size_hint[0] / 2) + 0.01   
-        aspect_ratio = float(window_x/window_y)
+        aspect_ratio = float(Window.size[0] / Window.size[1])
+
+        center_x_norm = self.pos_hint['center_x']
+        center_y_norm = self.pos_hint['center_y']
+        radius_norm = float(self.size_hint[0] / 2) 
 
         # touch.sx and touch.sy are the relative coordinates of tfhe touch to the window, between 0 and 1 
-        dist_from_center  = distance_from(touch.sx, touch.sy, button_center_x, button_center_y, aspect_ratio)
-        return  dist_from_center < (button_radius + (button_radius / 3))
-
+        return  is_within_ellipse(touch.sx, touch.sy, center_x_norm, center_y_norm, radius_norm + radius_norm/3, aspect_ratio)
+  
+    

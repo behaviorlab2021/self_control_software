@@ -218,16 +218,17 @@ file.remove(stats_pdf_name)
 
 cat("Sending email with attachment:", pdf_name, "\n")
 library(mailR)
-sender <- "behaviorlab2021@gmail.com"
-recipients <- c( "smanoliadis@gmail.com",  "smanoliadis@gmail.com")
+sender <- Sys.getenv("EMAIL_USER")
+password <- Sys.getenv("EMAIL_PASSWORD")
+recipients <- c("smanoliadis@gmail.com")
 
 send.mail(from = sender,
           to = recipients,
           subject = paste("Lab Results for ", subject_name, current_date),
           body = "Please find the attached file.",
           smtp = list(host.name = "smtp.gmail.com", port = 465, 
-                      user.name = "behaviorlab2021@gmail.com",            
-                      passwd = "birn ngjx sqsd lxkk", ssl = TRUE),
+                      user.name = sender,            
+                      passwd = password, ssl = TRUE),
           authenticate = TRUE,
           send = TRUE,
           attach.files = pdf_name

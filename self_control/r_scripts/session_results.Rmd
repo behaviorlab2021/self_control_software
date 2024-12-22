@@ -1,30 +1,173 @@
 ---
 title: "Self Control Session Results"
-author: "smanoliadis"
+author: "Behavior Analysis Lab"
 date: "2024-12-21"
 output: pdf_document
+header-includes:
+- \usepackage{pdflscape}
+- \newcommand{\blandscape}{\begin{landscape}}
+- \newcommand{\elandscape}{\end{landscape}}
+params:
+  session_id: '7737ea96-1097-4c38-ae61-1ad1ee8da412'
 ---
 
 ```{r setup, include=FALSE}
+# Setup chunk: Load necessary libraries and set session_id parameter
 knitr::opts_chunk$set(echo = TRUE)
+session_id <- params$session_id
+library(DBI)
+library(dotenv)
+library(knitr)
+library(kableExtra)
+library(ggforce) # Add this line to load ggforce library
 ```
 
-## R Markdown
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+```{r load_env, include=FALSE}
+# Load environment variables from .env file
+dotenv::load_dot_env("../.env")
 ```
 
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r get_db_credentials, include=FALSE}
+# Get database credentials from environment variables
+dsn_database <- Sys.getenv("DB_NAME")
+dsn_hostname <- Sys.getenv("DB_HOST")
+dsn_port <- Sys.getenv("DB_PORT")
+dsn_uid <- Sys.getenv("DB_USER")
+dsn_pwd <- Sys.getenv("DB_PASSWORD")
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+```{r connect_db, include=FALSE}
+# Connect to the PostgreSQL database
+tryCatch({
+  conn <- dbConnect(
+    RPostgres::Postgres(),
+    dbname = dsn_database,
+    host = dsn_hostname,
+    port = dsn_port,
+    user = dsn_uid,
+    password = dsn_pwd
+  )
+  cat("Connected successfully!\n")
+}, error = function(e) {
+  cat("Error: ", e$message, "\n")
+})
+```
+
+
+
+## Session Information
+
+```{r query_session_details, include=FALSE}
+# Query the database to get detailed session information
+session_details <- dbGetQuery(conn, paste0("
+  SELECT 
+    session_id,
+    subject_name, 
+    mode_name, 
+    created_at, 
+    total_reinforcements, 
+    warning_display_volume, 
+    warning_alarm_volume, 
+    reinforcement_ratio, 
+    warning_hits, 
+    consecutive_warnings_limit, 
+    feed_time, 
+    punishment_duration, 
+    button_height, 
+    warning_signal_position, 
+    is_spot_on,  
+    comments
+  FROM sessions 
+  JOIN subjects ON sessions.subject_id = subjects.subject_id
+  JOIN experiment_modes ON sessions.mode_id = experiment_modes.mode_id
+  WHERE session_id = '", session_id, "';"))
+```
+
+
+
+
+
+```{r session_details_table, echo=FALSE}
+# Transpose the session_details table for better readability
+session_details_t <- t(session_details)
+kable(session_details_t, caption = "Detailed Session Information")
+
+```
+
+\newpage
+\blandscape
+
+## Session Checks
+
+```{r query_session_round_checks, include=FALSE}
+# Query the database to get detailed session information
+session_round_checks <- dbGetQuery(conn, paste0("
+WITH last_session AS (
+    SELECT session_id
+    FROM rounds
+    ORDER BY started_at DESC
+    LIMIT 1
+)
+SELECT 
+  rc.round_id, 
+  rc.check_time, 
+  rc.outcome_valid, 
+  rc.green_pecks_valid, 
+  rc.red_pecks_valid, 
+  rc.feedback_period_valid, 
+  rc.pecks_until_warning_valid, 
+  rc.quarter_valid
+FROM round_checks rc
+JOIN rounds r ON rc.round_id = r.round_id
+WHERE r.session_id = '", session_id, "';"))
+```
+
+```{r session_round_checks_table, echo=FALSE}
+# Set custom column headings
+colnames(session_round_checks) <- c("Round ID", "Check Time", "Outcome Valid", "Green Pecks Valid", "Red Pecks Valid", "Feedback Period Valid", "Pecks Until Warning Valid", "Quarter Valid")
+
+# Transpose the session_details table for better readability
+kable(session_round_checks, caption = "Session Round Checks") %>%
+  kable_styling(font_size = 10) %>%  # Adjust the font size as needed
+  column_spec(2:ncol(session_round_checks), width = "5em") # Adjust the width as needed
+```
+
+
+\newpage
+## Pecks Information
+
+```{r pecks, include=FALSE}
+# Query the database to get detailed session information
+
+pecks <- dbGetQuery(conn, paste0("
+WITH last_session AS (
+    SELECT session_id
+    FROM rounds
+    ORDER BY started_at DESC
+    LIMIT 1
+)
+SELECT p.*
+FROM pecks p
+JOIN rounds r ON p.round_id = r.round_id
+WHERE r.session_id = '", session_id, "';"))
+```
+
+```{r pecks_scatterplot, echo=FALSE}
+# Create a scatterplot to show the position of the pecks using base R
+plot(pecks$x_pos * 1920, pecks$y_pos * 1080, 
+     xlab = "X Position", ylab = "Y Position", 
+     main = "Peck Positions", 
+     xlim = c(0, 1920), ylim = c(0, 1080), 
+     pch = 19, col = "blue", cex = 0.1) # Adjust the cex parameter to make the dots smaller
+
+# Add circles
+symbols(0.3 * 1920, 0.5 * 1080, circles = 0.075 * 1080, add = TRUE, inches = FALSE, fg = "red")
+symbols(0.7 * 1920, 0.5 * 1080, circles = 0.075 * 1080, add = TRUE, inches = FALSE, fg = "green")
+```
+
+\elandscape
+
+```{r disconnect_db, include=FALSE}
+# Disconnect from the PostgreSQL database
+dbDisconnect(conn)
+```

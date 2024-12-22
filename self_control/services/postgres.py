@@ -376,13 +376,17 @@ class ExperimentDB:
             cursor = self.connection.cursor()
             query = """
             INSERT INTO pecks (
-                x_pos, y_pos, screen_on, round_id
-            ) VALUES (%s, %s, %s, %s)
+                x_start, y_start, x_pos, y_pos, screen_on, green_on, red_on, round_id
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             """
             cursor.execute(query, (
+                peck_data['x_start'],
+                peck_data['y_start'],
                 peck_data['x_pos'],
                 peck_data['y_pos'],
                 peck_data['screen_on'],
+                peck_data['green_on'],
+                peck_data['red_on'],
                 peck_data['round_id']
             ))
             self.connection.commit()
@@ -402,12 +406,12 @@ class ExperimentDB:
         except Exception as e:
             print(f"Failed to insert round results: {e}")
 
-    def check_round(self, round_id):
+    def check_round(self, round_id, aspect_ratio):
         """Check round for a specific round_id."""
         try:
             cursor = self.connection.cursor()
-            query = "SELECT check_round(%s);"
-            cursor.execute(query, (round_id,))
+            query = "SELECT check_round(%s, %s);"
+            cursor.execute(query, (round_id, aspect_ratio))
             self.connection.commit()
             cursor.close()
             print(f"Checked round for round ID {round_id}.")

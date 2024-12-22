@@ -4,13 +4,15 @@ CREATE TABLE pecks (
     x_pos FLOAT NOT NULL,
     y_pos FLOAT NOT NULL,
     screen_on BOOLEAN NOT NULL,
+    green_on BOOLEAN NOT NULL,
+    red_on BOOLEAN NOT NULL,
     peck_time TIMESTAMP NOT NULL DEFAULT NOW(),
     round_id UUID REFERENCES rounds(round_id) NOT NULL
 );
 
 -- Example insert into pecks table
-INSERT INTO pecks (x_pos, y_pos, screen_on, round_id)
-VALUES (100.0, 150.0, TRUE, '123e4567-e89b-12d3-a456-426614174001');
+INSERT INTO pecks (x_pos, y_pos, screen_on, green_on, red_on, round_id)
+VALUES (100.0, 150.0, TRUE, FALSE, TRUE, '123e4567-e89b-12d3-a456-426614174001');
 
 -- Example select from pecks table
 SELECT * FROM pecks;    

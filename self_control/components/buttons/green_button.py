@@ -1,5 +1,4 @@
 from kivy.clock import Clock
-from self_control_software.self_control.utils.functions import distance_from
 from kivy.core.window import Window
 import datetime
 
@@ -51,11 +50,10 @@ class BasicImageButtonGreen(BasicImageButton):
             parent.update_button_count()
             parent.update_used_tries() # Updates the number of green clicks while red is enabled.
             self.injector.inject_event(parent.round_id, "green", not parent.button_red.disabled)
+            self.writer.write_data(parent.score, parent.warning_quarter, self.button_count, "green", not parent.button_red.disabled, parent.warning_signal_index)
             parent.make_checks()
             self.disabled = False
-            self.writer.write_data(parent.score, parent.warning_quarter, self.button_count, "green", not parent.button_red.disabled, parent.warning_signal_index)
-
-   
+            
         else:
             if self.touch_close_to_button(touch):
                 pass
