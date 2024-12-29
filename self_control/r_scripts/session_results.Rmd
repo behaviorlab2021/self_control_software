@@ -1,25 +1,40 @@
 ---
 title: "Self Control Session Results"
 author: "Behavior Analysis Lab"
-date: "2024-12-21"
 output: pdf_document
 header-includes:
 - \usepackage{pdflscape}
+- \usepackage{geometry}
 - \newcommand{\blandscape}{\begin{landscape}}
 - \newcommand{\elandscape}{\end{landscape}}
 params:
-  session_id: '7737ea96-1097-4c38-ae61-1ad1ee8da412'
+  session_id: '2b22b802-64bd-4500-b7fc-2e61f566637e'
+  output_dir: '../data'
+  output_name: 'session_results.pdf'
+  custom_output_name: NULL
 ---
-
 ```{r setup, include=FALSE}
+# 2b22b802-64bd-4500-b7fc-2e61f566637e
+# e0dfea33-3850-4415-afe7-7498a4dc7f03
 # Setup chunk: Load necessary libraries and set session_id parameter
 knitr::opts_chunk$set(echo = TRUE)
 session_id <- params$session_id
+output_dir <- params$output_dir
+output_name <- params$output_name
 library(DBI)
 library(dotenv)
 library(knitr)
 library(kableExtra)
 library(ggforce) # Add this line to load ggforce library
+library(mailR) # Add this line to load mailR library
+
+# Set the output file name dynamically if custom_output_name is provided
+if (!is.null(params$custom_output_name)) {
+  output_name <- params$custom_output_name
+} else {
+  output_name <- params$output_name
+}
+output_file <- file.path(params$output_dir, output_name)
 ```
 
 ```{r load_env, include=FALSE}
@@ -54,36 +69,42 @@ tryCatch({
 ```
 
 
-
-## Session Information
+## Session Distribution
 
 ```{r query_session_details, include=FALSE}
 # Query the database to get detailed session information
 session_details <- dbGetQuery(conn, paste0("
   SELECT 
     session_id,
-    subject_name, 
-    mode_name, 
-    created_at, 
-    total_reinforcements, 
-    warning_display_volume, 
-    warning_alarm_volume, 
-    reinforcement_ratio, 
-    warning_hits, 
-    consecutive_warnings_limit, 
-    feed_time, 
-    punishment_duration, 
-    button_height, 
-    warning_signal_position, 
-    is_spot_on,  
+    created_at,
+    subject_name,
+    reinforcement_ratio,
+    warning_hits,
+    punishment_duration,
+    feed_time,
+    total_reinforcements,
+    consecutive_warnings_limit,
+    warning_alarm_volume,
+    warning_display_volume,
+    mode_name,
+    is_spot_on,
+    punishment_periodicity,
+    warning_duration,
+    time_before_warning_signal,
+    highlight_warning_signal,
+    button_size,
+    grace_radius,
+    warning_signal_position,
+    button_height,
+    peck_slide,
+    window_height,
+    window_width,
     comments
   FROM sessions 
   JOIN subjects ON sessions.subject_id = subjects.subject_id
   JOIN experiment_modes ON sessions.mode_id = experiment_modes.mode_id
   WHERE session_id = '", session_id, "';"))
 ```
-
-
 
 
 
@@ -133,8 +154,247 @@ kable(session_round_checks, caption = "Session Round Checks") %>%
 ```
 
 
+## Database Errors
+
+```{r query_session_errors, include=FALSE}
+# Query the database to get errors related to the session
+session_errors_query1 <- dbGetQuery(conn, paste0("
+  SELECT * 
+  FROM errors e
+  JOIN rounds r ON e.round_id = r.round_id 
+  WHERE r.session_id = '", session_id, "';"))
+
+session_errors_query2 <- dbGetQuery(conn, paste0("
+  SELECT * 
+  FROM errors 
+  WHERE session_id = '", session_id, "';"))
+
+# Combine the results of the two queries
+session_errors <- rbind(session_errors_query1, session_errors_query2)
+
+# Get the total count of errors
+total_errors <- nrow(session_errors)
+```
+
+```{r display_session_errors, echo=FALSE}
+# Display the total count of errors found or a message indicating no errors found
+if (total_errors > 0) {
+  cat(total_errors, "error(s) found\n")
+} else {
+  cat("No errors found\n")
+}
+```
+
+\elandscape
+## Session Results
+
+```{r query_session_results, include=FALSE}
+# Query the database to get detailed session information
+session_results <- dbGetQuery(conn, paste0("
+SELECT warning_quarter,
+       COUNT(*) AS total_rows,
+       SUM(CASE
+               WHEN warning_terminated THEN 1
+               ELSE 0
+           END) AS terminations,
+       ROUND(SUM(CASE
+                     WHEN warning_terminated THEN 1
+                     ELSE 0
+                 END)::numeric / COUNT(*) * 100, 2) AS termination_percentage
+FROM round_results rr
+JOIN rounds r ON rr.round_id = r.round_id
+WHERE r.session_id = '", session_id, "'
+GROUP BY warning_quarter
+ORDER BY warning_quarter;"))
+```
+
+```{r session_results_table, echo=FALSE}
+# Set custom column headings
+colnames(session_results) <- c("Warning Quarter", "Rounds", "Terminations", "Percentage")
+
+# Transpose the session_details table for better readability
+kable(session_results, caption = "Session Results") %>%
+  kable_styling(font_size = 10) %>%  # Adjust the font size as needed
+  column_spec(2:ncol(session_results), width = "5em") # Adjust the width as needed
+```
+
+
+```{r query_session_results_history, include=FALSE}
+# Query the database to get detailed session information
+session_results_history <- dbGetQuery(conn, paste0("
+WITH session_info AS (
+    SELECT
+        subject_id,
+        reinforcement_ratio
+    FROM
+        sessions
+    WHERE
+        session_id = '", session_id, "'
+),
+termination_data AS (
+    SELECT
+        sr.session_id,
+        sr.warning_quarter,
+        sr.terminations,
+        sr.total_rounds,
+        sr.result_time
+    FROM
+        session_results sr
+    JOIN
+        sessions s ON sr.session_id = s.session_id
+    WHERE
+        s.subject_id = (SELECT subject_id FROM session_info)
+        AND s.reinforcement_ratio = (SELECT reinforcement_ratio FROM session_info)
+)
+SELECT
+    ROW_NUMBER() OVER (ORDER BY result_time) AS session_index,
+    TO_CHAR(result_time, 'YYYY-MM-DD HH24:MI:SS') AS result_time,
+    MAX(CASE WHEN warning_quarter = 1 THEN terminations ELSE 0 END) AS quarter_1_terminations,
+    MAX(CASE WHEN warning_quarter = 1 THEN total_rounds ELSE 0 END) AS quarter_1_total_rounds,
+    MAX(CASE WHEN warning_quarter = 2 THEN terminations ELSE 0 END) AS quarter_2_terminations,
+    MAX(CASE WHEN warning_quarter = 2 THEN total_rounds ELSE 0 END) AS quarter_2_total_rounds,
+    MAX(CASE WHEN warning_quarter = 3 THEN terminations ELSE 0 END) AS quarter_3_terminations,
+    MAX(CASE WHEN warning_quarter = 3 THEN total_rounds ELSE 0 END) AS quarter_3_total_rounds,
+    MAX(CASE WHEN warning_quarter = 4 THEN terminations ELSE 0 END) AS quarter_4_terminations,
+    MAX(CASE WHEN warning_quarter = 4 THEN total_rounds ELSE 0 END) AS quarter_4_total_rounds
+FROM
+    termination_data
+GROUP BY
+    result_time
+ORDER BY
+    result_time DESC;"))
+
+# Step 1: Convert List Columns to Numeric
+columns_to_convert <- c("quarter_1_terminations", "quarter_1_total_rounds",
+                        "quarter_2_terminations", "quarter_2_total_rounds",
+                        "quarter_3_terminations", "quarter_3_total_rounds",
+                        "quarter_4_terminations", "quarter_4_total_rounds")
+
+# Convert relevant columns to numeric
+session_results_history[columns_to_convert] <- lapply(session_results_history[columns_to_convert], function(col) {
+  as.numeric(unlist(col))
+})
+
+
+# Step 2.1: Calculate Percentage Columns
+session_results_history$quarter_1_percentage <- ifelse(
+  session_results_history$quarter_1_total_rounds > 0,
+  (session_results_history$quarter_1_terminations / session_results_history$quarter_1_total_rounds) * 100,
+  0
+)
+
+session_results_history$quarter_2_percentage <- ifelse(
+  session_results_history$quarter_2_total_rounds > 0,
+  (session_results_history$quarter_2_terminations / session_results_history$quarter_2_total_rounds) * 100,
+  0
+)
+
+session_results_history$quarter_3_percentage <- ifelse(
+  session_results_history$quarter_3_total_rounds > 0,
+  (session_results_history$quarter_3_terminations / session_results_history$quarter_3_total_rounds) * 100,
+  0
+)
+
+session_results_history$quarter_4_percentage <- ifelse(
+  session_results_history$quarter_4_total_rounds > 0,
+  (session_results_history$quarter_4_terminations / session_results_history$quarter_4_total_rounds) * 100,
+  0
+)
+
+# Step 2.2: Create Formatted Columns
+
+session_results_history_latest <- head(session_results_history, 5)
+
+
+calculate_formatted_column <- function(terminations, total_rounds, percentage) {
+  sprintf("%d / %d (%.2f%%)", terminations, total_rounds, percentage)
+}
+
+session_results_history_latest$quarter_1 <- mapply(calculate_formatted_column,
+                                                   session_results_history_latest$quarter_1_terminations,
+                                                   session_results_history_latest$quarter_1_total_rounds,
+                                                   session_results_history_latest$quarter_1_percentage)
+
+session_results_history_latest$quarter_2 <- mapply(calculate_formatted_column,
+                                                   session_results_history_latest$quarter_2_terminations,
+                                                   session_results_history_latest$quarter_2_total_rounds,
+                                                   session_results_history_latest$quarter_2_percentage)
+
+session_results_history_latest$quarter_3 <- mapply(calculate_formatted_column,
+                                                   session_results_history_latest$quarter_3_terminations,
+                                                   session_results_history_latest$quarter_3_total_rounds,
+                                                   session_results_history_latest$quarter_3_percentage)
+
+session_results_history_latest$quarter_4 <- mapply(calculate_formatted_column,
+                                                   session_results_history_latest$quarter_4_terminations,
+                                                   session_results_history_latest$quarter_4_total_rounds,
+                                                   session_results_history_latest$quarter_4_percentage)
+
+# Step 3: Prepare the Final Table
+session_results_history_latest <- session_results_history_latest[, c("session_index", "result_time", 
+                                                   "quarter_1", "quarter_2", 
+                                                   "quarter_3", "quarter_4")]
+
+
+```
+
+
+```{r session_results_history_latest_table, echo=FALSE}
+# Set custom column headings
+colnames(session_results_history_latest) <- c("#", "Date", "Quarter 1", "Quarter 2", "Quarter 3", "Quarter 4")
+
+
+# Transpose the session_details table for better readability
+kable(session_results_history_latest, caption = "Session History (Last 5 Sessions)") %>%
+  kable_styling(font_size = 10) # Adjust the font size as needed
+  # kable_styling(font_size = 10) %>%  # Adjust the font size as needed
+  # column_spec(2:ncol(session_results_history_latest), width = "5em") # Adjust the width as needed
+```
+
 \newpage
-## Pecks Information
+\blandscape
+
+## Warning Termination Percentage by Quarter
+
+```{r session_results_history_line_chart, echo=FALSE, message=FALSE, fig.width=12, fig.height=8}
+# Load necessary libraries
+library(tidyr)  # Ensure tidyr is loaded for pivot_longer
+library(ggplot2)  # Ensure ggplot2 is loaded
+library(kableExtra)  # Ensure kableExtra is loaded
+
+# Convert integer64 columns to numeric before plotting
+session_results_history$session_index <- as.numeric(session_results_history$session_index)
+
+# Extract percentages for each quarter
+completion_table <- session_results_history[, c("session_index", "quarter_1_percentage", "quarter_2_percentage", "quarter_3_percentage", "quarter_4_percentage")]
+
+# Transform the table into long format for the line graph
+completion_table_long <- pivot_longer(completion_table, 
+                                      cols = starts_with("quarter_"), 
+                                      names_to = "Quarter", 
+                                      values_to = "Completion_Percentage",
+                                      names_prefix = "quarter_")
+
+# Convert quarter identifiers to readable format (optional)
+completion_table_long$Quarter <- gsub("_percentage", "", completion_table_long$Quarter)
+completion_table_long$Quarter <- paste("Quarter", completion_table_long$Quarter)
+
+# Create the line graph
+ggplot(completion_table_long, aes(x = session_index, y = Completion_Percentage, color = Quarter, shape = Quarter)) +
+  geom_line() +
+  geom_point(size = 3, fill = "white") +
+  scale_shape_manual(values = c(1, 2, 0, 5)) +  # Use 1 for circle, 2 for triangle, 0 for square, 5 for kite
+  labs(title = "Completion Percentage by Quarter",
+       x = "Session",
+       y = "Completion Percentage (%)",
+       color = "Quarter",
+       shape = "Quarter") +
+  theme_minimal()
+```
+
+\newpage
+
+## Pecks Distribution
 
 ```{r pecks, include=FALSE}
 # Query the database to get detailed session information
@@ -152,17 +412,32 @@ JOIN rounds r ON p.round_id = r.round_id
 WHERE r.session_id = '", session_id, "';"))
 ```
 
-```{r pecks_scatterplot, echo=FALSE}
+
+```{r pecks_scatterplot, echo=FALSE, fig.width=12, fig.height=8}
 # Create a scatterplot to show the position of the pecks using base R
-plot(pecks$x_pos * 1920, pecks$y_pos * 1080, 
+
+window_width <- session_details$window_width[1]
+window_height <- session_details$window_height[1]
+button_size <- session_details$button_size[1]
+button_height <- session_details$button_height[1]
+warning_signal_position <- session_details$warning_signal_position[1]
+
+plot(pecks$x_pos * window_width, pecks$y_pos * window_height, 
      xlab = "X Position", ylab = "Y Position", 
-     main = "Peck Positions", 
-     xlim = c(0, 1920), ylim = c(0, 1080), 
+     main = "Pecks Distribution", 
+     xlim = c(0, window_width), ylim = c(0, window_height), 
      pch = 19, col = "blue", cex = 0.1) # Adjust the cex parameter to make the dots smaller
 
 # Add circles
-symbols(0.3 * 1920, 0.5 * 1080, circles = 0.075 * 1080, add = TRUE, inches = FALSE, fg = "red")
-symbols(0.7 * 1920, 0.5 * 1080, circles = 0.075 * 1080, add = TRUE, inches = FALSE, fg = "green")
+symbols((0.3 + (warning_signal_position / 100.0) * 0.4) * window_width, button_height/100.0 * window_height, circles = button_size/100.0/2.0 * window_height, add = TRUE, inches = FALSE, fg = "red")
+symbols(0.7 * window_width, button_height/100.0 * window_height, circles = button_size/100.0/2.0 * window_height, add = TRUE, inches = FALSE, fg = "green")
+
+# Add additional circles with grace radius if it exists
+if (!is.null(session_details$grace_radius)) {
+  grace_radius <- session_details$grace_radius * 1080
+symbols((0.3 + (warning_signal_position / 100.0) * 0.4) * window_width, button_height/100.0 * window_height, circles = button_size/100.0/2.0 * window_height + grace_radius/100.0, add = TRUE, inches = FALSE,  fg = "red", lty = 2)
+symbols(0.7 * window_width, button_height/100.0 * window_height, circles = button_size/100.0/2.0 * window_height + grace_radius/100.0, add = TRUE, inches = FALSE, fg = "green", lty = 2)
+}
 ```
 
 \elandscape

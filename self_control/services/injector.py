@@ -12,9 +12,9 @@ class Injector:
     def injector_update(self, constant_data):
         self.session_id = constant_data['session_id']
 
-    def inject_event(self, round_id, event_type, warning_signal_present):
+    def inject_event(self, round_id, event_type, warning_signal_present, hit_count):
         self.db.connect()
-        self.db.insert_event(round_id, event_type, warning_signal_present)
+        self.db.insert_event(round_id, event_type, warning_signal_present, hit_count)
         self.db.close()
 
 
@@ -70,10 +70,22 @@ class Injector:
 
         pass
 
-    def trigger_check_round(self, round_id, aspect_ratio):
+    def trigger_check_round(self, round_id):
         # Use the database connection to insert the round results
         self.db.connect()
-        self.db.check_round(round_id, aspect_ratio)
+        self.db.check_round(round_id)
         self.db.close()
         pass
+
+    def trigger_session_results(self, session_id):
+        """Trigger the insertion of session results for a specific session_id."""
+        self.db.connect()
+        self.db.insert_session_results(session_id)
+        self.db.close()
+
+    def update_session_window_size(self, session_id, window_x, window_y):
+        """Update the session size in the database."""
+        self.db.connect()
+        self.db.update_session_window_size(session_id, window_x, window_y)
+        self.db.close()
 

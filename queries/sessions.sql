@@ -15,10 +15,15 @@ CREATE TABLE sessions (
     warning_duration INTEGER NOT NULL,                  -- Warning duration in seconds
     time_before_warning_signal INTEGER,                 -- Pre-warning time in seconds
     highlight_warning_signal BOOLEAN,                   -- Highlight warning signal
+    button_size INTEGER NOT NULL,                       -- Size of the button
+    grace_radius INTEGER NOT NULL,                      -- Radius outside the button where pecks are valid
     warning_signal_position INTEGER NOT NULL,           -- Position of the warning signal
     button_height INTEGER NOT NULL,                     -- Height of the button
+    peck_slide INTEGER NOT NULL,                        -- Acceptable peck slide distance
     created_at TIMESTAMP DEFAULT NOW(),                 -- Record creation timestamp
     updated_at TIMESTAMP DEFAULT NOW(),                 -- Record update timestamp
+    window_height INTEGER,                              -- Height of the window
+    window_width INTEGER,                               -- Width of the window  
     comments TEXT                                       -- Optional comments
 );
 

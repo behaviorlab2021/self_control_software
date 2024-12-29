@@ -18,6 +18,7 @@ class ExperimentDB:
             'port': os.getenv('DB_PORT', 5432)
         }
         self.connection = None
+        self.connect()  # Ensure connection is established
 
     def connect(self):
         try:
@@ -111,6 +112,33 @@ class ExperimentDB:
             print(f"Failed to fetch modes: {e}")
             return []
 
+    def log_error_with_session_id(self, session_id, error_message):
+        """Log an error with session_id in a separate transaction."""
+        try:
+            error_connection = psycopg2.connect(**self.db_config)
+            cursor = error_connection.cursor()
+
+            query = "SELECT log_error_with_session_id(%s, %s);"
+            cursor.execute(query, (session_id, error_message))
+            error_connection.commit()
+            cursor.close()
+            error_connection.close()
+        except Exception as e:
+            print(f"Failed to log error with session_id: {e}")
+
+    def log_error_with_round_id(self, round_id, error_message):
+        """Log an error with round_id in a separate transaction."""
+        try:
+            error_connection = psycopg2.connect(**self.db_config)
+            cursor = error_connection.cursor()
+            query = "SELECT log_error_with_round_id(%s, %s);"
+            cursor.execute(query, (round_id, error_message))
+            error_connection.commit()
+            cursor.close()
+            error_connection.close()
+        except Exception as e:
+            print(f"Failed to log error with round_id: {e}")
+
     def insert_session(self, session_data):
         """Insert a new session into the sessions table and return the session_id."""
         try:
@@ -135,8 +163,11 @@ class ExperimentDB:
                 highlight_warning_signal, 
                 warning_signal_position, 
                 button_height, 
+                button_size,
+                grace_radius,
+                peck_slide,
                 comments
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             RETURNING session_id
             """
             cursor.execute(query, (
@@ -157,7 +188,10 @@ class ExperimentDB:
                 session_data['time_before_warning_signal'], 
                 session_data['highlight_warning_signal'], 
                 session_data['warning_signal_position'], 
-                session_data['button_height'], 
+                session_data['button_height'],
+                session_data['button_size'],
+                session_data['grace_radius'],
+                session_data['peck_slide'], 
                 session_data['comments']
             ))
             self.connection.commit()
@@ -166,6 +200,7 @@ class ExperimentDB:
             return session_data['session_id']
         except Exception as e:
             print(f"Failed to insert session: {e}")
+            self.log_error_with_session_id(session_data['session_id'], str(e))
             return None
 
     def insert_session_with_uuid(self, session_data):
@@ -191,9 +226,12 @@ class ExperimentDB:
                 time_before_warning_signal, 
                 highlight_warning_signal, 
                 warning_signal_position, 
-                button_height, 
+                button_height,
+                button_size,
+                grace_radius,
+                peck_slide, 
                 comments
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """
             session_id = session_data.get('session_id', str(uuid.uuid4()))
             cursor.execute(query, (
@@ -214,7 +252,10 @@ class ExperimentDB:
                 session_data['time_before_warning_signal'], 
                 session_data['highlight_warning_signal'], 
                 session_data['warning_signal_position'], 
-                session_data['button_height'], 
+                session_data['button_height'],
+                session_data['button_size'],
+                session_data['grace_radius'],
+                session_data['peck_slide'], 
                 session_data['comments']
             ))
             self.connection.commit()
@@ -222,24 +263,26 @@ class ExperimentDB:
             print(f"Inserted new session with UUID {session_id}.")
         except Exception as e:
             print(f"Failed to insert session: {e}")
+            self.log_error_with_session_id(session_id, str(e))
 
-    def insert_event(self, round_id, event_type, warning_signal_present):
+    def insert_event(self, round_id, event_type, warning_signal_present, hit_count):
         """Insert a new event into the events table."""
         try:
             cursor = self.connection.cursor()
             query = """
             INSERT INTO events (
-                round_id, event_type, warning_signal_present
-            ) VALUES (%s, %s, %s)
+                round_id, event_type, warning_signal_present, hit_count
+            ) VALUES (%s, %s, %s, %s)
             """
             cursor.execute(query, (
-                round_id, event_type, warning_signal_present
+                round_id, event_type, warning_signal_present, hit_count
             ))
             self.connection.commit()
             cursor.close()
         except Exception as e:
             print(f"Failed to insert event: {e}")
-            
+            self.log_error_with_round_id(round_id, str(e))
+
     def insert_cumulative_record(self, hit_count, session_id):
         """Insert a new row into the cumulative_record table."""
         try:
@@ -253,25 +296,7 @@ class ExperimentDB:
             cursor.close()
         except Exception as e:
             print(f"Failed to insert into cumulative_record: {e}")
-
-
-    def select_last_event(self):
-        """Fetch the last event from the events table."""
-        try:
-            cursor = self.connection.cursor(cursor_factory=RealDictCursor)
-            query = "SELECT * FROM events ORDER BY event_id DESC LIMIT 1"
-            cursor.execute(query)
-            result = cursor.fetchone()
-            cursor.close()
-            if result:
-                print("Last Event:", result)
-                return result
-            else:
-                print("The events table is empty.")
-                return None
-        except Exception as e:
-            print(f"Failed to fetch the last event: {e}")
-            return None
+            self.log_error_with_session_id(session_id, str(e))
 
     def select_session_by_id(self, session_id):
         """Fetch a session by its ID."""
@@ -289,6 +314,7 @@ class ExperimentDB:
                 return None
         except Exception as e:
             print(f"Failed to fetch session: {e}")
+            self.log_error_with_session_id(session_id, str(e))
             return None
 
     def edit_session_subject(self, session_id, new_subject):
@@ -302,6 +328,7 @@ class ExperimentDB:
             print(f"Updated session ID {session_id} with new subject: {new_subject}")
         except Exception as e:
             print(f"Failed to update session subject: {e}")
+            self.log_error_with_session_id(session_id, str(e))
 
     def find_session_by_id(self, session_id):
         """Find and return a session based on session_id."""
@@ -319,6 +346,7 @@ class ExperimentDB:
                 return None
         except Exception as e:
             print(f"Failed to find session: {e}")
+            self.log_error_with_session_id(session_id, str(e))
             return None
 
     def find_subject_by_id(self, subject_id):
@@ -337,38 +365,33 @@ class ExperimentDB:
                 return None
         except Exception as e:
             print(f"Failed to find subject: {e}")
-            return None
-
-    def insert_round(self, round_data):
-        """Insert a new round into the rounds table and return the round_id."""
-        try:
-            round_id = self.inject_round_data(round_data)
-            self.connection.commit()
-            print(f"Inserted new round with ID {round_id}.")
-            return round_id
-        except Exception as e:
-            print(f"Failed to insert round: {e}")
+            self.log_error_with_session_id(subject_id, str(e))
             return None
 
     def insert_round_data(self, round_data):
         """Helper function to inject round data into the rounds table."""
-        cursor = self.connection.cursor()
-        query = """
-        INSERT INTO rounds (
-            session_id, round_index, warning_index, warning_quarter, reinforcers_count
-        ) VALUES (%s, %s, %s, %s, %s)
-        RETURNING round_id
-        """
-        cursor.execute(query, (
-            round_data['session_id'],
-            round_data['round_index'],
-            round_data['warning_index'],
-            round_data['warning_quarter'],
-            round_data['reinforcers_count']
-        ))
-        round_id = cursor.fetchone()[0]
-        cursor.close()
-        return round_id
+        try:
+            cursor = self.connection.cursor()
+            query = """
+            INSERT INTO rounds (
+                session_id, round_index, warning_index, warning_quarter, reinforcers_count
+            ) VALUES (%s, %s, %s, %s, %s)
+            RETURNING round_id
+            """
+            cursor.execute(query, (
+                round_data['session_id'],
+                round_data['round_index'],
+                round_data['warning_index'],
+                round_data['warning_quarter'],
+                round_data['reinforcers_count']
+            ))
+            round_id = cursor.fetchone()[0]
+            cursor.close()
+            return round_id
+        except Exception as e:
+            print(f"Failed to insert round data: {e}")
+            self.log_error_with_round_id(round_data['round_id'], str(e))
+            return None
 
     def insert_peck(self, peck_data):
         """Insert a new peck into the pecks table."""
@@ -393,6 +416,7 @@ class ExperimentDB:
             cursor.close()
         except Exception as e:
             print(f"Failed to insert peck: {e}")
+            self.log_error_with_round_id(peck_data['round_id'], str(e))
 
     def insert_round_results(self, round_id):
         """Insert round results for a specific round_id."""
@@ -405,19 +429,75 @@ class ExperimentDB:
             print(f"Inserted round results for round ID {round_id}.")
         except Exception as e:
             print(f"Failed to insert round results: {e}")
+            self.log_error_with_round_id(round_id, str(e))
 
-    def check_round(self, round_id, aspect_ratio):
+    def check_round(self, round_id):
         """Check round for a specific round_id."""
         try:
             cursor = self.connection.cursor()
-            query = "SELECT check_round(%s, %s);"
-            cursor.execute(query, (round_id, aspect_ratio))
+            query = "SELECT check_round(%s);"
+            cursor.execute(query, (round_id,))  # Add comma here to make it a tuple
             self.connection.commit()
             cursor.close()
             print(f"Checked round for round ID {round_id}.")
         except Exception as e:
             print(f"Failed to check round: {e}")
+            self.log_error_with_round_id(round_id, str(e))
+
+    def insert_session_results(self, session_id):
+        """Insert session results for a specific session_id."""
+        try:
+            cursor = self.connection.cursor()
+            query = "SELECT insert_session_results(%s);"
+            cursor.execute(query, (session_id,))
+            self.connection.commit()
+            cursor.close()
+            print(f"Inserted session results for session ID {session_id}.")
+        except Exception as e:
+            print(f"Failed to insert session results: {e}")
+            self.log_error_with_session_id(session_id, str(e))
+
+    
+    def update_session_window_size(self, session_id, window_x, window_y):
+        """Update window size for a specific session_id."""
+        try:
+            cursor = self.connection.cursor()
+            query = """
+            UPDATE sessions
+            SET window_width = %s, 
+                window_height = %s
+            WHERE session_id = %s
+            """
+            cursor.execute(query, (window_x, window_y, session_id))
+            self.connection.commit()
+            cursor.close()
+            print(f"Updated window size for session ID {session_id}.")
+        except Exception as e:
+            print(f"Failed to update window size: {e}")
+            self.log_error_with_session_id(session_id, str(e))
 
 
 
-
+    def get_session_basic_info(self, session_id):
+        """Fetch session created_at and subject name by session_id."""
+        try:
+            cursor = self.connection.cursor(cursor_factory=RealDictCursor)
+            query = """
+            SELECT s.created_at as experiment_date, sub.subject_name
+            FROM sessions s
+            JOIN subjects sub ON s.subject_id = sub.subject_id
+            WHERE s.session_id = %s
+            """
+            cursor.execute(query, (session_id,))
+            result = cursor.fetchone()
+            cursor.close()
+            if result:
+                print("Session Basic Info:", result)
+                return result
+            else:
+                print(f"No session found with ID {session_id}.")
+                return None
+        except Exception as e:
+            print(f"Failed to fetch session basic info: {e}")
+            self.log_error_with_session_id(session_id, str(e))
+            return None

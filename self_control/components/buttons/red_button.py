@@ -30,10 +30,12 @@ class BasicImageButtonRed(BasicImageButton):
     def on_touch_up(self, touch):
         window_x = Window.size[0]
         window_y = Window.size[1]
+        parent = self.parent
+
         aspect_ratio = float(window_x/window_y)
         if self.touch_start_x:
             slide = distance_from(self.touch_start_x, self.touch_start_y, touch.sx, touch.sy)
-            if slide>0.05:
+            if slide>parent.session_data["peck_slide"]/100:
                 print("Feather", slide , datetime.datetime.now())
                 return
             else: 
@@ -51,11 +53,10 @@ class BasicImageButtonRed(BasicImageButton):
                     self.red_button_scheduled_event = Clock.schedule_once(self.change_button_image, .3)
                     self.clicker.click()
                     self.button_count = self.button_count + 1
-                    parent = self.parent
 
                     # Event Red
                     self.writer.write_data(parent.score, parent.warning_quarter, parent.clicks, "red-"+str(int(parent.warning_quarter)), not parent.button_red.disabled, parent.warning_signal_index) 
-                    self.injector.inject_event(parent.round_id, "red", True)
+                    self.injector.inject_event(parent.round_id, "red", True, parent.clicks)
                     parent.used_tries = 0
 
                     parent.negative_reinforcement()

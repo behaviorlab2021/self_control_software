@@ -49,7 +49,7 @@ class BasicImageButtonGreen(BasicImageButton):
             #Event Green
             parent.update_button_count()
             parent.update_used_tries() # Updates the number of green clicks while red is enabled.
-            self.injector.inject_event(parent.round_id, "green", not parent.button_red.disabled)
+            self.injector.inject_event(parent.round_id, "green", not parent.button_red.disabled, parent.clicks)
             self.writer.write_data(parent.score, parent.warning_quarter, self.button_count, "green", not parent.button_red.disabled, parent.warning_signal_index)
             parent.make_checks()
             self.disabled = False

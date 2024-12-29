@@ -3,20 +3,8 @@ CREATE TABLE events (
     event_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),   -- Unique identifier for the event
     event_time TIMESTAMP NOT NULL DEFAULT NOW(),            -- Time of the event
     event_type VARCHAR(50) NOT NULL,                        -- Type of event (e.g., "stimulus", "response")
-    warning_signal_present BOOLEAN NOT NULL                 -- Whether a warning signal was present
-);
-
-
-INSERT INTO events (
-    round_id,
-    event_time,
-    event_type,
-    warning_signal_present
-) VALUES (
-    '550e8400-e29b-41d4-a716-446655440000', -- Round ID (UUID)
-    '2024-11-27 15:00:00',                  -- Specific event time
-    'stimulus',                             -- Type of event
-    TRUE                                    -- Warning signal present
+    warning_signal_present BOOLEAN NOT NULL,                 -- Whether a warning signal was present
+    hit_count INT NOT NULL DEFAULT 0                       -- Number of hits
 );
 
 

@@ -26,24 +26,27 @@ class MultiStepApp:
         self.current_step = 1
         self.session_id = str(uuid.uuid4())
         self.subject_name = tk.StringVar()
-        self.total_reinforcements = tk.StringVar(value="1")
-        self.punishment_duration = tk.StringVar(value="0")
-        self.feed_time = tk.StringVar(value="1")
+        self.total_reinforcements = tk.StringVar(value="35")
+        self.punishment_duration = tk.StringVar(value="30")
+        self.feed_time = tk.StringVar(value="4")
         self.is_spot_on = tk.BooleanVar(value=False)
-        self.reinforcement_ratio = tk.StringVar(value="1")
+        self.reinforcement_ratio = tk.StringVar(value="60")
         self.subjects = self.db.select_all_subjects()
         self.mode_id = tk.StringVar()
         self.modes = self.db.select_all_modes()
-        self.consecutive_warnings_limit = tk.StringVar(value="1")
-        self.warning_alarm_volume = tk.StringVar(value="0")
-        self.warning_display_volume = tk.StringVar(value="0")
-        self.warning_hits = tk.StringVar(value="1")
+        self.consecutive_warnings_limit = tk.StringVar(value="3")
+        self.warning_alarm_volume = tk.StringVar(value="100")
+        self.warning_display_volume = tk.StringVar(value="100")
+        self.warning_hits = tk.StringVar(value="3")
         self.punishment_periodicity = tk.StringVar(value="1")
-        self.warning_duration = tk.StringVar(value="1")
-        self.time_before_warning_signal = tk.StringVar(value="1")
+        self.warning_duration = tk.StringVar(value="5")
+        self.time_before_warning_signal = tk.StringVar(value="5")
         self.highlight_warning_signal = tk.BooleanVar(value=False)
         self.warning_signal_position = tk.StringVar(value="0")
-        self.button_height = tk.StringVar(value="0")
+        self.button_height = tk.StringVar(value="50")
+        self.button_size = tk.StringVar(value="15")
+        self.grace_radius = tk.StringVar(value="1")
+        self.peck_slide = tk.StringVar(value="5")
         self.comments = tk.StringVar()
         self.inputs_frame = None  # Initialize inputs_frame to None
 
@@ -267,6 +270,12 @@ class MultiStepApp:
                 variable.set(new_value)
             elif variable == self.button_height and new_value <= 100:
                 variable.set(new_value)
+            elif variable == self.button_size and new_value <= 100:
+                variable.set(new_value)
+            elif variable == self.grace_radius and new_value <= 100:
+                variable.set(new_value)
+            elif variable == self.peck_slide and new_value <= 100:
+                variable.set(new_value)
         except ValueError:
             variable.set(increment)
 
@@ -310,6 +319,15 @@ class MultiStepApp:
                 if current_value > 0:
                     variable.set(max(0, current_value - decrement))
             elif variable == self.button_height:
+                if current_value > 0:
+                    variable.set(max(0, current_value - decrement))
+            elif variable == self.button_size:
+                if current_value > 0:
+                    variable.set(max(0, current_value - decrement))
+            elif variable == self.grace_radius:
+                if current_value > 0:
+                    variable.set(max(0, current_value - decrement))
+            elif variable == self.peck_slide:
                 if current_value > 0:
                     variable.set(max(0, current_value - decrement))
         except ValueError:
@@ -414,16 +432,45 @@ class MultiStepApp:
             tk.Button(input_frame, text="-10", command=lambda: self.decrement_value(self.button_height, 10)).grid(row=9, column=5, padx=2)
             self.button_height_entry.bind("<FocusOut>", lambda e: self.validate_entry(self.button_height, 0, 100))
 
+        # Button Size
+        if not self.is_basic_training_mode():
+            tk.Label(input_frame, text="Button Size:", font=("Tahoma", 12)).grid(row=10, column=0, pady=2, sticky="e")
+            self.button_size_entry = tk.Entry(input_frame, textvariable=self.button_size, validate="key", validatecommand=(self.root.register(self.validate_between_0_and_100), '%P'), width=5)
+            self.button_size_entry.grid(row=10, column=1, pady=2, sticky="w")
+            tk.Button(input_frame, text="+", command=lambda: self.increment_value(self.button_size, 1)).grid(row=10, column=2, padx=2)
+            tk.Button(input_frame, text="-", command=lambda: self.decrement_value(self.button_size, 1)).grid(row=10, column=3, padx=2)
+            self.button_size_entry.bind("<FocusOut>", lambda e: self.validate_entry(self.button_size, 0, 100))
+
+        # Grace Radius
+        if not self.is_basic_training_mode():
+            tk.Label(input_frame, text="Grace Radius:", font=("Tahoma", 12)).grid(row=11, column=0, pady=2, sticky="e")
+            self.grace_radius_entry = tk.Entry(input_frame, textvariable=self.grace_radius, validate="key", validatecommand=(self.root.register(self.validate_between_0_and_100), '%P'), width=5)
+            self.grace_radius_entry.grid(row=11, column=1, pady=2, sticky="w")
+            tk.Button(input_frame, text="+", command=lambda: self.increment_value(self.grace_radius, 1)).grid(row=11, column=2, padx=2)
+            tk.Button(input_frame, text="-", command=lambda: self.decrement_value(self.grace_radius, 1)).grid(row=11, column=3, padx=2)
+            self.grace_radius_entry.bind("<FocusOut>", lambda e: self.validate_entry(self.grace_radius, 0, 100))
+
+        # Peck Slide
+        if not self.is_basic_training_mode() and not self.is_schedule_training_mode():
+            tk.Label(input_frame, text="Peck Slide:", font=("Tahoma", 12)).grid(row=12, column=0, pady=2, sticky="e")
+            self.peck_slide_entry = tk.Entry(input_frame, textvariable=self.peck_slide, validate="key", validatecommand=(self.root.register(self.validate_between_0_and_100), '%P'), width=5)
+            self.peck_slide_entry.grid(row=12, column=1, pady=2, sticky="w")
+            tk.Button(input_frame, text="+", command=lambda: self.increment_value(self.peck_slide, 1)).grid(row=12, column=2, padx=2)
+            tk.Button(input_frame, text="-", command=lambda: self.decrement_value(self.peck_slide, 1)).grid(row=12, column=3, padx=2)
+            self.peck_slide_entry.bind("<FocusOut>", lambda e: self.validate_entry(self.peck_slide, 0, 100))
+
+
         # Highlight Warning Signal
         if not self.is_basic_training_mode() and not self.is_schedule_training_mode() and not self.is_random_warning_mode():
-            tk.Label(input_frame, text="Highlight Warning Signal:", font=("Tahoma", 12)).grid(row=10, column=0, pady=2, sticky="e")
+            tk.Label(input_frame, text="Highlight Warning Signal:", font=("Tahoma", 12)).grid(row=13, column=0, pady=2, sticky="e")
             self.highlight_warning_signal_check = tk.Checkbutton(input_frame, variable=self.highlight_warning_signal)
-            self.highlight_warning_signal_check.grid(row=10, column=1, pady=2, sticky="w")
+            self.highlight_warning_signal_check.grid(row=13, column=1, pady=2, sticky="w")
 
         # Add Is Spot On to More Options
-        tk.Label(input_frame, text="Is Spot On:", font=("Tahoma", 12)).grid(row=11, column=0, pady=2, sticky="e")
-        self.is_spot_on_check = tk.Checkbutton(input_frame, variable=self.is_spot_on)
-        self.is_spot_on_check.grid(row=11, column=1, pady=2, sticky="w")
+        if not self.is_basic_training_mode():
+            tk.Label(input_frame, text="Is Spot On:", font=("Tahoma", 12)).grid(row=14, column=0, pady=2, sticky="e")
+            self.is_spot_on_check = tk.Checkbutton(input_frame, variable=self.is_spot_on)
+            self.is_spot_on_check.grid(row=14, column=1, pady=2, sticky="w")
 
         # Configure columns to expand and center-align the grid
         input_frame.grid_columnconfigure(0, weight=1)
@@ -538,6 +585,9 @@ class MultiStepApp:
             'Time Before Warning Signal': self.time_before_warning_signal.get(),
             'Warning Signal Position': self.warning_signal_position.get(),
             'Button Height': self.button_height.get(),
+            'Button Size': self.button_size.get(),
+            'Grace Radius': self.grace_radius.get(),
+            'Peck Slide': self.peck_slide.get(),
             'Highlight Warning Signal': self.highlight_warning_signal.get(),
             'Is Spot On': self.is_spot_on.get(),
             'Comments': self.comments.get()
@@ -606,6 +656,12 @@ class MultiStepApp:
                     self.warning_signal_position.set(last_session['warning_signal_position'])
                 if 'button_height' in last_session:
                     self.button_height.set(last_session['button_height'])
+                if 'button_size' in last_session:
+                    self.button_size.set(last_session['button_size'])
+                if 'grace_radius' in last_session:
+                    self.grace_radius.set(last_session['grace_radius'])
+                if 'peck_slide' in last_session:
+                    self.peck_slide.set(last_session['peck_slide'])
                 if 'mode_id' in last_session:
                     mode_name = next((mode['mode_name'] for mode in self.modes if mode['mode_id'] == last_session['mode_id']), None)
                     if mode_name:
@@ -635,6 +691,9 @@ class MultiStepApp:
         highlight_warning_signal = session_data['Highlight Warning Signal']
         warning_signal_position = session_data['Warning Signal Position']
         button_height = session_data['Button Height']
+        button_size = session_data['Button Size']
+        grace_radius = session_data['Grace Radius']
+        peck_slide = session_data['Peck Slide']
         comments = session_data['Comments']
 
         subject = self.db.select_subject_by_name(subject_name)
@@ -661,6 +720,9 @@ class MultiStepApp:
             'highlight_warning_signal': highlight_warning_signal,
             'warning_signal_position': warning_signal_position,
             'button_height': button_height,
+            'button_size': button_size,
+            'grace_radius': grace_radius,
+            'peck_slide': peck_slide,
             'comments': comments
         }
         # Insert the session into the database and get the session_id

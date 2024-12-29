@@ -37,6 +37,7 @@ subject_name = None
 class ExperimentLayout(FloatLayout):
 
     button_height = 0.6
+    button_size = 0.6
     consecutive_warnings = 0
     feeding_condition = False
     score = 0
@@ -70,6 +71,7 @@ class ExperimentLayout(FloatLayout):
     touch_start_x = None
     touch_start_y = None
     has_ended = False
+    cumulative_record = None
 
 
     def check_if_hopper_training(self, dt):
@@ -88,8 +90,7 @@ class ExperimentLayout(FloatLayout):
         # Clock scheduling
         Clock.schedule_once(self.prepare_buttons, 0.8)
         Clock.schedule_once(self.start_session, 0.8)
-        Clock.schedule_interval(self.add_cumulative_record, 0.5)
-        # Keyboard event binding
+        self.cumulative_record = Clock.schedule_interval(self.add_cumulative_record, 0.1)        # Keyboard event binding
         self._keyboard = Window.request_keyboard(self._keyboard_closed, self)
         self._keyboard.bind(on_key_down=self._on_keyboard_down)
         # USB MONITORING
@@ -100,12 +101,13 @@ class ExperimentLayout(FloatLayout):
         
         self.window_x = Window.size[0]
         self.window_y = Window.size[1]
-        # Print the window size
-        print("Window size: ", self.window_x, self.window_y)
+
+        self.injector.update_session_window_size(self.session_data["session_id"], self.window_x, self.window_y)
+
+        self.button_size = self.session_data["button_size"]/100
         
         self.aspect_ratio = float(self.window_x/self.window_y)
 
-        print("ASPECT RATIO: ", self.aspect_ratio)
         # if any(device.split("\\")[1] == "VID_0C45&PID_8419" for device in devices_dict):
         #     print("Application started with Touch Panel Connected")
         #     self.is_panel_connected = True
@@ -114,12 +116,12 @@ class ExperimentLayout(FloatLayout):
         #     self.is_panel_connected = False
 
                 # Handle subject-specific logic
+                
         # Writer update
         self.writer.writer_update(self.session_data)
         self.injector.injector_update(self.session_data)
         # Event Start
         self.writer.write_data(self.score, self.warning_quarter, 0, "Start", False,  -1)
-        self.injector.inject_event(self.round_id, "start", False)
         # Inherit initialization
         super(FloatLayout, self).__init__(**kwargs)
         with self.canvas.before:
@@ -134,6 +136,9 @@ class ExperimentLayout(FloatLayout):
             # self.panel_connected_label.color = [1, 0.2, 0.2, 0.2]
         return ''
         # return 'Touch Pannel started ' + ('CONNECTED' if self.is_panel_connected else 'DISCONNECTED')
+    
+    def session_grace_radius(self):
+        return float(self.session_data["grace_radius"]/100)
 
     def initial_panel_connected_color(self):
         return [0.2, 0.2, 0.2, 0.2] if self.is_panel_connected  else [1, 0.2, 0.2, 1]
@@ -143,6 +148,7 @@ class ExperimentLayout(FloatLayout):
     
     def update_warning_quarter(self):
         self.warning_quarter = (self.warning_signal_index//( self.session_data["reinforcement_ratio"]/4))+1
+
 
     def randomize_array(self):
         if self.session_data["mode_id"] == 4:
@@ -175,22 +181,32 @@ class ExperimentLayout(FloatLayout):
     def end_session(self):
         self.close_last_round()
         self.houseLight.deactivate()
-        self.create_results_pdf()
         #Event End of Session
+        self.injector.trigger_session_results(self.session_data["session_id"])
         self.writer.write_data(self.score, self.warning_quarter, self.clicks, "end_of_session", False, self.warning_signal_index)
-        self.injector.inject_event(self.round_id, "end", False)    
+        self.injector.inject_event(self.round_id, "session_end", not self.button_red.disabled, self.clicks)   
         self.turn_off_screen()
         self.has_ended = True
         self.session_ended_label.text = "Session ended gracefully."
         self.session_ended_label.color = [0.2, 0.2, 0.2, 0.6]
+        Clock.unschedule(self.cumulative_record)
+        self.create_results_pdf()
 
 
     def create_results_pdf(self):
-        # Call the R script
-        result = subprocess.run(['Rscript', 'self_control_software/self_control/r_scripts/create_pdf.R', self.writer.filename], capture_output=True, text=True)
-        # Print the output from the R script
-        print("Output from R script:")
-        print(result.stdout)
+        # Call the make_and_send.py script with the appropriate arguments
+        result = subprocess.run(
+            [
+                'python',
+                'self_control_software/self_control/r_scripts/make_and_send.py',
+                self.session_data['session_id']            ],
+            capture_output=True,
+            text=True
+        )
+
+        # Print output for debugging
+        print("STDOUT:", result.stdout)
+        print("STDERR:", result.stderr)
         pass
 
     def check_if_warning_signal_training(self):
@@ -213,7 +229,7 @@ class ExperimentLayout(FloatLayout):
             self.button_green.disable_button()
             self.warning_signal_scheduled_event = Clock.schedule_once(self.warning_signal_training_punishment, self.session_data["warning_duration"])
             self.writer.write_data(self.score, self.warning_quarter, self.clicks, "warning-"+str(int(self.warning_quarter)), not self.button_red.disabled, self.warning_signal_index)
-            self.injector.inject_event(self.round_id, "warning", True)
+            self.injector.inject_event(self.round_id, "warning_training", not self.button_red.disabled, self.clicks)
         pass
 
     def stop_warning_signal_training(self):
@@ -238,7 +254,7 @@ class ExperimentLayout(FloatLayout):
             self.warning_variable = True
             #Event warning
             self.writer.write_data(self.score, self.warning_quarter, self.clicks, "warning-"+str(int(self.warning_quarter)), not self.button_red.disabled, self.warning_signal_index)
-            self.injector.inject_event(self.round_id, "warning", True)
+            self.injector.inject_event(self.round_id, "warning", not self.button_red.disabled, self.clicks)
         
     def sound_buzzer(self, dt):
         self.play_sound()
@@ -258,7 +274,7 @@ class ExperimentLayout(FloatLayout):
             return False
 
     def turn_feeding_condition_off(self, dt):
-        self.injector.inject_event(self.round_id, "feeding_end", not self.button_red.disabled)
+        self.injector.inject_event(self.round_id, "feeding_end", not self.button_red.disabled, self.clicks)
         if not self.check_if_end():
             self.check_if_warning_signal_training()
             self.houseLight.activate()
@@ -272,14 +288,16 @@ class ExperimentLayout(FloatLayout):
 
     def feed(self):
         if not self.feeding_condition:
+            self.writer.write_data(self.score, self.warning_quarter, self.clicks, "feeding", not self.button_red.disabled, self.warning_signal_index)
+            self.injector.inject_event(self.round_id, "feeding", not self.button_red.disabled, self.clicks)
+            self.button_green.zeroing()
             self.feeding_condition = True
             self.houseLight.deactivate()
             self.feeder.activate()
             self.feeder.create_deactivate_feeder_event(self.session_data["feed_time"])
             Clock.schedule_once(self.turn_feeding_condition_off, self.session_data["feed_time"])
             #Event Reinforcement
-            self.writer.write_data(self.score, self.warning_quarter, self.clicks, "feeding", not self.button_red.disabled, self.warning_signal_index)
-            self.injector.inject_event(self.round_id, "feeding", False)   
+
             self.turn_off_screen()
 
     def check_if_punishment(self):
@@ -287,6 +305,7 @@ class ExperimentLayout(FloatLayout):
             self.punish()
     
     def turn_off_screen(self):
+        self.update_button_count()
         self.rect.source ="assets/images/black_panel.png"
         self.button_red.disable_button()
         self.button_green.disable_button()
@@ -315,15 +334,14 @@ class ExperimentLayout(FloatLayout):
         self.start_new_round()
 
     def punish(self):
+        self.writer.write_data(self.score, self.warning_quarter, self.clicks, "punishment", not self.button_red.disabled, self.warning_signal_index)
+        self.injector.inject_event(self.round_id, "punishment", not self.button_red.disabled, self.clicks)
         self.houseLight.deactivate()
         self.buzzer.cancel() 
         self.subsequent_punishments += 1 
         self.button_green.zeroing()
         Clock.schedule_once(self.un_punish, self.session_data["punishment_duration"])
         #Event Punishment
-        self.writer.write_data(self.score, self.warning_quarter, self.clicks, "punishment", not self.button_red.disabled, self.warning_signal_index)
-        self.injector.inject_event(self.round_id, "punishment", False)
-        self.clicks = 0
         self.turn_off_screen()
 
     def un_punish(self, dt):
@@ -335,7 +353,7 @@ class ExperimentLayout(FloatLayout):
         # self.button_red_shadow.enable_button()
         self.was_warned = True
         self.warning_variable = False
-        self.injector.inject_event(self.round_id, "punishment_end", False)
+        self.injector.inject_event(self.round_id, "punishment_end", not self.button_red.disabled, self.clicks)
         self.turn_on_screen()
 
         #Event Staring Over
@@ -417,14 +435,14 @@ class ExperimentLayout(FloatLayout):
             if self.button_red.disabled == True :
                 #Event free-food
                 self.writer.write_data(self.score, self.warning_quarter, self.clicks, "free-food", not self.button_red.disabled, self.warning_signal_index) 
-                self.injector.inject_event(self.round_id, "free_food", False)
+                self.injector.inject_event(self.round_id, "free_food", not self.button_red.disabled, self.clicks)
                 self.positive_reinforcement()
             
         elif keycode[1] == 'enter':
             print("enter")
             # Event gratis-red
             self.writer.write_data(self.score, self.warning_quarter, self.clicks, "gratis-red-"+str(int(self.warning_quarter)), not self.button_red.disabled, self.warning_signal_index)
-            self.injector.inject_event(self.round_id, "gratis_red", not self.button_red.disabled)
+            self.injector.inject_event(self.round_id, "gratis_red", not self.button_red.disabled, self.clicks)
             if self.button_red.disabled == False :
                 self.negative_reinforcement()
                 if self.warning_signal_training_running:
@@ -453,20 +471,22 @@ class ExperimentLayout(FloatLayout):
 
     def start_new_round(self):
         print("Starting new round")
-        #Increase round by on
+        #Increase round by ons
         if self.subsequent_punishments == 0 or self.subsequent_punishments > self.session_data["consecutive_warnings_limit"]:
             self.randomize_array()
             self.subsequent_punishments = 0
         self.round += 1
         self.update_button_count()
         #Inject the new round in the database
+        new_round = not self.round_id
         self.round_id = self.injector.inject_round_data(self.session_data["session_id"], self.round, self.warning_signal_index, self.warning_quarter, self.score)
-        self.injector.inject_event(self.round_id, "new_round", False)
+        if new_round:
+            self.injector.inject_event(self.round_id, "session_start", not self.button_red.disabled, self.clicks)
+        self.injector.inject_event(self.round_id, "new_round", not self.button_red.disabled, self.clicks)
         pass
 
     def close_last_round(self):
-        self.injector.inject_event(self.round_id, "round_end", False)
-        self.injector.trigger_check_round(self.round_id, self.aspect_ratio)
+        self.injector.inject_event(self.round_id, "round_end", not self.button_red.disabled, self.clicks)
+        self.injector.trigger_check_round(self.round_id)
         self.injector.trigger_round_results(self.round_id)
         pass
-    

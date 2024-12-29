@@ -24,8 +24,7 @@ CREATE TABLE round_checks (
     feed_time INT
 );
 
-
-CREATE OR REPLACE FUNCTION check_round(round_uuid UUID, aspect_ratio FLOAT)
+CREATE OR REPLACE FUNCTION check_round(round_uuid UUID)
 RETURNS VOID AS $$
 BEGIN
     WITH 
@@ -33,7 +32,8 @@ BEGIN
         SELECT round_uuid AS id
     ),
     sessions_info AS (
-        SELECT s.reinforcement_ratio, s.button_height, s.warning_signal_position
+        SELECT s.reinforcement_ratio, s.button_height, s.warning_signal_position,
+               s.button_size, s.grace_radius, s.peck_slide, s.window_width, s.window_height
         FROM rounds r
         JOIN sessions s ON r.session_id = s.session_id
         JOIN round_id ON r.round_id = round_id.id
@@ -41,9 +41,14 @@ BEGIN
     pecks_in_green AS (
         SELECT COUNT(*) AS peck_count
         FROM (
-            SELECT is_in_circle(p.x_pos, p.y_pos, 0.075, 0.7, 
-                                (SELECT button_height FROM sessions_info)/100.0, 
-                                aspect_ratio) AS in_circle, 
+            SELECT is_in_circle(
+									p.x_pos::NUMERIC, 
+									p.y_pos::NUMERIC, 
+                                	(SELECT (button_size / 2.0 + grace_radius) / 100.0 FROM sessions_info)::NUMERIC, 
+                                	0.7::NUMERIC, 
+                                	(SELECT button_height / 100.0 FROM sessions_info)::NUMERIC,
+                                	(SELECT (window_width::NUMERIC / window_height::NUMERIC ) FROM sessions_info)::NUMERIC
+									) AS in_circle, 
                    p.screen_on AS screen_on,
                    p.green_on AS green_on
             FROM pecks p
@@ -54,11 +59,16 @@ BEGIN
     pecks_in_red AS (
         SELECT COUNT(*) AS peck_count
         FROM (
-            SELECT is_in_circle(p.x_pos, p.y_pos, 0.075, 
-                                0.3 + (SELECT warning_signal_position FROM sessions_info)/100.0 * 0.4, 
-                                (SELECT button_height FROM sessions_info)/100.0, 
-                                aspect_ratio) AS in_circle, 
-                   distance_between(p.x_start, p.y_start, p.x_pos, p.y_pos) > 0.05 AS peck_slides,
+					SELECT is_in_circle(
+					    p.x_pos::NUMERIC, 
+					    p.y_pos::NUMERIC, 
+					    ((SELECT button_size / 2.0 + grace_radius FROM sessions_info) / 100.0)::NUMERIC, 
+					    (0.3 + (SELECT warning_signal_position FROM sessions_info) / 100.0 * 0.4)::NUMERIC, 
+					    (SELECT button_height FROM sessions_info) / 100.0::NUMERIC, 
+					    (SELECT (window_width::NUMERIC ) / (window_height::NUMERIC ) FROM sessions_info)::NUMERIC
+					) AS in_circle,
+													
+                   distance_between(p.x_start, p.y_start, p.x_pos, p.y_pos) > (SELECT peck_slide FROM sessions_info) AS peck_slides,
                    p.screen_on AS screen_on,
                    p.red_on AS red_on
             FROM pecks p
@@ -112,7 +122,9 @@ BEGIN
         punishment_time,
         punishment_end_time,
         punishment_duration,
-        feed_time
+        feed_time,
+		radius,
+		aspect_ratio
     )
     SELECT
         events.round_id,
@@ -122,7 +134,7 @@ BEGIN
                  AND COUNT(CASE WHEN events.event_type = 'green' AND events.warning_signal_present = TRUE THEN 1 END) > sessions.warning_hits THEN TRUE
             WHEN COUNT(CASE WHEN events.event_type = 'red' THEN 1 END) = 1 
                  AND COUNT(CASE WHEN events.event_type = 'green' THEN 1 END) = sessions.reinforcement_ratio 
-                 AND COUNT(CASE WHEN events.event_type = 'green' AND events.warning_signal_present = TRUE THEN 1 END) < sessions.warning_hits THEN TRUE
+                 AND COUNT(CASE WHEN events.event_type = 'green' AND events.warning_signal_present = TRUE THEN 1 END) <= sessions.warning_hits THEN TRUE
             ELSE FALSE
         END AS outcome_valid,
         CASE
@@ -143,7 +155,7 @@ BEGIN
         CASE
             WHEN (SELECT green_count_until_warning FROM green_events_until_warning) = (SELECT warning_index FROM rounds WHERE round_id = (SELECT id FROM round_id)) THEN TRUE
             ELSE FALSE
-        END AS pecks_until_warning_valid,
+        END AS pecks_until_warning_valid,   
         CASE
             WHEN (SELECT warning_quarter FROM rounds WHERE round_id = (SELECT id FROM round_id)) = 
                  FLOOR((SELECT warning_index FROM rounds WHERE round_id = (SELECT id FROM round_id))::float / (SELECT reinforcement_ratio FROM sessions WHERE session_id = (SELECT session_id FROM rounds WHERE round_id = (SELECT id FROM round_id)))::float * 4) + 1 THEN TRUE
@@ -162,7 +174,9 @@ BEGIN
         MAX(timely_events.punishment_time) AS punishment_time,
         MAX(timely_events.punishment_end_time) AS punishment_end_time,
         sessions.punishment_duration,
-        sessions.feed_time
+        sessions.feed_time,
+		((SELECT button_size / 2.0 + grace_radius FROM sessions_info) / 100.0)::NUMERIC AS radius,
+		(SELECT (window_width::NUMERIC / window_height::NUMERIC ) FROM sessions_info)::NUMERIC AS aspect_ratio
     FROM
         events
     JOIN
@@ -182,6 +196,21 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+
+
 --SELECT check_round('cd0d766e-a4b8-4da3-a2e6-a7af0d84c201', 1.0);
 
 SELECT * FROM round_checks
+
+
+CREATE TABLE session_checks (
+    session_check_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    session_id UUID UNIQUE REFERENCES sessions(session_id),
+    check_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    total_reinforcements_valid BOOLEAN NOT NULL,
+    total_rounds_valid BOOLEAN NOT NULL,
+    total_warnings_valid BOOLEAN NOT NULL,
+    warning_switch_valid BOOLEAN NOT NULL,
+    round_checks_passed BOOLEAN NOT NULL,
+    no_errors BOOLEAN NOT NULL,
+    );
