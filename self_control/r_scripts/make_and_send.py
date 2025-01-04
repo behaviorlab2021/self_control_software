@@ -69,7 +69,7 @@ def main(session_id):
         [
             'Rscript',
             '-e',
-            f"rmarkdown::render('{os.path.join(script_dir, f'mode_{str(mode_id)}_session_results.Rmd').replace('\\', '/')}', params = list(session_id = '{session_id}'), output_file = '{os.path.join(output_dir, report_file_name).replace('\\', '/')}')"
+            f"rmarkdown::render('{os.path.join(script_dir, f'mode_{str(mode_id)}_session_results.Rmd').replace('\\\\', '/')}', params = list(session_id = '{session_id}'), output_file = '{os.path.join(output_dir, report_file_name).replace('\\\\', '/')}')"
         ],
         capture_output=True,
         text=True
@@ -93,7 +93,7 @@ def main(session_id):
     )
 
     def on_files_created():
-        print(f"Files have been created: {os.path.join(output_dir, report_file_name).replace('\\', '/')} and {os.path.join(output_dir, cumulative_record_file_name).replace('\\', '/')}")
+        print(f"Files have been created: {os.path.join(output_dir, report_file_name).replace('\\\\', '/')} and {os.path.join(output_dir, cumulative_record_file_name).replace('\\\\', '/')}")
 
     # Check if the files were created successfully
     report_path = os.path.join(output_dir, report_file_name).replace("\\", "/")
