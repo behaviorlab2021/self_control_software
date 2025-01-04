@@ -478,7 +478,6 @@ CREATE TABLE session_checks (
     );
 
 
-
 CREATE OR REPLACE FUNCTION insert_session_results(session_id UUID)
 RETURNS VOID AS $$
 BEGIN
