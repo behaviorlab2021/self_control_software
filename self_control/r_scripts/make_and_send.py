@@ -95,7 +95,9 @@ def main(session_id):
     )
 
     def on_files_created():
-        print(f"Files have been created: {os.path.join(output_dir, report_file_name).replace('\\\\', '/')} and {os.path.join(output_dir, cumulative_record_file_name).replace('\\\\', '/')}")
+        report_file_path = os.path.join(output_dir, report_file_name).replace("\\", "/")
+        cumulative_record_file_path = os.path.join(output_dir, cumulative_record_file_name).replace("\\", "/")
+        print(f"Files have been created: {report_file_path} and {cumulative_record_file_path}")
 
     # Check if the files were created successfully
     report_path = os.path.join(output_dir, report_file_name).replace("\\", "/")
