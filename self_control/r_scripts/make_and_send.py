@@ -1,6 +1,15 @@
+import os
 import sys
-sys.path.append('/Users/stammanol/Documents/code/MY_APPS/skinner_box/self_control_software')  # Add this line to include the module path
+
+# Get the directory of the current script
+script_dir = os.path.dirname(os.path.abspath(__file__))
+# Append the parent directory of the script directory to sys.path
+sys.path.append(os.path.abspath(os.path.join(script_dir, '../..')))
+
+print("PATH IS THIS:", sys.path, "LEN:", len(sys.path))
+
 from self_control.services.postgres import ExperimentDB
+
 from self_control.utils.serializer import datetime_serializer
 import subprocess
 import os
@@ -10,13 +19,15 @@ from datetime import datetime
 def generate_file_name(experiment_date, subject_name, suffix):
     return f"{experiment_date}_{subject_name}_{suffix}"
 
-def send_email(report_path, cumulative_record_path):
+def send_email(report_path, cumulative_record_path, subject_name, session_date):
     mail_result = subprocess.run(
         [
             'Rscript',
             'self_control_software/self_control/r_scripts/send_mail.R',
             report_path,
-            cumulative_record_path
+            cumulative_record_path,
+            subject_name,  # Add this argument
+            session_date  # Add this argument
         ],
         capture_output=True,
         text=True
@@ -33,13 +44,16 @@ def get_experiment_details(session_id):
             raise ValueError(f"No session found with ID {session_id}")
         subject_name = session_info['subject_name']
         experiment_date = session_info['experiment_date'].strftime('%Y.%m.%d_%H.%M.%S')
-        return subject_name, experiment_date
+        mode_id = session_info['mode_id']
+        return subject_name, experiment_date, mode_id
     finally:
         db.close()
 
 def main(session_id):
-    subject_name, experiment_date = get_experiment_details(session_id)
+    subject_name, experiment_date, mode_id = get_experiment_details(session_id)
     output_dir = "../data"  # Specify the output directory
+
+    print("Mode ID:", mode_id)
 
     report_file_name = generate_file_name(experiment_date, subject_name, "report.pdf")
     cumulative_record_file_name = generate_file_name(experiment_date, subject_name, "cumulative_record.pdf")
@@ -48,7 +62,7 @@ def main(session_id):
         [
             'Rscript',
             '-e',
-            f"rmarkdown::render('self_control_software/self_control/r_scripts/session_results.Rmd', params = list(session_id = '{session_id}'), output_file = '{output_dir}/{report_file_name}')"
+            f"rmarkdown::render('self_control_software/self_control/r_scripts/mode_{str(mode_id)}_session_results.Rmd', params = list(session_id = '{session_id}'), output_file = '{output_dir}/{report_file_name}')"
         ],
         capture_output=True,
         text=True
@@ -93,7 +107,7 @@ def main(session_id):
         if wait_for_files([report_path, cumulative_record_path]):
             on_files_created()
             time.sleep(1)
-            send_email(report_path, cumulative_record_path)
+            send_email(report_path, cumulative_record_path, subject_name, experiment_date)  # Pass new arguments
         else:
             print("Error: One or both files were not created within the timeout period.")
     except Exception as e:

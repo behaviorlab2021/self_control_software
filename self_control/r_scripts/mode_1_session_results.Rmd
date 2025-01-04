@@ -1,0 +1,240 @@
+---
+title: "Self Control Session Results"
+author: "Behavior Analysis Lab"
+output: pdf_document
+header-includes:
+  - \usepackage{pdflscape}
+  - \usepackage{geometry}
+  - \newcommand{\blandscape}{\begin{landscape}}
+  - \newcommand{\elandscape}{\end{landscape}}
+params:
+  session_id: "d4fee9dc-e494-4246-8197-b1c3c4de171c"
+  output_dir: "../data"
+  output_name: "session_results.pdf"
+  custom_output_name: NULL
+---
+
+```{r setup, include=FALSE}
+# 2b22b802-64bd-4500-b7fc-2e61f566637e
+# e0dfea33-3850-4415-afe7-7498a4dc7f03
+# Setup chunk: Load necessary libraries and set session_id parameter
+knitr::opts_chunk$set(echo = TRUE)
+session_id <- params$session_id
+output_dir <- params$output_dir
+output_name <- params$output_name
+library(DBI)
+library(dotenv)
+library(knitr)
+library(kableExtra)
+library(ggforce) # Add this line to load ggforce library
+library(mailR) # Add this line to load mailR library
+
+# Set the output file name dynamically if custom_output_name is provided
+if (!is.null(params$custom_output_name)) {
+  output_name <- params$custom_output_name
+} else {
+  output_name <- params$output_name
+}
+output_file <- file.path(params$output_dir, output_name)
+
+run_pecks_analysis <- params$run_pecks_analysis
+```
+
+```{r load_env, include=FALSE}
+# Load environment variables from .env file
+dotenv::load_dot_env("../.env")
+```
+
+```{r get_db_credentials, include=FALSE}
+# Get database credentials from environment variables
+dsn_database <- Sys.getenv("DB_NAME")
+dsn_hostname <- Sys.getenv("DB_HOST")
+dsn_port <- Sys.getenv("DB_PORT")
+dsn_uid <- Sys.getenv("DB_USER")
+dsn_pwd <- Sys.getenv("DB_PASSWORD")
+```
+
+```{r connect_db, include=FALSE}
+# Connect to the PostgreSQL database
+tryCatch(
+  {
+    conn <- dbConnect(
+      RPostgres::Postgres(),
+      dbname = dsn_database,
+      host = dsn_hostname,
+      port = dsn_port,
+      user = dsn_uid,
+      password = dsn_pwd
+    )
+    cat("Connected successfully!\n")
+  },
+  error = function(e) {
+    cat("Error: ", e$message, "\n")
+  }
+)
+```
+
+## Session Details
+
+```{r query_session_details, include=FALSE}
+# Query the database to get detailed session information
+session_details <- dbGetQuery(conn, paste0("
+  SELECT
+    session_id,
+    created_at,
+    subject_name,
+    reinforcement_ratio,
+    warning_hits,
+    punishment_duration,
+    feed_time,
+    total_reinforcements,
+    consecutive_warnings_limit,
+    warning_alarm_volume,
+    warning_display_volume,
+    mode_name,
+    sessions.mode_id,
+    is_spot_on,
+    punishment_periodicity,
+    warning_duration,
+    time_before_warning_signal,
+    highlight_warning_signal,
+    button_size,
+    grace_radius,
+    warning_signal_position,
+    button_height,
+    peck_slide,
+    window_height,
+    window_width,
+    comments
+  FROM sessions
+  JOIN subjects ON sessions.subject_id = subjects.subject_id
+  JOIN experiment_modes ON sessions.mode_id = experiment_modes.mode_id
+  WHERE session_id = '", session_id, "';"))
+```
+
+```{r set_run_pecks_analysis, include=FALSE}
+# Set the run_pecks_analysis parameter based on mode_id
+if (session_details$mode_id == 1) {
+  run_pecks_analysis <- FALSE
+} else {
+  run_pecks_analysis <- TRUE
+}
+```
+
+```{r session_details_table, echo=FALSE}
+# Define a list of column names in snake case and sentence case
+session_details_column_names <- list(
+  "session_id" = "Session ID", # All
+  "created_at" = "Created At", # All
+  "subject_name" = "Subject Name", # All
+  # "reinforcement_ratio" = "Reinforcement Ratio", # 2, 3, 4
+  # "warning_hits" = "Warning Hits", # 3, 4
+  # "punishment_duration" = "Punishment Duration", # 3, 4
+  "feed_time" = "Feed Time", # All
+  "total_reinforcements" = "Total Reinforcements", # All
+  # "consecutive_warnings_limit" = "Consecutive Warnings Limit", # 3, 4
+  # "warning_alarm_volume" = "Warning Alarm Volume", # 3, 4
+  # "warning_display_volume" = "Warning Display Volume", # 3, 4
+  "mode_id" = "Mode ID", # All
+  "mode_name" = "Mode Name", # All
+  # "is_spot_on" = "Is Spot On", # 2, 3, 4
+  # "punishment_periodicity" = "Punishment Periodicity", # 3
+  # "warning_duration" = "Warning Duration", # 3
+  # "time_before_warning_signal" = "Time Before Warning Signal", # 3
+  # "highlight_warning_signal" = "Highlight Warning Signal", #3, 4
+  # "button_size" = "Button Size", # 2, 3, 4
+  # "grace_radius" = "Grace Radius", # 2, 3, 4
+  # "warning_signal_position" = "Warning Signal Position", # 3, 4
+  # "button_height" = "Button Height", # 2, 3, 4
+  # "peck_slide" = "Peck Slide", # 2, 3, 4
+  "window_height" = "Window Height", # All
+  "window_width" = "Window Width", # All
+  "comments" = "Comments" # All
+)
+
+
+# Select and rename columns using the list
+session_details_table <- session_details[, names(session_details_column_names)]
+colnames(session_details_table) <- unlist(session_details_column_names)
+
+session_details_t <- t(session_details_table)
+
+kable(session_details_t, caption = "Detailed Session Information")
+```
+
+\newpage
+
+## Session Statistics
+
+```{r query_stats_details, include=FALSE}
+# Query the database to get detailed session information
+session_stats <- dbGetQuery(conn, paste0("
+  SELECT
+    total_reinforcements,
+    total_punishments,
+    total_rounds,
+    total_warning_presentations,
+    total_warning_terminations,
+    total_warning_switches,
+    TO_CHAR(total_time::interval, 'MI:SS') AS total_time
+  FROM session_checks
+  WHERE session_id = '", session_id, "';"))
+```
+
+```{r session_statistics_table, echo=FALSE}
+# Define a list of column names in snake case and sentence case for session statistics
+session_statistics_column_names <- list(
+  "total_reinforcements" = "Total Reinforcements",
+  "total_time" = "Total Time"
+)
+
+# Select and rename columns using the list
+session_statistics_table <- session_stats[, names(session_statistics_column_names)]
+colnames(session_statistics_table) <- unlist(session_statistics_column_names)
+
+# Transpose the session_statistics table for better readability
+session_stats_t <- t(session_statistics_table)
+kable(session_stats_t, caption = "Session Statistics")
+```
+
+## Session Checks
+
+```{r query_session_checks, include=FALSE}
+# Query the database to get detailed session information
+session_checks <- dbGetQuery(conn, paste0("
+  SELECT
+    no_errors,
+    session_end_valid,
+    round_checks_passed,
+    total_rounds_valid,
+    total_warnings_valid,
+    warning_switch_valid,
+    total_reinforcements_valid
+  FROM session_checks
+  WHERE session_id = '", session_id, "';"))
+```
+
+```{r session_checks_table, echo=FALSE}
+# Define a list of column names in snake case and sentence case for session checks
+session_checks_column_names <- list(
+  "no_errors" = "No Errors",
+  "session_end_valid" = "Session End Valid",
+  "round_checks_passed" = "Round Checks Passed",
+  "total_rounds_valid" = "Total Rounds Valid",
+  "total_reinforcements_valid" = "Total Reinforcements Valid"
+)
+
+# Select and rename columns using the list
+session_checks_table <- session_checks[, names(session_checks_column_names)]
+colnames(session_checks_table) <- unlist(session_checks_column_names)
+
+# Transpose the session_checks table for better readability
+session_checks_t <- t(session_checks_table)
+kable(session_checks_t, caption = "Session Checks Information")
+```
+
+
+```{r disconnect_db, include=FALSE}
+# Disconnect from the PostgreSQL database
+dbDisconnect(conn)
+```

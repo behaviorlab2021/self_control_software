@@ -444,6 +444,20 @@ class ExperimentDB:
             print(f"Failed to check round: {e}")
             self.log_error_with_round_id(round_id, str(e))
 
+    def check_session(self, session_id):
+        """Check session for a specific session_id."""
+        try:
+            cursor = self.connection.cursor()
+            query = "SELECT check_session(%s);"
+            cursor.execute(query, (session_id,))  # Add comma here to make it a tuple
+            self.connection.commit()
+            cursor.close()
+            print(f"Checked session for session ID {session_id}.")
+        except Exception as e:
+            print(f"Failed to check session: {e}")
+            self.log_error_with_round_id(session_id, str(e))
+
+
     def insert_session_results(self, session_id):
         """Insert session results for a specific session_id."""
         try:
@@ -483,7 +497,7 @@ class ExperimentDB:
         try:
             cursor = self.connection.cursor(cursor_factory=RealDictCursor)
             query = """
-            SELECT s.created_at as experiment_date, sub.subject_name
+            SELECT s.created_at as experiment_date, sub.subject_name, s.mode_id
             FROM sessions s
             JOIN subjects sub ON s.subject_id = sub.subject_id
             WHERE s.session_id = %s

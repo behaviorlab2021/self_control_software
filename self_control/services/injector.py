@@ -77,6 +77,13 @@ class Injector:
         self.db.close()
         pass
 
+    def trigger_check_session(self, session_id):
+        # Use the database connection to insert the session results
+        self.db.connect()
+        self.db.check_session(session_id)
+        self.db.close()
+        pass
+
     def trigger_session_results(self, session_id):
         """Trigger the insertion of session results for a specific session_id."""
         self.db.connect()

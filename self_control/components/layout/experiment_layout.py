@@ -155,16 +155,16 @@ class ExperimentLayout(FloatLayout):
             self.warning_signal_index = random.randint(1, self.session_data["reinforcement_ratio"] - self.session_data["warning_hits"] - 1)
             self.update_warning_quarter()
         else:
-            self.warning_signal_index = None
+            self.warning_signal_index = -1
 
     def on_touch_up(self,touch):
         #Event Touch
         if self.button_green.opacity == 0:
             self.writer.write_peck_data_blind( self.score, self.warning_quarter, self.clicks, touch.sx, touch.sy, "blind-peck", not self.button_red.disabled, self.warning_signal_index)
-            self.injector.inject_peck(self.touch_start_x, self.touch_start_y, touch.sx, touch.sy, False, not self.button_green.disabled, not self.button_red.disabled, self.round_id)
+            self.injector.inject_peck(self.touch_start_x, self.touch_start_y, touch.sx, touch.sy, self.rect.source !="assets/images/black_panel.png" , False, not self.button_red.disabled, self.round_id)
         else:
             self.writer.write_peck_data( self.score, self.warning_quarter, self.clicks, touch.sx, touch.sy,  not self.button_red.disabled, self.warning_signal_index)
-            self.injector.inject_peck(self.touch_start_x, self.touch_start_y, touch.sx, touch.sy, True, not self.button_green.disabled, not self.button_red.disabled, self.round_id)
+            self.injector.inject_peck(self.touch_start_x, self.touch_start_y, touch.sx, touch.sy, self.rect.source !="assets/images/black_panel.png", not self.button_green.disabled, not self.button_red.disabled, self.round_id)
         if self.session_data["is_spot_on"]:
             self.spot.pos_hint = {'center_x':touch.sx, 'center_y':touch.sy}
         return super(FloatLayout, self).on_touch_up(touch)
@@ -180,11 +180,13 @@ class ExperimentLayout(FloatLayout):
 
     def end_session(self):
         self.close_last_round()
+        self.injector.inject_event(self.round_id, "session_end", not self.button_red.disabled, self.clicks)        
+
         self.houseLight.deactivate()
         #Event End of Session
+        self.injector.trigger_check_session(self.session_data["session_id"])
         self.injector.trigger_session_results(self.session_data["session_id"])
         self.writer.write_data(self.score, self.warning_quarter, self.clicks, "end_of_session", False, self.warning_signal_index)
-        self.injector.inject_event(self.round_id, "session_end", not self.button_red.disabled, self.clicks)   
         self.turn_off_screen()
         self.has_ended = True
         self.session_ended_label.text = "Session ended gracefully."
@@ -229,7 +231,7 @@ class ExperimentLayout(FloatLayout):
             self.button_green.disable_button()
             self.warning_signal_scheduled_event = Clock.schedule_once(self.warning_signal_training_punishment, self.session_data["warning_duration"])
             self.writer.write_data(self.score, self.warning_quarter, self.clicks, "warning-"+str(int(self.warning_quarter)), not self.button_red.disabled, self.warning_signal_index)
-            self.injector.inject_event(self.round_id, "warning_training", not self.button_red.disabled, self.clicks)
+            self.injector.inject_event(self.round_id, "warning", not self.button_red.disabled, self.clicks)
         pass
 
     def stop_warning_signal_training(self):
@@ -290,6 +292,7 @@ class ExperimentLayout(FloatLayout):
         if not self.feeding_condition:
             self.writer.write_data(self.score, self.warning_quarter, self.clicks, "feeding", not self.button_red.disabled, self.warning_signal_index)
             self.injector.inject_event(self.round_id, "feeding", not self.button_red.disabled, self.clicks)
+            self.injector.inject_cumulative_record(self.clicks)            
             self.button_green.zeroing()
             self.feeding_condition = True
             self.houseLight.deactivate()
@@ -373,7 +376,7 @@ class ExperimentLayout(FloatLayout):
     def update_labels(self):
         self.label_top_left.text = str(self.score).zfill(2)
         self.label_top_right.text = str(self.clicks).zfill(2)
-        self.label_bottom_left.text = str(self.round).zfill(2)
+        self.label_bottom_left.text = str(self.round - self.score - 1).zfill(2)
 
     def update_used_tries(self):
         if self.button_red.disabled == False:
@@ -441,9 +444,9 @@ class ExperimentLayout(FloatLayout):
         elif keycode[1] == 'enter':
             print("enter")
             # Event gratis-red
-            self.writer.write_data(self.score, self.warning_quarter, self.clicks, "gratis-red-"+str(int(self.warning_quarter)), not self.button_red.disabled, self.warning_signal_index)
-            self.injector.inject_event(self.round_id, "gratis_red", not self.button_red.disabled, self.clicks)
-            if self.button_red.disabled == False :
+            if self.button_red.disabled == False : 
+                self.writer.write_data(self.score, self.warning_quarter, self.clicks, "gratis-red-"+str(int(self.warning_quarter)), not self.button_red.disabled, self.warning_signal_index)
+                self.injector.inject_event(self.round_id, "gratis_red", not self.button_red.disabled, self.clicks)
                 self.negative_reinforcement()
                 if self.warning_signal_training_running:
                     self.stop_warning_signal_training()
@@ -472,8 +475,12 @@ class ExperimentLayout(FloatLayout):
     def start_new_round(self):
         print("Starting new round")
         #Increase round by ons
-        if self.subsequent_punishments == 0 or self.subsequent_punishments > self.session_data["consecutive_warnings_limit"]:
+        if self.subsequent_punishments == 0:
             self.randomize_array()
+            self.subsequent_punishments = 0
+        elif self.subsequent_punishments >= self.session_data["consecutive_warnings_limit"]:
+            self.randomize_array()
+            self.injector.inject_event(self.round_id, "warning_switch", not self.button_red.disabled, self.clicks)
             self.subsequent_punishments = 0
         self.round += 1
         self.update_button_count()
