@@ -19,7 +19,8 @@ class MultiStepApp:
         self.root = root  # Add this line
         self.root.title("Multi-Step Setup Wizard")
         self.root.geometry("720x520")
-        img = tk.PhotoImage(file='self_control_software/self_control/assets/icons/settings.png')
+        img_path = os.path.join(project_root, 'self_control', 'assets', 'icons', 'settings.png')
+        img = tk.PhotoImage(file=img_path)
         root.iconphoto(False, img)    
         self.db = ExperimentDB()
         self.db.connect()
