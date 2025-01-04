@@ -23,7 +23,7 @@ def send_email(report_path, cumulative_record_path, subject_name, session_date):
     mail_result = subprocess.run(
         [
             'Rscript',
-            'self_control_software/self_control/r_scripts/send_mail.R',
+            os.path.join(script_dir, 'send_mail.R'),  # Make path relative
             report_path,
             cumulative_record_path,
             subject_name,  # Add this argument
@@ -51,7 +51,7 @@ def get_experiment_details(session_id):
 
 def main(session_id):
     subject_name, experiment_date, mode_id = get_experiment_details(session_id)
-    output_dir = "../data"  # Specify the output directory
+    output_dir = os.path.join(script_dir, "../data")  # Specify the output directory
 
     print("Mode ID:", mode_id)
 
@@ -62,7 +62,7 @@ def main(session_id):
         [
             'Rscript',
             '-e',
-            f"rmarkdown::render('self_control_software/self_control/r_scripts/mode_{str(mode_id)}_session_results.Rmd', params = list(session_id = '{session_id}'), output_file = '{output_dir}/{report_file_name}')"
+            f"rmarkdown::render('{os.path.join(script_dir, f'mode_{str(mode_id)}_session_results.Rmd')}', params = list(session_id = '{session_id}'), output_file = '{os.path.join(output_dir, report_file_name)}')"
         ],
         capture_output=True,
         text=True
@@ -76,7 +76,7 @@ def main(session_id):
     cumulative_result = subprocess.run(
         [
             'Rscript',
-            'self_control_software/self_control/r_scripts/cumulative_record.R',
+            os.path.join(script_dir, 'cumulative_record.R'),  # Make path relative
             session_id,
             output_dir,
             cumulative_record_file_name
@@ -86,14 +86,11 @@ def main(session_id):
     )
 
     def on_files_created():
-        print(f"Files have been created: {output_dir}/{report_file_name} and {output_dir}/{cumulative_record_file_name}")
+        print(f"Files have been created: {os.path.join(output_dir, report_file_name)} and {os.path.join(output_dir, cumulative_record_file_name)}")
 
     # Check if the files were created successfully
-    absolute_output_dir = '/Users/stammanol/Documents/code/MY_APPS/skinner_box/self_control_software/self_control/data'
-
-    report_path = f"{absolute_output_dir}/{report_file_name}"
-    cumulative_record_path = f"{absolute_output_dir}/{cumulative_record_file_name}"
-
+    report_path = os.path.join(output_dir, report_file_name)
+    cumulative_record_path = os.path.join(output_dir, cumulative_record_file_name)
 
     def wait_for_files(paths, timeout=60):
         start_time = time.time()

@@ -196,12 +196,15 @@ class ExperimentLayout(FloatLayout):
 
 
     def create_results_pdf(self):
-        # Call the make_and_send.py script with the appropriate arguments
+        current_file_path = os.path.dirname(os.path.abspath(__file__))
+        print("Current file path:", current_file_path)
+        script_path = os.path.join(current_file_path, '..', '..', 'r_scripts', 'make_and_send.py')
         result = subprocess.run(
             [
-                'python',
-                'self_control_software/self_control/r_scripts/make_and_send.py',
-                self.session_data['session_id']            ],
+                sys.executable,  # Use the current Python interpreter
+                script_path,
+                self.session_data['session_id']
+            ],
             capture_output=True,
             text=True
         )
