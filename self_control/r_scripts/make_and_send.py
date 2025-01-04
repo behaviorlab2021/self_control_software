@@ -4,7 +4,7 @@ import sys
 # Get the directory of the current script
 script_dir = os.path.dirname(os.path.abspath(__file__))
 # Append the parent directory of the script directory to sys.path
-sys.path.append(os.path.abspath(os.path.join(script_dir, '../..')))
+sys.path.append(os.path.abspath(os.path.join(script_dir, os.pardir, os.pardir)))
 
 print("PATH IS THIS:", sys.path, "LEN:", len(sys.path))
 
@@ -29,7 +29,7 @@ def send_email(report_path, cumulative_record_path, subject_name, session_date):
     mail_result = subprocess.run(
         [
             'Rscript',
-            os.path.join(script_dir, r"send_mail.R"),  # Make path relative
+            os.path.join(script_dir, "send_mail.R"),  # Make path relative
             report_path,
             cumulative_record_path,
             subject_name,  # Add this argument
@@ -58,7 +58,7 @@ def get_experiment_details(session_id):
 def main(session_id):
     check_rscript()  # Check if Rscript is available
     subject_name, experiment_date, mode_id = get_experiment_details(session_id)
-    output_dir = os.path.join(script_dir, r"../data")  # Specify the output directory
+    output_dir = os.path.join(script_dir, "..", "data")  # Specify the output directory
 
     print("Mode ID:", mode_id)
 
@@ -69,7 +69,7 @@ def main(session_id):
         [
             'Rscript',
             '-e',
-            f"rmarkdown::render(r\"{os.path.join(script_dir, f'mode_{str(mode_id)}_session_results.Rmd')}\", params = list(session_id = '{session_id}'), output_file = r\"{os.path.join(output_dir, report_file_name)}\")"
+            f"rmarkdown::render('{os.path.join(script_dir, f'mode_{str(mode_id)}_session_results.Rmd')}', params = list(session_id = '{session_id}'), output_file = '{os.path.join(output_dir, report_file_name)}')"
         ],
         capture_output=True,
         text=True
@@ -83,7 +83,7 @@ def main(session_id):
     cumulative_result = subprocess.run(
         [
             'Rscript',
-            os.path.join(script_dir, r"cumulative_record.R"),  # Make path relative
+            os.path.join(script_dir, "cumulative_record.R"),  # Make path relative
             session_id,
             output_dir,
             cumulative_record_file_name
