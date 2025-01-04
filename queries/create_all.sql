@@ -499,3 +499,4 @@ BEGIN
         warning_quarter;
 END;
 $$ LANGUAGE plpgsql;
+
