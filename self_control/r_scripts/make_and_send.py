@@ -29,7 +29,7 @@ def send_email(report_path, cumulative_record_path, subject_name, session_date):
     mail_result = subprocess.run(
         [
             'Rscript',
-            os.path.join(script_dir, r'send_mail.R'),  # Make path relative
+            os.path.join(script_dir, r"send_mail.R"),  # Make path relative
             report_path,
             cumulative_record_path,
             subject_name,  # Add this argument
@@ -69,7 +69,7 @@ def main(session_id):
         [
             'Rscript',
             '-e',
-            f"rmarkdown::render(r'{os.path.join(script_dir, f'mode_{str(mode_id)}_session_results.Rmd')}', params = list(session_id = '{session_id}'), output_file = r'{os.path.join(output_dir, report_file_name)}')"
+            f"rmarkdown::render(r\"{os.path.join(script_dir, f'mode_{str(mode_id)}_session_results.Rmd')}\", params = list(session_id = '{session_id}'), output_file = r\"{os.path.join(output_dir, report_file_name)}\")"
         ],
         capture_output=True,
         text=True
@@ -83,7 +83,7 @@ def main(session_id):
     cumulative_result = subprocess.run(
         [
             'Rscript',
-            os.path.join(script_dir, r'cumulative_record.R'),  # Make path relative
+            os.path.join(script_dir, r"cumulative_record.R"),  # Make path relative
             session_id,
             output_dir,
             cumulative_record_file_name
