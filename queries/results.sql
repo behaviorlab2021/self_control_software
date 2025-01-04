@@ -82,7 +82,7 @@ CREATE TABLE session_results (
 CREATE OR REPLACE FUNCTION insert_session_results(session_id UUID)
 RETURNS VOID AS $$
 BEGIN
-    INSERT INTO session_results (session_id, warning_quarter, total_rounds, terminations)
+    INSERT INTO session_results (a_session_id, warning_quarter, total_rounds, terminations)
     SELECT 
         r.session_id,
         warning_quarter, 
@@ -93,7 +93,7 @@ BEGIN
     JOIN 
         rounds r ON rr.round_id = r.round_id
     WHERE 
-        r.session_id = session_id
+        r.session_id = a_session_id
     GROUP BY 
         warning_quarter, r.session_id
     ORDER BY 
