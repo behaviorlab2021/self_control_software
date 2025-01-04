@@ -742,7 +742,8 @@ class MultiStepApp:
         self.db.close()
 
     def run_subprocess(self, session_id):
-        subprocess.run(["python", "self_control_software/self_control/app.py", str(session_id)])
+        app_path = os.path.join(project_root, 'self_control', 'app.py')
+        subprocess.run(["python", app_path, str(session_id)])
         
         self.on_subprocess_complete()
 
