@@ -69,7 +69,9 @@ def main(session_id):
         [
             'Rscript',
             '-e',
-            f"rmarkdown::render('{os.path.join(script_dir, f'mode_{str(mode_id)}_session_results.Rmd').replace('\\\\', '/')}', params = list(session_id = '{session_id}'), output_file = '{os.path.join(output_dir, report_file_name).replace('\\\\', '/')}')"
+            f"rmarkdown::render('{os.path.join(script_dir, f'mode_{str(mode_id)}_session_results.Rmd').replace('\\\\', '/')}')",
+            f"params = list(session_id = '{session_id}')",
+            f"output_file = '{os.path.join(output_dir, report_file_name).replace('\\\\', '/')}'"
         ],
         capture_output=True,
         text=True
