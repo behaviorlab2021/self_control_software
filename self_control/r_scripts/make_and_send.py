@@ -16,6 +16,12 @@ import os
 import time
 from datetime import datetime
 
+def check_rscript():
+    """Check if Rscript is available in the system PATH."""
+    result = subprocess.run(['Rscript', '--version'], capture_output=True, text=True)
+    if result.returncode != 0:
+        print("Warning: Rscript is not found in the system PATH. Please ensure R is installed and Rscript is accessible.")
+
 def generate_file_name(experiment_date, subject_name, suffix):
     return f"{experiment_date}_{subject_name}_{suffix}"
 
@@ -50,6 +56,7 @@ def get_experiment_details(session_id):
         db.close()
 
 def main(session_id):
+    check_rscript()  # Check if Rscript is available
     subject_name, experiment_date, mode_id = get_experiment_details(session_id)
     output_dir = os.path.join(script_dir, "../data")  # Specify the output directory
 
