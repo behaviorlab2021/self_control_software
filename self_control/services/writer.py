@@ -23,7 +23,7 @@ class Writer:
         self.start_time = get_time_now()
 
         self.filename =  get_timestamp_for_filename()+ "_"+ subject + "_Data.csv"
-        self.filepath =  main_dir_path + "/data/" + self.filename
+        self.filepath = os.path.join(main_dir_path, "data", self.filename)
         
         print("Filepath: ", self.filepath)
         print("Filename: ", self.filename)
