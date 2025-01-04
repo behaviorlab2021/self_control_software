@@ -29,9 +29,9 @@ def send_email(report_path, cumulative_record_path, subject_name, session_date):
     mail_result = subprocess.run(
         [
             'Rscript',
-            os.path.join(script_dir, "send_mail.R"),  # Make path relative
-            report_path,
-            cumulative_record_path,
+            os.path.join(script_dir, "send_mail.R").replace("\\", "/"),  # Make path relative and use forward slashes
+            report_path.replace("\\", "/"),
+            cumulative_record_path.replace("\\", "/"),
             subject_name,  # Add this argument
             session_date  # Add this argument
         ],
@@ -58,7 +58,7 @@ def get_experiment_details(session_id):
 def main(session_id):
     check_rscript()  # Check if Rscript is available
     subject_name, experiment_date, mode_id = get_experiment_details(session_id)
-    output_dir = os.path.join(script_dir, "..", "data")  # Specify the output directory
+    output_dir = os.path.join(script_dir, "..", "data").replace("\\", "/")  # Specify the output directory
 
     print("Mode ID:", mode_id)
 
@@ -69,7 +69,7 @@ def main(session_id):
         [
             'Rscript',
             '-e',
-            f"rmarkdown::render('{os.path.join(script_dir, f'mode_{str(mode_id)}_session_results.Rmd')}', params = list(session_id = '{session_id}'), output_file = '{os.path.join(output_dir, report_file_name)}')"
+            f"rmarkdown::render('{os.path.join(script_dir, f'mode_{str(mode_id)}_session_results.Rmd').replace('\\', '/')}', params = list(session_id = '{session_id}'), output_file = '{os.path.join(output_dir, report_file_name).replace('\\', '/')}')"
         ],
         capture_output=True,
         text=True
@@ -83,7 +83,7 @@ def main(session_id):
     cumulative_result = subprocess.run(
         [
             'Rscript',
-            os.path.join(script_dir, "cumulative_record.R"),  # Make path relative
+            os.path.join(script_dir, "cumulative_record.R").replace("\\", "/"),  # Make path relative and use forward slashes
             session_id,
             output_dir,
             cumulative_record_file_name
@@ -93,11 +93,11 @@ def main(session_id):
     )
 
     def on_files_created():
-        print(f"Files have been created: {os.path.join(output_dir, report_file_name)} and {os.path.join(output_dir, cumulative_record_file_name)}")
+        print(f"Files have been created: {os.path.join(output_dir, report_file_name).replace('\\', '/')} and {os.path.join(output_dir, cumulative_record_file_name).replace('\\', '/')}")
 
     # Check if the files were created successfully
-    report_path = os.path.join(output_dir, report_file_name)
-    cumulative_record_path = os.path.join(output_dir, cumulative_record_file_name)
+    report_path = os.path.join(output_dir, report_file_name).replace("\\", "/")
+    cumulative_record_path = os.path.join(output_dir, cumulative_record_file_name).replace("\\", "/")
 
     def wait_for_files(paths, timeout=60):
         start_time = time.time()
