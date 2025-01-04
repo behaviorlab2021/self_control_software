@@ -93,7 +93,7 @@ BEGIN
     JOIN 
         rounds r ON rr.round_id = r.round_id
     WHERE 
-        r.session_id = a_session_id
+        r.session_id = $1 -- Use $1 to explicitly reference the function parameter
     GROUP BY 
         warning_quarter, r.session_id
     ORDER BY 
