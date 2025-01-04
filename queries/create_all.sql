@@ -195,7 +195,9 @@ CREATE TABLE round_checks (
     punishment_time TIMESTAMP,
     punishment_end_time TIMESTAMP,
     punishment_duration INT ,
-    feed_time INT
+    feed_time INT,
+    aspect_ratio NUMERIC,
+    radius NUMERIC
 );
 
 
