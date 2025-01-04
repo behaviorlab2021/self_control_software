@@ -65,13 +65,13 @@ def main(session_id):
     report_file_name = generate_file_name(experiment_date, subject_name, "report.pdf")
     cumulative_record_file_name = generate_file_name(experiment_date, subject_name, "cumulative_record.pdf")
 
+    rmd_path = os.path.join(script_dir, f"mode_{str(mode_id)}_session_results.Rmd").replace("\\", "/")
+    output_file_path = os.path.join(output_dir, report_file_name).replace("\\", "/")
     result = subprocess.run(
         [
             'Rscript',
             '-e',
-            f"rmarkdown::render('{os.path.join(script_dir, f'mode_{str(mode_id)}_session_results.Rmd').replace('\\\\', '/')}')",
-            f"params = list(session_id = '{session_id}')",
-            f"output_file = '{os.path.join(output_dir, report_file_name).replace('\\\\', '/')}'"
+            f"rmarkdown::render('{rmd_path}', params = list(session_id = '{session_id}'), output_file = '{output_file_path}')"
         ],
         capture_output=True,
         text=True
