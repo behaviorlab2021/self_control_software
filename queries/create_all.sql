@@ -481,7 +481,7 @@ CREATE TABLE session_checks (
 CREATE OR REPLACE FUNCTION insert_session_results(session_id UUID)
 RETURNS VOID AS $$
 BEGIN
-    INSERT INTO session_results (a_session_id, warning_quarter, total_rounds, terminations)
+    INSERT INTO session_results (session_id, warning_quarter, total_rounds, terminations)
     SELECT 
         r.session_id,
         warning_quarter, 
