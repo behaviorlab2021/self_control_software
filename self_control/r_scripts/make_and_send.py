@@ -23,7 +23,7 @@ def check_rscript():
         print("Warning: Rscript is not found in the system PATH. Please ensure R is installed and Rscript is accessible.")
 
 def generate_file_name(experiment_date, subject_name, suffix):
-    return f"{experiment_date}_{subject_name}_{suffix}"
+    return experiment_date + "_" + subject_name + "_" + suffix
 
 def send_email(report_path, cumulative_record_path, subject_name, session_date):
     mail_result = subprocess.run(
@@ -47,7 +47,7 @@ def get_experiment_details(session_id):
     try:
         session_info = db.get_session_basic_info(session_id)
         if session_info is None:
-            raise ValueError(f"No session found with ID {session_id}")
+            raise ValueError("No session found with ID " + session_id)
         subject_name = session_info['subject_name']
         experiment_date = session_info['experiment_date'].strftime('%Y.%m.%d_%H.%M.%S')
         mode_id = session_info['mode_id']
@@ -67,13 +67,13 @@ def main(session_id):
     report_file_name = generate_file_name(experiment_date, subject_name, "report.pdf")
     cumulative_record_file_name = generate_file_name(experiment_date, subject_name, "cumulative_record.pdf")
 
-    rmd_path = os.path.normpath(os.path.join(script_dir, f"mode_{str(mode_id)}_session_results.Rmd"))
+    rmd_path = os.path.normpath(os.path.join(script_dir, "mode_" + str(mode_id) + "_session_results.Rmd"))
     output_file_path = os.path.normpath(os.path.join(output_dir, report_file_name))
     result = subprocess.run(
         [
             'Rscript',
             '-e',
-            f"rmarkdown::render('{rmd_path}', params = list(session_id = '{session_id}'), output_file = '{output_file_path}')"
+            "rmarkdown::render('" + rmd_path + "', params = list(session_id = '" + session_id + "'), output_file = '" + output_file_path + "')"
         ],
         capture_output=True,
         text=True
@@ -99,7 +99,7 @@ def main(session_id):
     def on_files_created():
         report_file_path = os.path.normpath(os.path.join(output_dir, report_file_name))
         cumulative_record_file_path = os.path.normpath(os.path.join(output_dir, cumulative_record_file_name))
-        print(f"Files have been created: {report_file_path} and {cumulative_record_file_path}")
+        print("Files have been created: " + report_file_path + " and " + cumulative_record_file_path)
 
     # Check if the files were created successfully
     report_path = os.path.normpath(os.path.join(output_dir, report_file_name))
