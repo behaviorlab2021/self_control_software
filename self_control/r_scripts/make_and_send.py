@@ -58,7 +58,7 @@ def get_experiment_details(session_id):
 def main(session_id):
     check_rscript()  # Check if Rscript is available
     subject_name, experiment_date, mode_id = get_experiment_details(session_id)
-    output_dir = os.path.join(script_dir, "..", "data")  # Specify the output directory
+    output_dir = os.path.normpath(os.path.join(script_dir, "..", "data"))  # Normalize path
 
     print("Subject Name:", subject_name)
     print("Mode ID:", mode_id)
@@ -97,13 +97,13 @@ def main(session_id):
     )
 
     def on_files_created():
-        report_file_path = os.path.join(output_dir, report_file_name)
-        cumulative_record_file_path = os.path.join(output_dir, cumulative_record_file_name)
+        report_file_path = os.path.normpath(os.path.join(output_dir, report_file_name))
+        cumulative_record_file_path = os.path.normpath(os.path.join(output_dir, cumulative_record_file_name))
         print(f"Files have been created: {report_file_path} and {cumulative_record_file_path}")
 
     # Check if the files were created successfully
-    report_path = os.path.join(output_dir, report_file_name)
-    cumulative_record_path = os.path.join(output_dir, cumulative_record_file_name)
+    report_path = os.path.normpath(os.path.join(output_dir, report_file_name))
+    cumulative_record_path = os.path.normpath(os.path.join(output_dir, cumulative_record_file_name))
 
     def wait_for_files(paths, timeout=60):
         start_time = time.time()
