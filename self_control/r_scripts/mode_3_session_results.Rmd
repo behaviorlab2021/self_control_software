@@ -20,8 +20,8 @@ params:
 # Setup chunk: Load necessary libraries and set session_id parameter
 knitr::opts_chunk$set(echo = TRUE)
 session_id <- params$session_id
-output_dir <- params$output_dir
-output_name <- params$output_name
+output_dir <- params$output_dir.replace("\\", "/")
+output_name <- params$output_name.replace("\\", "/")
 library(DBI)
 library(dotenv)
 library(knitr)
@@ -42,7 +42,7 @@ run_pecks_analysis <- params$run_pecks_analysis
 
 ```{r load_env, include=FALSE}
 # Load environment variables from .env file
-dotenv::load_dot_env(file.path("..", ".env"))
+dotenv::load_dot_env(file.path("..", ".env").replace("\\", "/"))
 ```
 
 ```{r get_db_credentials, include=FALSE}
