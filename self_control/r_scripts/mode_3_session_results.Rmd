@@ -37,6 +37,9 @@ if (!is.null(params$custom_output_name)) {
 }
 output_file <- file.path(params$output_dir, output_name)
 
+# Debug log the output file path
+cat("Output file path: ", output_file, "\n")
+
 run_pecks_analysis <- params$run_pecks_analysis
 ```
 
