@@ -2,7 +2,7 @@ import os
 import sys
 
 # Get the directory of the current script
-script_dir = os.path.dirname(os.path.abspath(__file__))
+script_dir = os.path.normpath(os.path.dirname(os.path.abspath(__file__)))  # Normalize path
 # Append the parent directory of the script directory to sys.path
 sys.path.append(os.path.abspath(os.path.join(script_dir, os.pardir, os.pardir)))
 
