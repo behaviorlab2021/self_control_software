@@ -415,6 +415,5 @@ if (!is.null(session_details$grace_radius)) {
 \elandscape
 
 ```{r disconnect_db, include=FALSE}
-# Disconnect from the PostgreSQL database
 dbDisconnect(conn)
 ```

@@ -234,6 +234,5 @@ kable(session_checks_t, caption = "Session Checks Information")
 ```
 
 ```{r disconnect_db, include=FALSE}
-# Disconnect from the PostgreSQL database
 dbDisconnect(conn)
 ```

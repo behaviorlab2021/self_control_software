@@ -9,7 +9,7 @@ header-includes:
   - \newcommand{\elandscape}{\end{landscape}}
 params:
   session_id: "f86849b1-24fe-42e0-93fa-f8b080decb43"
-  output_dir: "../data" # Specify the path as a string
+  output_dir: "../data"
   output_name: "session_results.pdf"
   custom_output_name: NULL
 ---
@@ -512,6 +512,5 @@ if (!is.null(session_details$grace_radius)) {
 \elandscape
 
 ```{r disconnect_db, include=FALSE}
-# Disconnect from the PostgreSQL database
 dbDisconnect(conn)
 ```
