@@ -245,7 +245,7 @@ JOIN rounds r ON p.round_id = r.round_id
 WHERE r.session_id = '", session_id, "';"))
 ```
 
-```{r pecks_scatterplot, echo=FALSE, fig.width=12, fig.height=8, eval=run_pecks_analysis}
+```{r pecks_scatterplot, echo=FALSE, fig.width=12, fig.height=8}
 # Create a scatterplot to show the position of the pecks using base R
 
 window_width <- session_details$window_width[1]
