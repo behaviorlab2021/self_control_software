@@ -2,7 +2,7 @@ import os
 import sys
 
 # Get the directory of the current script
-script_dir = os.path.dirname(os.path.abspath(__file__))+ "\\"
+script_dir = os.path.dirname(os.path.abspath(__file__))
 # Append the parent directory of the script directory to sys.path
 sys.path.append(os.path.abspath(os.path.join(script_dir, os.pardir, os.pardir)))
 
@@ -29,9 +29,9 @@ def send_email(report_path, cumulative_record_path, subject_name, session_date):
     mail_result = subprocess.run(
         [
             'Rscript',
-            os.path.join(script_dir, "send_mail.R").replace("\\", "/"),  # Make path relative and use forward slashes
-            report_path.replace("\\", "/"),
-            cumulative_record_path.replace("\\", "/"),
+            os.path.join(script_dir, "send_mail.R"),  # Make path relative and use forward slashes
+            report_path,
+            cumulative_record_path,
             subject_name,  # Add this argument
             session_date  # Add this argument
         ],
@@ -58,7 +58,7 @@ def get_experiment_details(session_id):
 def main(session_id):
     check_rscript()  # Check if Rscript is available
     subject_name, experiment_date, mode_id = get_experiment_details(session_id)
-    output_dir = os.path.join(script_dir, "..", "data").replace("\\", "/")  # Specify the output directory
+    output_dir = os.path.join(script_dir, "..", "data")  # Specify the output directory
 
     print("Subject Name:", subject_name)
     print("Mode ID:", mode_id)
@@ -67,8 +67,8 @@ def main(session_id):
     report_file_name = generate_file_name(experiment_date, subject_name, "report.pdf")
     cumulative_record_file_name = generate_file_name(experiment_date, subject_name, "cumulative_record.pdf")
 
-    rmd_path = os.path.join(script_dir, f"mode_{str(mode_id)}_session_results.Rmd").replace("\\", "/")
-    output_file_path = os.path.join(output_dir, report_file_name).replace("\\", "/")
+    rmd_path = os.path.join(script_dir, f"mode_{str(mode_id)}_session_results.Rmd")
+    output_file_path = os.path.join(output_dir, report_file_name)
     result = subprocess.run(
         [
             'Rscript',
@@ -87,7 +87,7 @@ def main(session_id):
     cumulative_result = subprocess.run(
         [
             'Rscript',
-            os.path.join(script_dir, "cumulative_record.R").replace("\\", "/"),  # Make path relative and use forward slashes
+            os.path.join(script_dir, "cumulative_record.R"),  # Make path relative and use forward slashes
             session_id,
             output_dir,
             cumulative_record_file_name
@@ -97,13 +97,13 @@ def main(session_id):
     )
 
     def on_files_created():
-        report_file_path = os.path.join(output_dir, report_file_name).replace("\\", "/")
-        cumulative_record_file_path = os.path.join(output_dir, cumulative_record_file_name).replace("\\", "/")
+        report_file_path = os.path.join(output_dir, report_file_name)
+        cumulative_record_file_path = os.path.join(output_dir, cumulative_record_file_name)
         print(f"Files have been created: {report_file_path} and {cumulative_record_file_path}")
 
     # Check if the files were created successfully
-    report_path = os.path.join(output_dir, report_file_name).replace("\\", "/")
-    cumulative_record_path = os.path.join(output_dir, cumulative_record_file_name).replace("\\", "/")
+    report_path = os.path.join(output_dir, report_file_name)
+    cumulative_record_path = os.path.join(output_dir, cumulative_record_file_name)
 
     def wait_for_files(paths, timeout=60):
         start_time = time.time()
