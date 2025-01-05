@@ -58,7 +58,7 @@ def get_experiment_details(session_id):
 def main(session_id):
     check_rscript()  # Check if Rscript is available
     subject_name, experiment_date, mode_id = get_experiment_details(session_id)
-    output_dir = os.path.join(script_dir, "..", "data").replace("\\", "/")  # Specify the output directory
+    output_dir = os.path.normpath(os.path.join(script_dir, "..", "data")).replace("\\", "/")  # Specify the output directory
 
     print("Mode ID:", mode_id)
 
