@@ -366,6 +366,8 @@ ggplot(completion_table, aes(x = session_index, y = termination_percentage)) +
     y = "Termination Percentage (%)"
   ) +
   theme_minimal()
+scale_y_continuous(limits = c(0, 100)) + # Set y-axis span from 0 to 100
+
 ```
 
 ## Pecks Distribution
