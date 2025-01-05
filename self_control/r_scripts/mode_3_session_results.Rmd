@@ -9,7 +9,7 @@ header-includes:
   - \newcommand{\elandscape}{\end{landscape}}
 params:
   session_id: "d4fee9dc-e494-4246-8197-b1c3c4de171c"
-  output_dir: "../data"
+  output_dir: "/../data"
   output_name: "session_results.pdf"
   custom_output_name: NULL
 ---
@@ -20,7 +20,7 @@ params:
 # Setup chunk: Load necessary libraries and set session_id parameter
 knitr::opts_chunk$set(echo = TRUE)
 session_id <- params$session_id
-output_dir <- params$output_dir
+output_dir <- file.path("..", "data")
 output_name <- params$output_name
 library(DBI)
 library(dotenv)
@@ -38,7 +38,6 @@ if (!is.null(params$custom_output_name)) {
 output_file <- file.path(params$output_dir, output_name)
 
 # Debug log the output file path
-cat("Output file path: ", output_file, "\n")
 
 run_pecks_analysis <- params$run_pecks_analysis
 ```
