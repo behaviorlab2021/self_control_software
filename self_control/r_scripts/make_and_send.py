@@ -69,6 +69,9 @@ def main(session_id):
 
     rmd_path = os.path.normpath(os.path.join(script_dir, "mode_" + str(mode_id) + "_session_results.Rmd"))
     output_file_path = os.path.normpath(os.path.join(output_dir, report_file_name))
+    print("Report File Name:", report_file_name)
+    print("RMD Path:", rmd_path)
+    print("Output File Path:", output_file_path)
     result = subprocess.run(
         [
             'Rscript',
