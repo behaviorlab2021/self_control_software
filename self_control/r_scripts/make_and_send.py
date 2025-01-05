@@ -76,7 +76,7 @@ def main(session_id):
         [
             'Rscript',
             '-e',
-            "rmarkdown::render('" + rmd_path + "', params = list(session_id = '" + session_id + "'), output_file = '" + output_file_path + "')"
+            "rmarkdown::render('" + rmd_path.replace("\\", "\\\\") + "', params = list(session_id = '" + session_id + "'), output_file = '" + output_file_path.replace("\\", "\\\\") + "')"
         ],
         capture_output=True,
         text=True
