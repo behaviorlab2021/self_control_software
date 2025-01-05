@@ -90,7 +90,7 @@ class ExperimentLayout(FloatLayout):
         # Clock scheduling
         Clock.schedule_once(self.prepare_buttons, 0.8)
         Clock.schedule_once(self.start_session, 0.8)
-        self.cumulative_record = Clock.schedule_interval(self.add_cumulative_record, 0.1)        # Keyboard event binding
+        # self.cumulative_record = Clock.schedule_interval(self.add_cumulative_record, 0.1)        # Keyboard event binding
         self._keyboard = Window.request_keyboard(self._keyboard_closed, self)
         self._keyboard.bind(on_key_down=self._on_keyboard_down)
         # USB MONITORING
@@ -167,9 +167,11 @@ class ExperimentLayout(FloatLayout):
             self.injector.inject_peck(self.touch_start_x, self.touch_start_y, touch.sx, touch.sy, self.rect.source !="assets/images/black_panel.png", not self.button_green.disabled, not self.button_red.disabled, self.round_id)
         if self.session_data["is_spot_on"]:
             self.spot.pos_hint = {'center_x':touch.sx, 'center_y':touch.sy}
+        
         return super(FloatLayout, self).on_touch_up(touch)
 
     def on_touch_down(self,touch):
+        self.injector.inject_cumulative_record(self.clicks)
         self.touch_start_x = touch.sx
         self.touch_start_y = touch.sy
         return super(FloatLayout, self).on_touch_down(touch)
@@ -191,7 +193,7 @@ class ExperimentLayout(FloatLayout):
         self.has_ended = True
         self.session_ended_label.text = "Session ended gracefully."
         self.session_ended_label.color = [0.2, 0.2, 0.2, 0.6]
-        Clock.unschedule(self.cumulative_record)
+        # Clock.unschedule(self.cumulative_record)
         self.create_results_pdf()
 
 
@@ -340,7 +342,9 @@ class ExperimentLayout(FloatLayout):
         self.start_new_round()
 
     def punish(self):
+
         self.writer.write_data(self.score, self.warning_quarter, self.clicks, "punishment", not self.button_red.disabled, self.warning_signal_index)
+        self.injector.inject_cumulative_record(self.clicks)
         self.injector.inject_event(self.round_id, "punishment", not self.button_red.disabled, self.clicks)
         self.houseLight.deactivate()
         self.buzzer.cancel() 
@@ -367,6 +371,7 @@ class ExperimentLayout(FloatLayout):
 
     def update_button_count(self):
         self.clicks = self.button_green.button_count  # Updates the number of clicks the green button has
+        self.injector.inject_cumulative_record(self.clicks)
         self.update_labels() # Updates the labels
         # Update the writer and injector
         self.writer.write_data(self.score, self.warning_quarter, self.clicks, "score_updated", not self.button_red.disabled, self.warning_signal_index)
