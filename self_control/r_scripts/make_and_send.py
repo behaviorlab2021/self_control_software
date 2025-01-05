@@ -29,11 +29,11 @@ def send_email(report_path, cumulative_record_path, subject_name, session_date):
     mail_result = subprocess.run(
         [
             'Rscript',
-            os.path.join(script_dir, "send_mail.R"),  # Make path relative and use forward slashes
+            os.path.normpath(os.path.join(script_dir, "send_mail.R")),  # Normalize path
             report_path,
             cumulative_record_path,
-            subject_name,  # Add this argument
-            session_date  # Add this argument
+            subject_name,
+            session_date
         ],
         capture_output=True,
         text=True
@@ -67,8 +67,8 @@ def main(session_id):
     report_file_name = generate_file_name(experiment_date, subject_name, "report.pdf")
     cumulative_record_file_name = generate_file_name(experiment_date, subject_name, "cumulative_record.pdf")
 
-    rmd_path = os.path.join(script_dir, f"mode_{str(mode_id)}_session_results.Rmd")
-    output_file_path = os.path.join(output_dir, report_file_name)
+    rmd_path = os.path.normpath(os.path.join(script_dir, f"mode_{str(mode_id)}_session_results.Rmd"))
+    output_file_path = os.path.normpath(os.path.join(output_dir, report_file_name))
     result = subprocess.run(
         [
             'Rscript',
@@ -87,7 +87,7 @@ def main(session_id):
     cumulative_result = subprocess.run(
         [
             'Rscript',
-            os.path.join(script_dir, "cumulative_record.R"),  # Make path relative and use forward slashes
+            os.path.normpath(os.path.join(script_dir, "cumulative_record.R")),  # Normalize path
             session_id,
             output_dir,
             cumulative_record_file_name
