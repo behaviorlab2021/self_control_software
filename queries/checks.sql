@@ -204,29 +204,29 @@ BEGIN
             WHEN session_info.mode_id = 4 THEN
                 CASE
                     WHEN COUNT(CASE WHEN events.event_type = 'red' THEN 1 END) = 0 
-                         AND ABS(EXTRACT(EPOCH FROM (MAX(timely_events.punishment_end_time) - MAX(timely_events.punishment_time))) - sessions.punishment_duration) <= 0.2 THEN TRUE
+                         AND ABS(EXTRACT(EPOCH FROM (MAX(timely_events.punishment_end_time) - MAX(timely_events.punishment_time))) - sessions.punishment_duration) <= 1 THEN TRUE
                     WHEN COUNT(CASE WHEN events.event_type = 'red' THEN 1 END) = 1 
-                         AND ABS(EXTRACT(EPOCH FROM (MAX(timely_events.feeding_end_time) - MAX(timely_events.feeding_time))) - sessions.feed_time) <= 0.2 THEN TRUE
+                         AND ABS(EXTRACT(EPOCH FROM (MAX(timely_events.feeding_end_time) - MAX(timely_events.feeding_time))) - sessions.feed_time) <= 1 THEN TRUE
                     ELSE FALSE
                 END
             WHEN session_info.mode_id = 3 THEN
                 CASE
                     WHEN COUNT(CASE WHEN events.event_type = 'warning' THEN 1 END) = 0 
-                         AND ABS(EXTRACT(EPOCH FROM (MAX(timely_events.feeding_end_time) - MAX(timely_events.feeding_time))) - sessions.feed_time) <= 0.2 THEN TRUE
+                         AND ABS(EXTRACT(EPOCH FROM (MAX(timely_events.feeding_end_time) - MAX(timely_events.feeding_time))) - sessions.feed_time) <= 1 THEN TRUE
                     WHEN COUNT(CASE WHEN events.event_type = 'red' THEN 1 END) = 1 
-                         AND ABS(EXTRACT(EPOCH FROM (MAX(timely_events.feeding_end_time) - MAX(timely_events.feeding_time))) - sessions.feed_time) <= 0.2 THEN TRUE
+                         AND ABS(EXTRACT(EPOCH FROM (MAX(timely_events.feeding_end_time) - MAX(timely_events.feeding_time))) - sessions.feed_time) <= 1 THEN TRUE
                     WHEN COUNT(CASE WHEN events.event_type = 'red' THEN 1 END) = 0 
-                         AND ABS(EXTRACT(EPOCH FROM (MAX(timely_events.punishment_end_time) - MAX(timely_events.punishment_time))) - sessions.punishment_duration) <= 0.2 THEN TRUE
+                         AND ABS(EXTRACT(EPOCH FROM (MAX(timely_events.punishment_end_time) - MAX(timely_events.punishment_time))) - sessions.punishment_duration) <= 1 THEN TRUE
                     ELSE FALSE
                 END
             WHEN session_info.mode_id = 2 THEN
                 CASE
-                    WHEN ABS(EXTRACT(EPOCH FROM (MAX(timely_events.feeding_end_time) - MAX(timely_events.feeding_time))) - sessions.feed_time) <= 0.2 THEN TRUE
+                    WHEN ABS(EXTRACT(EPOCH FROM (MAX(timely_events.feeding_end_time) - MAX(timely_events.feeding_time))) - sessions.feed_time) <= 1 THEN TRUE
                     ELSE FALSE
                 END
             WHEN session_info.mode_id = 1 THEN
                 CASE
-                    WHEN ABS(EXTRACT(EPOCH FROM (MAX(timely_events.feeding_end_time) - MAX(timely_events.feeding_time))) - sessions.feed_time) <= 0.2 THEN TRUE
+                    WHEN ABS(EXTRACT(EPOCH FROM (MAX(timely_events.feeding_end_time) - MAX(timely_events.feeding_time))) - sessions.feed_time) <= 1 THEN TRUE
                     ELSE FALSE
                 END
             ELSE FALSE
