@@ -20,7 +20,7 @@ params:
 # Setup chunk: Load necessary libraries and set session_id parameter
 knitr::opts_chunk$set(echo = TRUE)
 session_id <- params$session_id
-output_dir <- params$output_dir
+output_dir <- file.path("..", "data")
 output_name <- params$output_name
 library(DBI)
 library(dotenv)
@@ -36,8 +36,6 @@ if (!is.null(params$custom_output_name)) {
   output_name <- params$output_name
 }
 output_file <- file.path(params$output_dir, output_name)
-
-run_pecks_analysis <- params$run_pecks_analysis
 ```
 
 ```{r load_env, include=FALSE}
@@ -112,14 +110,6 @@ session_details <- dbGetQuery(conn, paste0("
   WHERE session_id = '", session_id, "';"))
 ```
 
-```{r set_run_pecks_analysis, include=FALSE}
-# Set the run_pecks_analysis parameter based on mode_id
-if (session_details$mode_id == 1) {
-  run_pecks_analysis <- FALSE
-} else {
-  run_pecks_analysis <- TRUE
-}
-```
 
 ```{r session_details_table, echo=FALSE}
 # Define a list of column names in snake case and sentence case
@@ -239,7 +229,7 @@ kable(session_checks_t, caption = "Session Checks Information")
 
 ## Pecks Distribution
 
-```{r pecks, include=FALSE, eval=run_pecks_analysis}
+```{r pecks, include=FALSE}
 # Query the database to get detailed session information
 
 pecks <- dbGetQuery(conn, paste0("
