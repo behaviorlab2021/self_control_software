@@ -9,7 +9,7 @@ header-includes:
   - \newcommand{\elandscape}{\end{landscape}}
 params:
   session_id: "f86849b1-24fe-42e0-93fa-f8b080decb43"
-  output_dir: "../data"
+  output_dir: "../data" # Specify the path as a string
   output_name: "session_results.pdf"
   custom_output_name: NULL
 ---
@@ -42,7 +42,7 @@ run_pecks_analysis <- params$run_pecks_analysis
 
 ```{r load_env, include=FALSE}
 # Load environment variables from .env file
-dotenv::load_dot_env("../.env")
+dotenv::load_dot_env(file.path("..", ".env"))
 ```
 
 ```{r get_db_credentials, include=FALSE}

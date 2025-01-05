@@ -42,7 +42,7 @@ run_pecks_analysis <- params$run_pecks_analysis
 
 ```{r load_env, include=FALSE}
 # Load environment variables from .env file
-dotenv::load_dot_env("../.env")
+dotenv::load_dot_env("../.env") # Use forward slashes for compatibility
 ```
 
 ```{r get_db_credentials, include=FALSE}
@@ -365,7 +365,6 @@ ggplot(completion_table, aes(x = session_index, y = termination_percentage)) +
   ) +
   theme_minimal()
 ```
-
 
 ## Pecks Distribution
 

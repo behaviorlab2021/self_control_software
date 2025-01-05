@@ -9,7 +9,7 @@ header-includes:
   - \newcommand{\elandscape}{\end{landscape}}
 params:
   session_id: "d4fee9dc-e494-4246-8197-b1c3c4de171c"
-  output_dir: "../data"
+  output_dir: file.path("..", "data")
   output_name: "session_results.pdf"
   custom_output_name: NULL
 ---
@@ -20,7 +20,7 @@ params:
 # Setup chunk: Load necessary libraries and set session_id parameter
 knitr::opts_chunk$set(echo = TRUE)
 session_id <- params$session_id
-output_dir <- params$output_dir
+output_dir <- file.path("..", "data")
 output_name <- params$output_name
 library(DBI)
 library(dotenv)
@@ -35,14 +35,14 @@ if (!is.null(params$custom_output_name)) {
 } else {
   output_name <- params$output_name
 }
-output_file <- file.path(params$output_dir, output_name)
+output_file <- file.path(output_dir, output_name)
 
 run_pecks_analysis <- params$run_pecks_analysis
 ```
 
 ```{r load_env, include=FALSE}
 # Load environment variables from .env file
-dotenv::load_dot_env("../.env")
+dotenv::load_dot_env(file.path("..", ".env"))
 ```
 
 ```{r get_db_credentials, include=FALSE}
@@ -232,7 +232,6 @@ colnames(session_checks_table) <- unlist(session_checks_column_names)
 session_checks_t <- t(session_checks_table)
 kable(session_checks_t, caption = "Session Checks Information")
 ```
-
 
 ```{r disconnect_db, include=FALSE}
 # Disconnect from the PostgreSQL database

@@ -9,7 +9,7 @@ header-includes:
   - \newcommand{\elandscape}{\end{landscape}}
 params:
   session_id: "d4fee9dc-e494-4246-8197-b1c3c4de171c"
-  output_dir: "../data"
+  output_dir: file.path("..", "data") # Use file.path for platform independence
   output_name: "session_results.pdf"
   custom_output_name: NULL
 ---
@@ -38,11 +38,12 @@ if (!is.null(params$custom_output_name)) {
 output_file <- file.path(params$output_dir, output_name)
 
 run_pecks_analysis <- params$run_pecks_analysis
+dotenv::load_dot_env(file.path("..", ".env")) # Use file.path for platform independence
 ```
 
 ```{r load_env, include=FALSE}
 # Load environment variables from .env file
-dotenv::load_dot_env("../.env")
+dotenv::load_dot_env(file.path("..", ".env")) # Use file.path for platform independence
 ```
 
 ```{r get_db_credentials, include=FALSE}
@@ -287,3 +288,4 @@ if (!is.null(session_details$grace_radius)) {
 # Disconnect from the PostgreSQL database
 dbDisconnect(conn)
 ```
+````
