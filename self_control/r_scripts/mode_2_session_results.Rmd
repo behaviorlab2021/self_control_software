@@ -38,7 +38,6 @@ if (!is.null(params$custom_output_name)) {
 output_file <- file.path(params$output_dir, output_name)
 
 run_pecks_analysis <- params$run_pecks_analysis
-dotenv::load_dot_env(file.path("..", ".env")) # Use file.path for platform independence
 ```
 
 ```{r load_env, include=FALSE}

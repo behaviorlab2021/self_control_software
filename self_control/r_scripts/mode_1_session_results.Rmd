@@ -20,7 +20,7 @@ params:
 # Setup chunk: Load necessary libraries and set session_id parameter
 knitr::opts_chunk$set(echo = TRUE)
 session_id <- params$session_id
-output_dir <- file.path("..", "data")
+output_dir <- params$output_dir
 output_name <- params$output_name
 library(DBI)
 library(dotenv)
@@ -234,5 +234,6 @@ kable(session_checks_t, caption = "Session Checks Information")
 ```
 
 ```{r disconnect_db, include=FALSE}
+# Disconnect from the PostgreSQL database
 dbDisconnect(conn)
 ```
