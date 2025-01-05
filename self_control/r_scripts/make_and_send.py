@@ -58,9 +58,11 @@ def get_experiment_details(session_id):
 def main(session_id):
     check_rscript()  # Check if Rscript is available
     subject_name, experiment_date, mode_id = get_experiment_details(session_id)
-    output_dir = os.path.normpath(os.path.join(script_dir, "..", "data")).replace("\\", "/")  # Specify the output directory
+    output_dir = os.path.join(script_dir, "..", "data").replace("\\", "/")  # Specify the output directory
 
+    print("Subject Name:", subject_name)
     print("Mode ID:", mode_id)
+    print("Output Directory:", output_dir)
 
     report_file_name = generate_file_name(experiment_date, subject_name, "report.pdf")
     cumulative_record_file_name = generate_file_name(experiment_date, subject_name, "cumulative_record.pdf")
