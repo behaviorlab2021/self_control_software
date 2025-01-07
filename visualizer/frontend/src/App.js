@@ -52,6 +52,9 @@ function App() {
         const pecksResponse = await axios.get(`${ENDPOINT}/pecks`);
         setPecks(pecksResponse.data);
       }
+      if (newEvent.event_type === "session_start") {
+        window.location.reload();
+      }
     });
 
     socket.on("newPeck", (newPeck) => {
@@ -105,10 +108,10 @@ function App() {
     <div
       className="App"
       style={{
-        padding: "0 20px",
+        padding: "0 40px",
         height: "100vh",
         display: "grid",
-        gridTemplateRows: "10vh 1fr 40vh",
+        gridTemplateRows: "10vh 45fr 40vh",
         boxSizing: "border-box", // Add this line
       }}
     >
@@ -117,7 +120,7 @@ function App() {
           {session ? session.subject_name : ""} running{" "}
           {session ? session.mode_name : ""} -{" "}
           {session
-            ? format(new Date(session.created_at), "EEEE dd MMMM yyyy HH:mm")
+            ? format(new Date(session.created_at), "EEEE dd MMMM yyyy hh:mm")
             : ""}
         </h1>
       </div>
@@ -127,7 +130,6 @@ function App() {
         style={{
           display: "flex",
           overflow: "hidden",
-          boxSizing: "border-box", // Add this line
         }}
       >
         <CameraFeed
@@ -145,7 +147,7 @@ function App() {
           headerGroups={headerGroups}
           rows={rows}
           prepareRow={prepareRow}
-          style={{ height: "100%", margin: "20px" }} // Add boxSizing
+          style={{ height: "100%" }} // Add boxSizing
         />
       </div>
 

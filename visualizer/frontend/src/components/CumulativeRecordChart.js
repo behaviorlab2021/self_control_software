@@ -22,8 +22,8 @@ function CumulativeRecordChart({ chartRef, records, events, session }) {
       svg.attr("width", width + margin.left + margin.right);
 
       const x = d3
-        .scaleTime()
-        .domain([minTime, maxTime])
+        .scaleLinear()
+        .domain([0, timeDiff])
         .range([margin.left, width + margin.left]);
 
       const y = d3
@@ -33,7 +33,7 @@ function CumulativeRecordChart({ chartRef, records, events, session }) {
 
       const line = d3
         .line()
-        .x((d) => x(new Date(d.event_time)))
+        .x((d) => x((new Date(d.event_time) - minTime) / (1000 * 60))) // Convert to minutes from start
         .y((d) => y(d.hit_count));
 
       svg
@@ -43,6 +43,11 @@ function CumulativeRecordChart({ chartRef, records, events, session }) {
           d3
             .axisBottom(x)
             .ticks(width / 80)
+            .tickFormat((d) => {
+              const minutes = Math.floor(d);
+              const seconds = Math.floor((d - minutes) * 60);
+              return `${minutes}:${seconds < 10 ? "0" : ""}${seconds}`;
+            })
             .tickSizeOuter(0)
         );
 
@@ -65,7 +70,10 @@ function CumulativeRecordChart({ chartRef, records, events, session }) {
         .enter()
         .append("rect")
         .attr("class", "feeding-symbol")
-        .attr("x", (d) => x(new Date(d.event_time)) - 5)
+        .attr(
+          "x",
+          (d) => x((new Date(d.event_time) - minTime) / (1000 * 60)) - 5
+        )
         .attr("y", (d) => y(d.hit_count) - 5)
         .attr("width", 10)
         .attr("height", 10)
@@ -77,7 +85,7 @@ function CumulativeRecordChart({ chartRef, records, events, session }) {
         .enter()
         .append("circle")
         .attr("class", "red-symbol")
-        .attr("cx", (d) => x(new Date(d.event_time)))
+        .attr("cx", (d) => x((new Date(d.event_time) - minTime) / (1000 * 60)))
         .attr("cy", (d) => y(d.hit_count))
         .attr("r", 5)
         .attr("fill", "red");
@@ -88,7 +96,7 @@ function CumulativeRecordChart({ chartRef, records, events, session }) {
         .enter()
         .append("circle")
         .attr("class", "warning-symbol")
-        .attr("cx", (d) => x(new Date(d.event_time)))
+        .attr("cx", (d) => x((new Date(d.event_time) - minTime) / (1000 * 60)))
         .attr("cy", (d) => y(d.hit_count))
         .attr("r", 5)
         .attr("fill", "none")
@@ -100,7 +108,7 @@ function CumulativeRecordChart({ chartRef, records, events, session }) {
         .enter()
         .append("circle")
         .attr("class", "punishment-symbol")
-        .attr("cx", (d) => x(new Date(d.event_time)))
+        .attr("cx", (d) => x((new Date(d.event_time) - minTime) / (1000 * 60)))
         .attr("cy", (d) => y(d.hit_count))
         .attr("r", 5)
         .attr("fill", "black");
@@ -111,7 +119,7 @@ function CumulativeRecordChart({ chartRef, records, events, session }) {
         .enter()
         .append("text")
         .attr("class", "session-end-symbol")
-        .attr("x", (d) => x(new Date(d.event_time)))
+        .attr("x", (d) => x((new Date(d.event_time) - minTime) / (1000 * 60)))
         .attr("y", (d) => y(d.hit_count))
         .attr("dy", ".5em")
         .attr("text-anchor", "middle")
@@ -125,7 +133,7 @@ function CumulativeRecordChart({ chartRef, records, events, session }) {
         .enter()
         .append("text")
         .attr("class", "session-start-symbol")
-        .attr("x", (d) => x(new Date(d.event_time)))
+        .attr("x", (d) => x((new Date(d.event_time) - minTime) / (1000 * 60)))
         .attr("y", (d) => y(d.hit_count))
         .attr("dy", ".5em")
         .attr("text-anchor", "middle")
@@ -139,7 +147,7 @@ function CumulativeRecordChart({ chartRef, records, events, session }) {
         .enter()
         .append("text")
         .attr("class", "new-round-symbol")
-        .attr("x", (d) => x(new Date(d.event_time)))
+        .attr("x", (d) => x((new Date(d.event_time) - minTime) / (1000 * 60)))
         .attr("y", (d) => y(d.hit_count))
         .attr("dy", "0.2em")
         .attr("text-anchor", "middle")

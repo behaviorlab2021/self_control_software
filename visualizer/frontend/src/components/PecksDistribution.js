@@ -10,7 +10,7 @@ function PecksDistribution({ pecks, session }) {
 
       svg.selectAll("*").remove(); // Clear previous elements
 
-      const margin = { top: 10, right: 0, bottom: 10, left: 0 };
+      const margin = { top: 0, right: 0, bottom: 1, left: 0 };
       const container = containerRef.current;
       const availableHeight = Math.floor(container.clientHeight); // Use Math.floor to avoid overflow
       const aspectRatio = session.window_width / session.window_height;

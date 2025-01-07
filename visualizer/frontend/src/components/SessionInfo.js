@@ -2,7 +2,13 @@ import React from "react";
 
 function SessionInfo({ session }) {
   return (
-    <div id="session_info">
+    <div
+      id="session_info"
+      style={{
+        height: "100%",
+        overflowY: "auto",
+      }}
+    >
       <table
         style={{
           border: "1px solid black",

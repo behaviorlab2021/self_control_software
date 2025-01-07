@@ -18,7 +18,7 @@ function Tabs({
 }) {
   const tabButtonsRef = useRef(null);
   const getButtonStyle = (tabName) => ({
-    backgroundColor: activeTab === tabName ? "blue" : "transparent",
+    backgroundColor: activeTab === tabName ? "#999" : "transparent",
     color: activeTab === tabName ? "white" : "black",
   });
 
@@ -32,12 +32,14 @@ function Tabs({
     <div
       style={{
         flex: 1,
-        marginRight: "20px",
         overflow: "hidden",
         boxSizing: "border-box",
       }}
     >
-      <div ref={tabButtonsRef}>
+      <div
+        ref={tabButtonsRef}
+        style={{ display: "flex", height: "30px", padding: "10px 0" }}
+      >
         <button
           onClick={() => setActiveTab("pecks_distribution")}
           style={getButtonStyle("pecks_distribution")}
@@ -60,8 +62,6 @@ function Tabs({
       <div
         id="tab_content"
         style={{
-          overflowY: "auto",
-          marginTop: "20px",
           width: "100%",
           height: "100%",
           boxSizing: "border-box",
@@ -74,8 +74,7 @@ function Tabs({
             style={{
               width: "100%",
               height: "100%",
-              marginTop: "20px",
-              marginBottom: "20px",
+
               boxSizing: "border-box",
             }}
           />
@@ -87,7 +86,11 @@ function Tabs({
             headerGroups={headerGroups}
             rows={rows}
             prepareRow={prepareRow}
-            style={{ width: "100%", height: "100%", boxSizing: "border-box" }}
+            style={{
+              width: "100%",
+              height: "100%",
+              boxSizing: "border-box",
+            }}
           />
         )}
         {activeTab === "session_info" && session && (

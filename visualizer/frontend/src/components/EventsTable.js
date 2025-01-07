@@ -8,7 +8,10 @@ function EventsTable({
   prepareRow,
 }) {
   return (
-    <div id="events_table">
+    <div
+      id="events_table"
+      style={{ overflowY: "auto", height: "100%", boxSizing: "border-box" }}
+    >
       <table
         {...getTableProps()}
         style={{ width: "100%", borderCollapse: "collapse" }}

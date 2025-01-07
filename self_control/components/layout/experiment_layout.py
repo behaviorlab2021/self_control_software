@@ -171,7 +171,8 @@ class ExperimentLayout(FloatLayout):
         return super(FloatLayout, self).on_touch_up(touch)
 
     def on_touch_down(self,touch):
-        self.injector.inject_cumulative_record(self.clicks)
+        if (not self.has_ended):
+            self.injector.inject_cumulative_record(self.clicks)
         self.touch_start_x = touch.sx
         self.touch_start_y = touch.sy
         return super(FloatLayout, self).on_touch_down(touch)
