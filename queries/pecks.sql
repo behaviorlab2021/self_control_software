@@ -14,15 +14,16 @@ CREATE TABLE pecks (
 
 
 
-CREATE OR REPLACE FUNCTION notify_peck_event() RETURNS trigger AS $$
+
+
+CREATE OR REPLACE FUNCTION notify_peck() RETURNS trigger AS $$
 BEGIN
-    RAISE NOTICE 'Trigger notify_peck_event executed for record: %', row_to_json(NEW)::text; -- Debug print
-    PERFORM pg_notify('new_peck_event', row_to_json(NEW)::text);
+    PERFORM pg_notify('new_peck', row_to_json(NEW)::text);
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER peck_event_trigger
+CREATE TRIGGER peck_trigger
 AFTER INSERT ON pecks
 FOR EACH ROW
-EXECUTE FUNCTION notify_peck_event();
+EXECUTE FUNCTION notify_peck();

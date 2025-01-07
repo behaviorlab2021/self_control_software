@@ -90,7 +90,7 @@ class ExperimentLayout(FloatLayout):
         # Clock scheduling
         Clock.schedule_once(self.prepare_buttons, 0.8)
         Clock.schedule_once(self.start_session, 0.8)
-        # self.cumulative_record = Clock.schedule_interval(self.add_cumulative_record, 0.1)        # Keyboard event binding
+        self.cumulative_record = Clock.schedule_interval(self.add_cumulative_record, 0.5)        # Keyboard event binding
         self._keyboard = Window.request_keyboard(self._keyboard_closed, self)
         self._keyboard.bind(on_key_down=self._on_keyboard_down)
         # USB MONITORING
@@ -193,7 +193,7 @@ class ExperimentLayout(FloatLayout):
         self.has_ended = True
         self.session_ended_label.text = "Session ended gracefully."
         self.session_ended_label.color = [0.2, 0.2, 0.2, 0.6]
-        # Clock.unschedule(self.cumulative_record)
+        Clock.unschedule(self.cumulative_record)
         self.create_results_pdf()
 
 

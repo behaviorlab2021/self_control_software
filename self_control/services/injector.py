@@ -13,6 +13,7 @@ class Injector:
         self.session_id = constant_data['session_id']
 
     def inject_event(self, round_id, event_type, warning_signal_present, hit_count):
+        self.inject_cumulative_record(hit_count)
         self.db.connect()
         self.db.insert_event(round_id, event_type, warning_signal_present, hit_count)
         self.db.close()

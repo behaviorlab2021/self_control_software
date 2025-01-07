@@ -1,225 +1,186 @@
-import React, { useEffect, useState, useMemo, useRef } from 'react';
-import axios from 'axios';
-import socketIOClient from 'socket.io-client';
-import * as d3 from 'd3';
-import { useTable, useSortBy } from 'react-table';
+import React, { useEffect, useState, useMemo, useRef } from "react";
+import axios from "axios";
+import socketIOClient from "socket.io-client";
+import { useTable, useSortBy } from "react-table";
+import { format } from "date-fns";
+import CameraFeed from "./components/CameraFeed";
+import Tabs from "./components/Tabs";
+import CumulativeRecordChart from "./components/CumulativeRecordChart";
 
 const ENDPOINT = "http://localhost:3001";
 
 function App() {
-    const [records, setRecords] = useState([]);
-    const chartRef = useRef(null);
-    const videoRef = useRef(null);
+  const [records, setRecords] = useState([]);
+  const [events, setEvents] = useState([]);
+  const [session, setSession] = useState(null);
+  const [pecks, setPecks] = useState([]);
+  const [activeTab, setActiveTab] = useState("pecks_distribution");
+  const chartRef = useRef(null);
+  const videoRef = useRef(null);
 
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const response = await axios.get(`${ENDPOINT}/cumulative_records`);
-                setRecords(response.data);
-            } catch (error) {
-                console.error('Error fetching data:', error);
-            }
-        };
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const recordsResponse = await axios.get(
+          `${ENDPOINT}/cumulative_records`
+        );
+        setRecords(recordsResponse.data);
 
-        fetchData();
+        const eventsResponse = await axios.get(`${ENDPOINT}/events`);
+        setEvents(eventsResponse.data);
 
-        const socket = socketIOClient(ENDPOINT);
-        socket.on('newCumulativeRecord', (newRecord) => {
-            setRecords((prevRecords) => [newRecord, ...prevRecords]);
-        });
+        const sessionResponse = await axios.get(`${ENDPOINT}/cur_session`);
+        setSession(sessionResponse.data);
 
-        return () => socket.disconnect();
-    }, []);
+        const pecksResponse = await axios.get(`${ENDPOINT}/pecks`);
+        setPecks(pecksResponse.data);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+    };
 
-    useEffect(() => {
-        if (records.length > 0) {
-            const svg = d3.select(chartRef.current)
-                .attr('height', 300);
+    fetchData();
 
-            svg.selectAll('*').remove(); // Clear previous elements
+    const socket = socketIOClient(ENDPOINT);
+    socket.on("newCumulativeRecord", (newRecord) => {
+      setRecords((prevRecords) => [newRecord, ...prevRecords]);
+    });
 
-            const margin = { top: 20, right: 30, bottom: 30, left: 40 };
-            const width = records.length * 50; // Dynamic width based on data length
-            const height = +svg.attr('height') - margin.top - margin.bottom;
+    socket.on("newEvent", async (newEvent) => {
+      setEvents((prevEvents) => [newEvent, ...prevEvents]);
+      if (newEvent.event_type === "new_round") {
+        const pecksResponse = await axios.get(`${ENDPOINT}/pecks`);
+        setPecks(pecksResponse.data);
+      }
+    });
 
-            svg.attr('width', width + margin.left + margin.right);
+    socket.on("newPeck", (newPeck) => {
+      setPecks((prevPecks) => [newPeck, ...prevPecks]);
+    });
 
-            const x = d3.scaleTime()
-                .domain([
-                    d3.min(records, d => new Date(d.event_time)), 
-                    d3.timeMinute.offset(d3.min(records, d => new Date(d.event_time)), records.length)
-                ]) // Dynamic domain: based on the number of records
-                .range([margin.left, margin.left + records.length * 200]); // 30 pixels per minute
+    const handleResize = () => {
+      window.location.reload();
+    };
 
-            const y = d3.scaleLinear()
-                .domain([0, 20]) // Default domain from 0 to 10
-                .range([height - margin.bottom, margin.top]);
-                
-            const line = d3.line()
-                .x(d => x(new Date(d.event_time)))
-                .y(d => y(d.hit_count));
+    window.addEventListener("resize", handleResize);
 
-            svg.append('g')
-                .attr('transform', `translate(0,${height - margin.bottom})`)
-                .call(d3.axisBottom(x).ticks(width / 80).tickSizeOuter(0));
+    return () => {
+      socket.disconnect();
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
 
-            svg.append('g')
-                .attr('transform', `translate(${margin.left},0)`)
-                .call(d3.axisLeft(y));
+  useEffect(() => {
+    const bottomSection = document.querySelector(".bottom_section > div");
+    if (bottomSection) {
+      bottomSection.scrollLeft = bottomSection.scrollWidth;
+    }
+  }, [records, events, pecks]);
 
-            svg.append('path')
-                .datum(records)
-                .attr('fill', 'none')
-                .attr('stroke', 'steelblue')
-                .attr('stroke-width', 1.5)
-                .attr('d', line);
+  const columns = useMemo(
+    () => [
+      {
+        Header: "Hit Count",
+        accessor: "hit_count",
+      },
+      {
+        Header: "Type",
+        accessor: "event_type",
+      },
+      {
+        Header: "Time",
+        accessor: "event_time",
+        Cell: ({ value }) => format(new Date(value), "HH:mm:ss.S"),
+      },
+    ],
+    []
+  );
 
-            svg.selectAll('.feeding-symbol')
-                .data(records.filter(record => record.event_type === 'feeding'))
-                .enter()
-                .append('rect')
-                .attr('class', 'feeding-symbol')
-                .attr('x', d => x(new Date(d.event_time)) - 5)
-                .attr('y', d => y(d.hit_count) - 5)
-                .attr('width', 10)
-                .attr('height', 10)
-                .attr('fill', 'blue');
+  const tableInstance = useTable({ columns, data: events }, useSortBy);
 
-            svg.selectAll('.red-symbol')
-                .data(records.filter(record => ['red-1', 'red-2', 'red-3', 'red-4'].includes(record.event_type)))
-                .enter()
-                .append('circle')
-                .attr('class', 'red-symbol')
-                .attr('cx', d => x(new Date(d.event_time)))
-                .attr('cy', d => y(d.hit_count))
-                .attr('r', 5)
-                .attr('fill', 'red');
+  const { getTableProps, getTableBodyProps, headerGroups, rows, prepareRow } =
+    tableInstance;
 
-            svg.selectAll('.warning-symbol')
-                .data(records.filter(record => ['warning-1', 'warning-2', 'warning-3', 'warning-4'].includes(record.event_type)))
-                .enter()
-                .append('circle')
-                .attr('class', 'warning-symbol')
-                .attr('cx', d => x(new Date(d.event_time)))
-                .attr('cy', d => y(d.hit_count))
-                .attr('r', 5)
-                .attr('fill', 'none')
-                .attr('stroke', 'red');
+  return (
+    <div
+      className="App"
+      style={{
+        padding: "0 20px",
+        height: "100vh",
+        display: "grid",
+        gridTemplateRows: "10vh 1fr 40vh",
+        boxSizing: "border-box", // Add this line
+      }}
+    >
+      <div className="title_section" style={{ overflow: "hidden" }}>
+        <h1>
+          {session ? session.subject_name : ""} running{" "}
+          {session ? session.mode_name : ""} -{" "}
+          {session
+            ? format(new Date(session.created_at), "EEEE dd MMMM yyyy HH:mm")
+            : ""}
+        </h1>
+      </div>
 
-            svg.selectAll('.punishment-symbol')
-                .data(records.filter(record => record.event_type === 'punishment'))
-                .enter()
-                .append('circle')
-                .attr('class', 'punishment-symbol')
-                .attr('cx', d => x(new Date(d.event_time)))
-                .attr('cy', d => y(d.hit_count))
-                .attr('r', 5)
-                .attr('fill', 'black');
-        }
-    }, [records]);
+      <div
+        className="upper_section"
+        style={{
+          display: "flex",
+          overflow: "hidden",
+          boxSizing: "border-box", // Add this line
+        }}
+      >
+        <CameraFeed
+          videoRef={videoRef}
+          style={{ height: "100%", width: "100%", boxSizing: "border-box" }} // Add boxSizing
+        />
+        <Tabs
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          events={events}
+          session={session}
+          pecks={pecks}
+          getTableProps={getTableProps}
+          getTableBodyProps={getTableBodyProps}
+          headerGroups={headerGroups}
+          rows={rows}
+          prepareRow={prepareRow}
+          style={{ height: "100%", margin: "20px" }} // Add boxSizing
+        />
+      </div>
 
-    useEffect(() => {
-        const startCamera = async () => {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                if (videoRef.current) {
-                    videoRef.current.srcObject = stream;
-                }
-            } catch (error) {
-                console.error('Error accessing camera:', error);
-            }
-        };
-
-        startCamera();
-    }, []);
-
-    const columns = useMemo(
-        () => [
-            {
-                Header: 'ID',
-                accessor: 'event_id',
-            },
-            {
-                Header: 'Type',
-                accessor: 'event_type',
-            },
-            {
-                Header: 'Time',
-                accessor: 'event_time',
-            },
-            {
-                Header: 'Hit Count',
-                accessor: 'hit_count',
-            },
-        ],
-        []
-    );
-
-    const tableInstance = useTable({ columns, data: records }, useSortBy);
-
-    const {
-        getTableProps,
-        getTableBodyProps,
-        headerGroups,
-        rows,
-        prepareRow,
-    } = tableInstance;
-
-    return (
-        <div className="App" style={{ padding: '0 20px' }}>
-            <h1>Cumulative Records</h1>
-
-            <div style={{ display: 'flex', marginBottom: '20px' }}>
-                <div style={{ flex: 1, marginRight: '20px' }}>
-                    <h2>Score Updated Records Line Chart</h2>
-                    <div style={{ height: '400px', overflowY: 'scroll' }}>
-                        <table {...getTableProps()} style={{ width: '100%', borderCollapse: 'collapse' }}>
-                            <thead>
-                                {headerGroups.map(headerGroup => (
-                                    <tr {...headerGroup.getHeaderGroupProps()}>
-                                        {headerGroup.headers.map(column => (
-                                            <th {...column.getHeaderProps(column.getSortByToggleProps())} style={{ border: '1px solid black', padding: '5px' }}>
-                                                {column.render('Header')}
-                                                <span>
-                                                    {column.isSorted
-                                                        ? column.isSortedDesc
-                                                            ? ' 🔽'
-                                                            : ' 🔼'
-                                                        : ''}
-                                                </span>
-                                            </th>
-                                        ))}
-                                    </tr>
-                                ))}
-                            </thead>
-                            <tbody {...getTableBodyProps()}>
-                                {rows.map(row => {
-                                    prepareRow(row);
-                                    return (
-                                        <tr {...row.getRowProps()}>
-                                            {row.cells.map(cell => (
-                                                <td {...cell.getCellProps()} style={{ border: '1px solid black', padding: '5px' }}>
-                                                    {cell.render('Cell')}
-                                                </td>
-                                            ))}
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                <div style={{ flex: 1 }}>
-                    <h2>Live Camera Feed</h2>
-                    <video ref={videoRef} autoPlay style={{ width: '100%', maxHeight: '400px' }}></video>
-                </div>
-            </div>
-
-            <div style={{ width: '100%', overflowX: 'auto' }}>
-                <svg ref={chartRef}></svg>
-            </div>
+      <div
+        className="bottom_section"
+        style={{
+          width: "100%",
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          overflowX: "auto",
+          boxSizing: "border-box", // Add this line
+        }}
+      >
+        <h2 style={{ flex: "0 0 auto" }}>Cumulative Record</h2>
+        <div
+          style={{
+            flex: "1 1 auto",
+            height: "100%",
+            overflowY: "hidden",
+            overflowX: "auto",
+            boxSizing: "border-box", // Add this line
+          }}
+        >
+          <CumulativeRecordChart
+            chartRef={chartRef}
+            records={records}
+            events={events}
+            session={session}
+            style={{ height: "100%", boxSizing: "border-box" }} // Add boxSizing
+          />
         </div>
-    );
+      </div>
+    </div>
+  );
 }
 
 export default App;
