@@ -219,8 +219,7 @@ class ExperimentLayout(FloatLayout):
 
     def check_if_warning_signal_training(self):
         if self.session_data["mode_id"] == 3 and self.score % self.session_data["punishment_periodicity"] == 0:  
-            if self.consecutive_warnings <= self.session_data["consecutive_warnings_limit"]:    
-
+            if self.consecutive_warnings < self.session_data["consecutive_warnings_limit"]:    
                 self.warning_signal_training_running = True
                 self.warning_signal_scheduled_event = Clock.schedule_once(self.start_warning_signal_training, self.session_data["time_before_warning_signal"])
             else :
