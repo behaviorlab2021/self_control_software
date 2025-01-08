@@ -2,6 +2,7 @@ from self_control_software.self_control.utils.time_functions import get_time_now
 import csv
 import os
 import sys
+import threading
 
 
 class Writer:
@@ -28,6 +29,8 @@ class Writer:
         print("Filepath: ", self.filepath)
         print("Filename: ", self.filename)
 
+        self.lock = threading.Lock()
+
         with open(self.filepath, 'w', newline='') as csvfile:
             cwriter = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
             cwriter.writerow(self.header)
@@ -36,10 +39,10 @@ class Writer:
 
 
     def write_to_file(self, data):
-        with open(self.filepath, 'a', newline='') as csvfile:
-            cwriter = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
-
-            cwriter.writerow(self.cd_values + data)
+        with self.lock:
+            with open(self.filepath, 'a', newline='') as csvfile:
+                cwriter = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+                cwriter.writerow(self.cd_values + data)
 
     def write_peck_data_blind(self, reinforcements, quarter, hit_count, click_x, click_y, event, warning_present, warning_signal_index):
         time = get_time_dif(self.start_time)
