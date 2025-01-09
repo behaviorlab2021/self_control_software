@@ -30,6 +30,7 @@ from self_control_software.self_control.utils.functions import distance_from
 from self_control_software.self_control.services.clicker import Clicker
 from self_control_software.self_control.services.postgres import ExperimentDB
 from self_control_software.self_control.utils.subject_names import ERMIS, ADAM, SNIK, MOSES
+import threading
 
 session_data = None
 subject_name = None
@@ -268,9 +269,11 @@ class ExperimentLayout(FloatLayout):
         #Buzzer
         
     def play_sound(self):
-        if self.sound:
-            self.sound.volume = self.session_data["warning_alarm_volume"] / 100
-            self.sound.play()
+        def play():
+            if self.sound:
+                self.sound.volume = self.session_data["warning_alarm_volume"] / 100
+                self.sound.play()
+        threading.Thread(target=play).start()
         pass
         
     def check_if_end(self):

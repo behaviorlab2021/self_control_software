@@ -44,21 +44,25 @@ class Writer:
                 cwriter = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
                 cwriter.writerow(self.cd_values + data)
 
+    def write_to_file_threaded(self, data):
+        thread = threading.Thread(target=self.write_to_file, args=(data,))
+        thread.start()
+
     def write_peck_data_blind(self, reinforcements, quarter, hit_count, click_x, click_y, event, warning_present, warning_signal_index):
         time = get_time_dif(self.start_time)
         data = [time, reinforcements, quarter, hit_count, event, click_x, click_y, warning_present, warning_signal_index]
-        self.write_to_file(data)
+        self.write_to_file_threaded(data)
 
     def write_peck_data(self, reinforcements, quarter, hit_count, click_x, click_y, warning_present, warning_signal_index):
         time = get_time_dif(self.start_time)
         event = "peck"
         data = [time, reinforcements, quarter, hit_count, event, click_x, click_y, warning_present, warning_signal_index]
-        self.write_to_file(data)
+        self.write_to_file_threaded(data)
 
     def write_data(self, reinforcements, quarter, hit_count, event, warning_present, warning_signal_index):
         time = get_time_dif(self.start_time)
         data = [time, reinforcements, quarter, hit_count, event, 0, 0, warning_present, warning_signal_index]
-        self.write_to_file(data)
+        self.write_to_file_threaded(data)
 
 
 

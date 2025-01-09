@@ -25,12 +25,12 @@ def deactivate_relay_1():
     pass
 
 def activate_relay_2():
-    # def task():
-    #     relay = pyhid_usb_relay.find()
-    #     print(relay.get_state(1))
-    #     if not relay.get_state(2):
-    #         relay.toggle_state(2)
-    # threading.Thread(target=task).start()
+    def task():
+        relay = pyhid_usb_relay.find()
+        print(relay.get_state(1))
+        if not relay.get_state(2):
+            relay.toggle_state(2)
+    threading.Thread(target=task).start()
     pass
 
 def deactivate_relay_2():
