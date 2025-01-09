@@ -1,6 +1,7 @@
 from self_control_software.self_control.utils.time_functions import get_time_now, get_time_dif
 from self_control_software.self_control.services.postgres import ExperimentDB
 import psycopg2
+import threading
 
 class Injector:
 
@@ -8,92 +9,95 @@ class Injector:
         self.db = ExperimentDB()
         self.session_id = constant_data['session_id']
         self.start_time = get_time_now()
+        self.lock = threading.Lock()
 
     def injector_update(self, constant_data):
         self.session_id = constant_data['session_id']
 
     def inject_event(self, round_id, event_type, warning_signal_present, hit_count):
         self.inject_cumulative_record(hit_count)
-        self.db.connect()
-        self.db.insert_event(round_id, event_type, warning_signal_present, hit_count)
-        self.db.close()
-
+        with self.lock:
+            self.db.connect()
+            self.db.insert_event(round_id, event_type, warning_signal_present, hit_count)
+            self.db.close()
 
     def inject_cumulative_record(self, hit_count):
-        self.db.connect()
-        self.db.insert_cumulative_record(hit_count,self.session_id)
-        self.db.close()
-        pass
-
+        with self.lock:
+            self.db.connect()
+            self.db.insert_cumulative_record(hit_count, self.session_id)
+            self.db.close()
 
     def inject_round_data(self, session_id, round_index, warning_index, warning_quarter, reinforcers_count):
         """Inject new round data into the database."""
-        self.db.connect()
-        round_data = {
-            'session_id': session_id,
-            'round_index': round_index,
-            'warning_index': warning_index,
-            'warning_quarter': warning_quarter,
-            'reinforcers_count': reinforcers_count
-        }
-        try:
-            round_id = self.db.insert_round_data(round_data)
-            self.db.connection.commit()
-            print(f"Inserted new round with ID {round_id}.")
-            return round_id
-        except Exception as e:
-            print(f"Failed to insert round: {e}")
-            return None
-        finally:
-            self.db.close()
+        with self.lock:
+            self.db.connect()
+            round_data = {
+                'session_id': session_id,
+                'round_index': round_index,
+                'warning_index': warning_index,
+                'warning_quarter': warning_quarter,
+                'reinforcers_count': reinforcers_count
+            }
+            try:
+                round_id = self.db.insert_round_data(round_data)
+                self.db.connection.commit()
+                print(f"Inserted new round with ID {round_id}.")
+                return round_id
+            except Exception as e:
+                print(f"Failed to insert round: {e}")
+                return None
+            finally:
+                self.db.close()
 
     def inject_peck(self, x_start, y_start, x_pos, y_pos, screen_on, green_on, red_on, round_id):
         """Inject a new peck into the pecks table."""
-        self.db.connect()
-        peck_data = {
-            'x_start': x_start,
-            'y_start': y_start,
-            'x_pos': x_pos,
-            'y_pos': y_pos,
-            'screen_on': screen_on,
-            'green_on': green_on,
-            'red_on': red_on,
-            'round_id': round_id
-        }
-        self.db.insert_peck(peck_data)
-        self.db.close()
+        with self.lock:
+            self.db.connect()
+            peck_data = {
+                'x_start': x_start,
+                'y_start': y_start,
+                'x_pos': x_pos,
+                'y_pos': y_pos,
+                'screen_on': screen_on,
+                'green_on': green_on,
+                'red_on': red_on,
+                'round_id': round_id
+            }
+            self.db.insert_peck(peck_data)
+            self.db.close()
 
     def trigger_round_results(self, round_id):
         # Use the database connection to insert the round results
-        self.db.connect()
-        self.db.insert_round_results(round_id)
-        self.db.close()
-
-        pass
+        with self.lock:
+            self.db.connect()
+            self.db.insert_round_results(round_id)
+            self.db.close()
 
     def trigger_check_round(self, round_id):
         # Use the database connection to insert the round results
-        self.db.connect()
-        self.db.check_round(round_id)
-        self.db.close()
-        pass
+        with self.lock:
+            self.db.connect()
+            self.db.check_round(round_id)
+            self.db.close()
 
     def trigger_check_session(self, session_id):
         # Use the database connection to insert the session results
-        self.db.connect()
-        self.db.check_session(session_id)
-        self.db.close()
-        pass
+        with self.lock:
+            self.db.connect()
+            self.db.check_session(session_id)
+            self.db.close()
 
     def trigger_session_results(self, session_id):
         """Trigger the insertion of session results for a specific session_id."""
-        self.db.connect()
-        self.db.insert_session_results(session_id)
-        self.db.close()
+        with self.lock:
+            self.db.connect()
+            self.db.insert_session_results(session_id)
+            self.db.close()
 
     def update_session_window_size(self, session_id, window_x, window_y):
         """Update the session size in the database."""
-        self.db.connect()
-        self.db.update_session_window_size(session_id, window_x, window_y)
-        self.db.close()
+        with self.lock:
+            self.db.connect()
+            self.db.update_session_window_size(session_id, window_x, window_y)
+            self.db.close()
 
