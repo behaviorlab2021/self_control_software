@@ -183,15 +183,14 @@ class ExperimentLayout(FloatLayout):
             self.positive_reinforcement()
 
     def end_session(self):
+        self.turn_off_screen()
         self.close_last_round()
         self.injector.inject_event(self.round_id, "session_end", not self.button_red.disabled, self.clicks)        
-
         self.houseLight.deactivate()
         #Event End of Session
         self.injector.trigger_check_session(self.session_data["session_id"])
         self.injector.trigger_session_results(self.session_data["session_id"])
         self.writer.write_data(self.score, self.warning_quarter, self.clicks, "end_of_session", False, self.warning_signal_index)
-        self.turn_off_screen()
         self.has_ended = True
         self.session_ended_label.text = "Session ended gracefully."
         self.session_ended_label.color = [0.2, 0.2, 0.2, 0.6]

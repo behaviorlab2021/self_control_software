@@ -101,3 +101,89 @@ class Injector:
             self.db.update_session_window_size(session_id, window_x, window_y)
             self.db.close()
 
+    async def async_inject_event(self, round_id, event_type, warning_signal_present, hit_count):
+        # Removed connection handling
+        try:
+            await self.db.async_insert_event(round_id, event_type, warning_signal_present, hit_count)
+        finally:
+            pass  # No need to close connection
+
+    async def async_inject_cumulative_record(self, hit_count):
+        # Removed connection handling
+        try:
+            await self.db.async_insert_cumulative_record(hit_count, self.session_id)
+        finally:
+            pass  # No need to close connection
+
+    async def async_inject_round_data(self, session_id, round_index, warning_index, warning_quarter, reinforcers_count):
+        # Removed connection handling
+        round_data = {
+            'session_id': session_id,
+            'round_index': round_index,
+            'warning_index': warning_index,
+            'warning_quarter': warning_quarter,
+            'reinforcers_count': reinforcers_count
+        }
+        try:
+            round_id = await self.db.insert_round_data(round_data)
+            await self.db.connection.commit()
+            print(f"Inserted new round with ID {round_id}.")
+            return round_id
+        except Exception as e:
+            print(f"Failed to insert round: {e}")
+            return None
+        finally:
+            pass  # No need to close connection
+
+    async def async_inject_peck(self, x_start, y_start, x_pos, y_pos, screen_on, green_on, red_on, round_id):
+        # Removed connection handling
+        peck_data = {
+            'x_start': x_start,
+            'y_start': y_start,
+            'x_pos': x_pos,
+            'y_pos': y_pos,
+            'screen_on': screen_on,
+            'green_on': green_on,
+            'red_on': red_on,
+            'round_id': round_id
+        }
+        try:
+            await self.db.async_insert_peck(peck_data)
+        finally:
+            pass  # No need to close connection
+
+    async def async_trigger_round_results(self, round_id):
+        # Removed connection handling
+        try:
+            await self.db.async_insert_round_results(round_id)
+        finally:
+            pass  # No need to close connection
+
+    async def async_trigger_check_round(self, round_id):
+        # Removed connection handling
+        try:
+            await self.db.async_check_round(round_id)
+        finally:
+            pass  # No need to close connection
+
+    async def async_trigger_check_session(self, session_id):
+        # Removed connection handling
+        try:
+            await self.db.async_check_session(session_id)
+        finally:
+            pass  # No need to close connection
+
+    async def async_trigger_session_results(self, session_id):
+        # Removed connection handling
+        try:
+            await self.db.async_insert_session_results(session_id)
+        finally:
+            pass  # No need to close connection
+
+    async def async_update_session_window_size(self, session_id, window_x, window_y):
+        # Removed connection handling
+        try:
+            await self.db.async_update_session_window_size(session_id, window_x, window_y)
+        finally:
+            pass  # No need to close connection
+

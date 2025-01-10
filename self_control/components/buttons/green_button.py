@@ -1,10 +1,13 @@
 from kivy.clock import Clock
 from kivy.core.window import Window
 import datetime
+import asyncio
+from threading import Thread
 
 from self_control_software.self_control.components.buttons.basic_image_button import BasicImageButton
 
 class BasicImageButtonGreen(BasicImageButton):
+
 
 
     green_button_changed = False
@@ -14,6 +17,14 @@ class BasicImageButtonGreen(BasicImageButton):
         self.clicker = None  # Initialize clicker
         self.writer = None  # Initialize writer
         self.injector = None  # Initialize injector
+
+        self.loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(self.loop)
+        self.loop_thread = Thread(target=self.run_asyncio_loop, daemon=True)
+        self.loop_thread.start()
+    
+    def run_asyncio_loop(self):
+        self.loop.run_forever()
 
     def set_clicker(self, clicker):
         self.clicker = clicker
@@ -49,7 +60,8 @@ class BasicImageButtonGreen(BasicImageButton):
             #Event Green
             parent.update_button_count()
             parent.update_used_tries() # Updates the number of green clicks while red is enabled.
-            self.injector.inject_event(parent.round_id, "green", not parent.button_red.disabled, parent.clicks)
+            # self.injector.inject_event(parent.round_id, "green", not parent.button_red.disabled, parent.clicks)
+            self.loop.call_soon_threadsafe(asyncio.create_task, self.injector.async_inject_event(parent.round_id, "green", not parent.button_red.disabled, parent.clicks))
             self.writer.write_data(parent.score, parent.warning_quarter, self.button_count, "green", not parent.button_red.disabled, parent.warning_signal_index)
             parent.make_checks()
             self.disabled = False
