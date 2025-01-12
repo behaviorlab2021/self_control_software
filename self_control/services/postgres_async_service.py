@@ -60,7 +60,6 @@ class PostgresAsyncService:
                 ) VALUES ($1, $2, $3, $4)
                 """
                 await conn.execute(query, round_id, event_type, warning_signal_present, hit_count)
-                print(f"Inserted event for round_id: {round_id}")
         except Exception as e:
             print(f"Failed to insert event: {e}")
             await self.log_error_with_round_id(round_id, str(e))
@@ -75,7 +74,6 @@ class PostgresAsyncService:
                 VALUES ($1, $2)
                 """
                 await conn.execute(query, hit_count, session_id)
-                print(f"Inserted cumulative record for session_id: {session_id}")
         except Exception as e:
             print(f"Failed to insert into cumulative_record: {e}")
             await self.log_error_with_session_id(session_id, str(e))
@@ -100,7 +98,6 @@ class PostgresAsyncService:
                     peck_data['red_on'],
                     peck_data['round_id']
                 )
-                print(f"Inserted peck for round_id: {peck_data['round_id']}")
         except Exception as e:
             print(f"Failed to insert peck: {e}")
             await self.log_error_with_round_id(peck_data['round_id'], str(e))
@@ -112,7 +109,6 @@ class PostgresAsyncService:
             async with self.pool.acquire() as conn:
                 query = "SELECT insert_round_results($1);"
                 await conn.execute(query, round_id)
-                print(f"Inserted round results for round ID {round_id}.")
         except Exception as e:
             print(f"Failed to insert round results: {e}")
             await self.log_error_with_round_id(round_id, str(e))
@@ -124,7 +120,6 @@ class PostgresAsyncService:
             async with self.pool.acquire() as conn:
                 query = "SELECT check_round($1);"
                 await conn.execute(query, round_id)
-                print(f"Checked round for round ID {round_id}.")
         except Exception as e:
             print(f"Failed to check round: {e}")
             await self.log_error_with_round_id(round_id, str(e))
@@ -136,7 +131,6 @@ class PostgresAsyncService:
             async with self.pool.acquire() as conn:
                 query = "SELECT check_session($1);"
                 await conn.execute(query, session_id)
-                print(f"Checked session for session ID {session_id}.")
         except Exception as e:
             print(f"Failed to check session: {e}")
             await self.log_error_with_session_id(session_id, str(e))
@@ -148,7 +142,6 @@ class PostgresAsyncService:
             async with self.pool.acquire() as conn:
                 query = "SELECT insert_session_results($1);"
                 await conn.execute(query, session_id)
-                print(f"Inserted session results for session ID {session_id}.")
         except Exception as e:
             print(f"Failed to insert session results: {e}")
             await self.log_error_with_session_id(session_id, str(e))
@@ -165,7 +158,6 @@ class PostgresAsyncService:
                 WHERE session_id = $3
                 """
                 await conn.execute(query, window_x, window_y, session_id)
-                print(f"Updated window size for session ID {session_id}.")
         except Exception as e:
             print(f"Failed to update window size: {e}")
             await self.log_error_with_session_id(session_id, str(e))

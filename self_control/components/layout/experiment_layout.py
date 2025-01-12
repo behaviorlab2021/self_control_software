@@ -36,7 +36,7 @@ session_data = None
 subject_name = None
 
 class ExperimentLayout(FloatLayout):
-
+    ending = False
     button_height = 0.6
     button_size = 0.6
     consecutive_warnings = 0
@@ -194,11 +194,9 @@ class ExperimentLayout(FloatLayout):
         self.async_pg_controller.trigger_check_session(self.session_data["session_id"])
         self.async_pg_controller.trigger_session_results(self.session_data["session_id"])
         self.writer.write_data(self.score, self.warning_quarter, self.clicks, "end_of_session", False, self.warning_signal_index)
-        self.has_ended = True
-        self.session_ended_label.text = "Session ended gracefully."
-        self.session_ended_label.color = [0.2, 0.2, 0.2, 0.6]
+
         Clock.unschedule(self.cumulative_record)
-        threading.Thread(target=self.create_results_pdf).start()
+        threading.Thread(target=self.create_results_pdf, args=(self.after_graceful_end_pdf_creation,)).start()
     
     def terminate_session(self):
         print("Terminating session")
@@ -207,22 +205,20 @@ class ExperimentLayout(FloatLayout):
         self.async_pg_controller.inject_event(self.round_id, "session_terminated", not self.button_red.disabled, self.clicks)        
         self.houseLight.deactivate()
         print("Deactivating house light")
-
         #Event End of Session
         self.async_pg_controller.trigger_check_session(self.session_data["session_id"])
         self.async_pg_controller.trigger_session_results(self.session_data["session_id"])
         self.writer.write_data(self.score, self.warning_quarter, self.clicks, "end_of_session", False, self.warning_signal_index)
-        self.session_ended_label.text = "Session terminated by user."
-        self.session_ended_label.color = [1, 0.2, 0.2, 0.6]
-        Clock.unschedule(self.cumulative_record)
-        threading.Thread(target=self.create_results_pdf).start()
 
-    def create_results_pdf(self):
+        Clock.unschedule(self.cumulative_record)
+        threading.Thread(target=self.create_results_pdf, args=(self.after_termination_pdf_creation,)).start()
+
+    def create_results_pdf(self, callback=None):
         print("Creating results PDF!!!")
         current_file_path = os.path.dirname(os.path.abspath(__file__))
         print("Current file path:", current_file_path)
         script_path = os.path.join(current_file_path, '..', '..', 'r_scripts', 'make_and_send.py')
-        result = subprocess.Popen(
+        result = subprocess.run(
             [
                 sys.executable,  # Use the current Python interpreter
                 script_path,
@@ -233,7 +229,24 @@ class ExperimentLayout(FloatLayout):
         # Print output for debugging
         print("STDOUT:", result.stdout)
         print("STDERR:", result.stderr)
+        
+        if callback:
+            callback()
         pass
+
+    def after_termination_pdf_creation(self):
+        self.ending = False
+        self.has_ended = True
+        self.session_ended_label.text = "Session terminated by user."
+        self.session_ended_label.color = [1, 0.2, 0.2, 0.6]
+        print("PDF creation completed. Executing callback function.")
+        # Add the code you want to execute after PDF creation here
+    def after_graceful_end_pdf_creation(self):
+        self.ending = False
+        self.has_ended = True
+        self.session_ended_label.text = "Session ended gracefully."
+        self.session_ended_label.color = [0.2, 0.2, 0.2, 0.6]
+        print("PDF creation completed. Executing callback function.")
 
     def check_if_warning_signal_training(self):
         if self.session_data["mode_id"] == 3 and self.score % self.session_data["punishment_periodicity"] == 0:  
@@ -456,10 +469,12 @@ class ExperimentLayout(FloatLayout):
 
     def _on_keyboard_down(self, keyboard, keycode, text, modifiers):
         if keycode[1] == 'escape':
-            self.turn_off_screen()
-            if not self.has_ended:    
-                self.terminate_session()
-            self.stop_app()
+            if not self.ending:
+                self.turn_off_screen()
+                if not self.has_ended:    
+                    self.terminate_session()
+                else:
+                    self.stop_app()
 
 
         elif keycode[1] == 'spacebar':
