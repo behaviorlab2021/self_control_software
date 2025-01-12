@@ -7,7 +7,7 @@ class AsyncLoop:
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)
         self.queue = asyncio.Queue()
-        self.loop_thread = Thread(target=self.run_asyncio_loop, daemon=True)  # Set daemon to False
+        self.loop_thread = Thread(target=self.run_asyncio_loop, daemon=True)
         self.loop_thread.start()
         self.loop.create_task(self.worker())
 
@@ -18,13 +18,11 @@ class AsyncLoop:
         while True:
             task = await self.queue.get()
             try:
-                logging.debug("Processing task: %s", task)
                 await task
             except Exception as e:
                 logging.error("Error processing task: %s", e)
             finally:
                 self.queue.task_done()
-                logging.debug("Task done")
 
     def add_task(self, coro):
         # print("Adding task")
