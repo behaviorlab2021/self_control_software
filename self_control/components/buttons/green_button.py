@@ -16,7 +16,7 @@ class BasicImageButtonGreen(BasicImageButton):
         super().__init__(**kwargs)
         self.clicker = None  # Initialize clicker
         self.writer = None  # Initialize writer
-        self.injector = None  # Initialize injector
+        self.async_pg_controller = None  # Initialize async_pg_controller
 
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)
@@ -32,8 +32,8 @@ class BasicImageButtonGreen(BasicImageButton):
     def set_writer(self, writer):
         self.writer = writer
 
-    def set_injector(self, injector):
-        self.injector = injector   
+    def set_async_pg_controller(self, async_pg_controller):
+        self.async_pg_controller = async_pg_controller   
 
     def on_touch_down(self, touch):
         if self.touch_on_button(touch) and not self.disabled:
@@ -60,8 +60,7 @@ class BasicImageButtonGreen(BasicImageButton):
             #Event Green
             parent.update_button_count()
             parent.update_used_tries() # Updates the number of green clicks while red is enabled.
-            # self.injector.inject_event(parent.round_id, "green", not parent.button_red.disabled, parent.clicks)
-            self.loop.call_soon_threadsafe(asyncio.create_task, self.injector.async_inject_event(parent.round_id, "green", not parent.button_red.disabled, parent.clicks))
+            self.async_pg_controller.inject_event(parent.round_id, "green", not parent.button_red.disabled, parent.clicks)
             self.writer.write_data(parent.score, parent.warning_quarter, self.button_count, "green", not parent.button_red.disabled, parent.warning_signal_index)
             parent.make_checks()
             self.disabled = False

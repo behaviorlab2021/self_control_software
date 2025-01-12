@@ -4,12 +4,13 @@ import subprocess
 import random
 import datetime
 from kivy.config import Config  # Import the Config module
+import asyncio
 
 Config.set('graphics', 'position', 'custom')
 Config.set('graphics', 'top', '0')
 Config.set('graphics', 'left', '-1440')
 Config.set('graphics', 'fullscreen', 'auto')
-
+import time
 from kivy.core.window import Window
 from kivy.uix.behaviors import ButtonBehavior
 from kivy.uix.image import Image
@@ -24,11 +25,10 @@ from usbmonitor import USBMonitor
 from usbmonitor.attributes import ID_MODEL, ID_MODEL_ID, ID_VENDOR_ID
 from self_control_software.self_control.services.house_light import HouseLight
 from self_control_software.self_control.services.writer import Writer
-from self_control_software.self_control.services.injector import Injector
+from self_control_software.self_control.controllers.postgres_sync_controller import PostgresSyncController
 from self_control_software.self_control.services.feeder import Feeder
 from self_control_software.self_control.utils.functions import distance_from
 from self_control_software.self_control.services.clicker import Clicker
-from self_control_software.self_control.services.postgres import ExperimentDB
 from self_control_software.self_control.utils.subject_names import ERMIS, ADAM, SNIK, MOSES
 import threading
 
@@ -73,6 +73,7 @@ class ExperimentLayout(FloatLayout):
     touch_start_y = None
     has_ended = False
     cumulative_record = None
+    sync_pg_controller = PostgresSyncController()
 
 
     def check_if_hopper_training(self, dt):
@@ -80,11 +81,11 @@ class ExperimentLayout(FloatLayout):
             self.button_green.disable_button()
             pass
 
-    def __init__(self, session_arguments, writer, injector, clicker, houseLight, feeder, **kwargs):
+    def __init__(self, session_arguments, writer, async_pg_controller, clicker, houseLight, feeder, **kwargs):
         # Use the renamed session_arguments object
         self.session_data = session_arguments
         self.writer = writer  # Store writer as an instance variable
-        self.injector = injector  # Store injector as an instance variable
+        self.async_pg_controller = async_pg_controller  # Store async_pg_controller as an instance variable
         self.houseLight = houseLight  # Store houseLight as an instance variable
         self.feeder = feeder  # Store feeder as an instance variable
         Window.set_icon('self_control_software/self_control/assets/icons/g220.ico')
@@ -103,7 +104,7 @@ class ExperimentLayout(FloatLayout):
         self.window_x = Window.size[0]
         self.window_y = Window.size[1]
 
-        self.injector.update_session_window_size(self.session_data["session_id"], self.window_x, self.window_y)
+        self.async_pg_controller.update_session_window_size(self.session_data["session_id"], self.window_x, self.window_y)
 
         self.button_size = self.session_data["button_size"]/100
         
@@ -120,13 +121,13 @@ class ExperimentLayout(FloatLayout):
                 
         # Writer update
         self.writer.writer_update(self.session_data)
-        self.injector.injector_update(self.session_data)
+        # self.async_pg_controller.async_pg_controller_update(self.session_data)
         # Event Start
         self.writer.write_data(self.score, self.warning_quarter, 0, "Start", False,  -1)
         # Inherit initialization
         super(FloatLayout, self).__init__(**kwargs)
         with self.canvas.before:
-            self.rect = Rectangle(source="assets/images/panel.png")\
+            self.rect = Rectangle(source="assets/images/panel.png")
     
     def initial_session_ended_text(self):        
         return ''
@@ -162,10 +163,10 @@ class ExperimentLayout(FloatLayout):
         #Event Touch
         if self.button_green.opacity == 0:
             self.writer.write_peck_data_blind( self.score, self.warning_quarter, self.clicks, touch.sx, touch.sy, "blind-peck", not self.button_red.disabled, self.warning_signal_index)
-            self.injector.inject_peck(self.touch_start_x, self.touch_start_y, touch.sx, touch.sy, self.rect.source !="assets/images/black_panel.png" , False, not self.button_red.disabled, self.round_id)
+            self.async_pg_controller.inject_peck(self.touch_start_x, self.touch_start_y, touch.sx, touch.sy, self.rect.source !="assets/images/black_panel.png" , False, not self.button_red.disabled, self.round_id)
         else:
             self.writer.write_peck_data( self.score, self.warning_quarter, self.clicks, touch.sx, touch.sy,  not self.button_red.disabled, self.warning_signal_index)
-            self.injector.inject_peck(self.touch_start_x, self.touch_start_y, touch.sx, touch.sy, self.rect.source !="assets/images/black_panel.png", not self.button_green.disabled, not self.button_red.disabled, self.round_id)
+            self.async_pg_controller.inject_peck(self.touch_start_x, self.touch_start_y, touch.sx, touch.sy, self.rect.source !="assets/images/black_panel.png", not self.button_green.disabled, not self.button_red.disabled, self.round_id)
         if self.session_data["is_spot_on"]:
             self.spot.pos_hint = {'center_x':touch.sx, 'center_y':touch.sy}
         
@@ -173,7 +174,7 @@ class ExperimentLayout(FloatLayout):
 
     def on_touch_down(self,touch):
         if (not self.has_ended):
-            self.injector.inject_cumulative_record(self.clicks)
+            self.async_pg_controller.inject_cumulative_record(self.clicks, self.session_data["session_id"])            
         self.touch_start_x = touch.sx
         self.touch_start_y = touch.sy
         return super(FloatLayout, self).on_touch_down(touch)
@@ -185,31 +186,48 @@ class ExperimentLayout(FloatLayout):
     def end_session(self):
         self.turn_off_screen()
         self.close_last_round()
-        self.injector.inject_event(self.round_id, "session_end", not self.button_red.disabled, self.clicks)        
+        self.async_pg_controller.inject_event(self.round_id, "session_end", not self.button_red.disabled, self.clicks)        
         self.houseLight.deactivate()
+        print("Deactivating house light")
+
         #Event End of Session
-        self.injector.trigger_check_session(self.session_data["session_id"])
-        self.injector.trigger_session_results(self.session_data["session_id"])
+        self.async_pg_controller.trigger_check_session(self.session_data["session_id"])
+        self.async_pg_controller.trigger_session_results(self.session_data["session_id"])
         self.writer.write_data(self.score, self.warning_quarter, self.clicks, "end_of_session", False, self.warning_signal_index)
         self.has_ended = True
         self.session_ended_label.text = "Session ended gracefully."
         self.session_ended_label.color = [0.2, 0.2, 0.2, 0.6]
         Clock.unschedule(self.cumulative_record)
-        self.create_results_pdf()
+        threading.Thread(target=self.create_results_pdf).start()
+    
+    def terminate_session(self):
+        print("Terminating session")
+        self.turn_off_screen()
+        self.close_last_round()
+        self.async_pg_controller.inject_event(self.round_id, "session_terminated", not self.button_red.disabled, self.clicks)        
+        self.houseLight.deactivate()
+        print("Deactivating house light")
 
+        #Event End of Session
+        self.async_pg_controller.trigger_check_session(self.session_data["session_id"])
+        self.async_pg_controller.trigger_session_results(self.session_data["session_id"])
+        self.writer.write_data(self.score, self.warning_quarter, self.clicks, "end_of_session", False, self.warning_signal_index)
+        self.session_ended_label.text = "Session terminated by user."
+        self.session_ended_label.color = [1, 0.2, 0.2, 0.6]
+        Clock.unschedule(self.cumulative_record)
+        threading.Thread(target=self.create_results_pdf).start()
 
     def create_results_pdf(self):
+        print("Creating results PDF!!!")
         current_file_path = os.path.dirname(os.path.abspath(__file__))
         print("Current file path:", current_file_path)
         script_path = os.path.join(current_file_path, '..', '..', 'r_scripts', 'make_and_send.py')
-        result = subprocess.run(
+        result = subprocess.Popen(
             [
                 sys.executable,  # Use the current Python interpreter
                 script_path,
                 self.session_data['session_id']
-            ],
-            capture_output=True,
-            text=True
+            ]
         )
 
         # Print output for debugging
@@ -236,7 +254,7 @@ class ExperimentLayout(FloatLayout):
             self.button_green.disable_button()
             self.warning_signal_scheduled_event = Clock.schedule_once(self.warning_signal_training_punishment, self.session_data["warning_duration"])
             self.writer.write_data(self.score, self.warning_quarter, self.clicks, "warning-"+str(int(self.warning_quarter)), not self.button_red.disabled, self.warning_signal_index)
-            self.injector.inject_event(self.round_id, "warning", not self.button_red.disabled, self.clicks)
+            self.async_pg_controller.inject_event(self.round_id, "warning", not self.button_red.disabled, self.clicks)
         pass
 
     def stop_warning_signal_training(self):
@@ -261,7 +279,7 @@ class ExperimentLayout(FloatLayout):
             self.warning_variable = True
             #Event warning
             self.writer.write_data(self.score, self.warning_quarter, self.clicks, "warning-"+str(int(self.warning_quarter)), not self.button_red.disabled, self.warning_signal_index)
-            self.injector.inject_event(self.round_id, "warning", not self.button_red.disabled, self.clicks)
+            self.async_pg_controller.inject_event(self.round_id, "warning", not self.button_red.disabled, self.clicks)
         
     def sound_buzzer(self, dt):
         self.play_sound()
@@ -283,7 +301,7 @@ class ExperimentLayout(FloatLayout):
             return False
 
     def turn_feeding_condition_off(self, dt):
-        self.injector.inject_event(self.round_id, "feeding_end", not self.button_red.disabled, self.clicks)
+        self.async_pg_controller.inject_event(self.round_id, "feeding_end", not self.button_red.disabled, self.clicks)
         if not self.check_if_end():
             self.check_if_warning_signal_training()
             self.houseLight.activate()
@@ -298,8 +316,8 @@ class ExperimentLayout(FloatLayout):
     def feed(self):
         if not self.feeding_condition:
             self.writer.write_data(self.score, self.warning_quarter, self.clicks, "feeding", not self.button_red.disabled, self.warning_signal_index)
-            self.injector.inject_event(self.round_id, "feeding", not self.button_red.disabled, self.clicks)
-            self.injector.inject_cumulative_record(self.clicks)            
+            self.async_pg_controller.inject_event(self.round_id, "feeding", not self.button_red.disabled, self.clicks)
+            self.async_pg_controller.inject_cumulative_record(self.clicks, self.session_data["session_id"])            
             self.button_green.zeroing()
             self.feeding_condition = True
             self.houseLight.deactivate()
@@ -315,6 +333,7 @@ class ExperimentLayout(FloatLayout):
             self.punish()
     
     def turn_off_screen(self):
+        print("Turning off screen")
         self.update_button_count()
         self.rect.source ="assets/images/black_panel.png"
         self.button_red.disable_button()
@@ -346,8 +365,8 @@ class ExperimentLayout(FloatLayout):
     def punish(self):
 
         self.writer.write_data(self.score, self.warning_quarter, self.clicks, "punishment", not self.button_red.disabled, self.warning_signal_index)
-        self.injector.inject_cumulative_record(self.clicks)
-        self.injector.inject_event(self.round_id, "punishment", not self.button_red.disabled, self.clicks)
+        self.async_pg_controller.inject_cumulative_record(self.clicks, self.session_data["session_id"])
+        self.async_pg_controller.inject_event(self.round_id, "punishment", not self.button_red.disabled, self.clicks)
         self.houseLight.deactivate()
         self.buzzer.cancel() 
         self.subsequent_punishments += 1 
@@ -365,7 +384,7 @@ class ExperimentLayout(FloatLayout):
         # self.button_red_shadow.enable_button()
         self.was_warned = True
         self.warning_variable = False
-        self.injector.inject_event(self.round_id, "punishment_end", not self.button_red.disabled, self.clicks)
+        self.async_pg_controller.inject_event(self.round_id, "punishment_end", not self.button_red.disabled, self.clicks)
         self.turn_on_screen()
 
         #Event Staring Over
@@ -373,9 +392,9 @@ class ExperimentLayout(FloatLayout):
 
     def update_button_count(self):
         self.clicks = self.button_green.button_count  # Updates the number of clicks the green button has
-        self.injector.inject_cumulative_record(self.clicks)
+        self.async_pg_controller.inject_cumulative_record(self.clicks, self.session_data["session_id"])
         self.update_labels() # Updates the labels
-        # Update the writer and injector
+        # Update the writer and async_pg_controller
         self.writer.write_data(self.score, self.warning_quarter, self.clicks, "score_updated", not self.button_red.disabled, self.warning_signal_index)
     
     def make_checks(self):
@@ -437,18 +456,18 @@ class ExperimentLayout(FloatLayout):
 
     def _on_keyboard_down(self, keyboard, keycode, text, modifiers):
         if keycode[1] == 'escape':
-            
+            self.turn_off_screen()
             if not self.has_ended:    
-                self.end_session()
-            self.houseLight.deactivate()
-            App.get_running_app().stop()
+                self.terminate_session()
+            self.stop_app()
+
 
         elif keycode[1] == 'spacebar':
             print("spacebar")
             if self.button_red.disabled == True :
                 #Event free-food
                 self.writer.write_data(self.score, self.warning_quarter, self.clicks, "free-food", not self.button_red.disabled, self.warning_signal_index) 
-                self.injector.inject_event(self.round_id, "free_food", not self.button_red.disabled, self.clicks)
+                self.async_pg_controller.inject_event(self.round_id, "free_food", not self.button_red.disabled, self.clicks)
                 self.positive_reinforcement()
             
         elif keycode[1] == 'enter':
@@ -456,7 +475,7 @@ class ExperimentLayout(FloatLayout):
             # Event gratis-red
             if self.button_red.disabled == False : 
                 self.writer.write_data(self.score, self.warning_quarter, self.clicks, "gratis-red-"+str(int(self.warning_quarter)), not self.button_red.disabled, self.warning_signal_index)
-                self.injector.inject_event(self.round_id, "gratis_red", not self.button_red.disabled, self.clicks)
+                self.async_pg_controller.inject_event(self.round_id, "gratis_red", not self.button_red.disabled, self.clicks)
                 self.negative_reinforcement()
                 if self.warning_signal_training_running:
                     self.stop_warning_signal_training()
@@ -479,7 +498,7 @@ class ExperimentLayout(FloatLayout):
         # Clock.schedule_once(self.button_red_shadow.enable_button_delayed, 0.2)
 
     def add_cumulative_record(self, dt):
-        self.injector.inject_cumulative_record(self.clicks)
+        self.async_pg_controller.inject_cumulative_record(self.clicks, self.session_data["session_id"])
         pass
 
     def start_new_round(self):
@@ -490,20 +509,33 @@ class ExperimentLayout(FloatLayout):
             self.subsequent_punishments = 0
         elif self.subsequent_punishments >= self.session_data["consecutive_warnings_limit"]:
             self.randomize_array()
-            self.injector.inject_event(self.round_id, "warning_switch", not self.button_red.disabled, self.clicks)
+            self.async_pg_controller.inject_event(self.round_id, "warning_switch", not self.button_red.disabled, self.clicks)
             self.subsequent_punishments = 0
         self.round += 1
         self.update_button_count()
         #Inject the new round in the database
         new_round = not self.round_id
-        self.round_id = self.injector.inject_round_data(self.session_data["session_id"], self.round, self.warning_signal_index, self.warning_quarter, self.score)
+        self.round_id = self.sync_pg_controller.inject_round_data(self.session_data["session_id"], self.round, self.warning_signal_index, self.warning_quarter, self.score)
+        
+        print("Round ID IS:", self.round_id, "SESSION ID IS:", self.session_data["session_id"])
         if new_round:
-            self.injector.inject_event(self.round_id, "session_start", not self.button_red.disabled, self.clicks)
-        self.injector.inject_event(self.round_id, "new_round", not self.button_red.disabled, self.clicks)
+            self.async_pg_controller.inject_event(self.round_id, "session_start", not self.button_red.disabled, self.clicks)
+        self.async_pg_controller.inject_event(self.round_id, "new_round", not self.button_red.disabled, self.clicks)
         pass
 
     def close_last_round(self):
-        self.injector.inject_event(self.round_id, "round_end", not self.button_red.disabled, self.clicks)
-        self.injector.trigger_check_round(self.round_id)
-        self.injector.trigger_round_results(self.round_id)
+        self.async_pg_controller.inject_event(self.round_id, "round_end", not self.button_red.disabled, self.clicks)
+        self.async_pg_controller.trigger_check_round(self.round_id)
+        self.async_pg_controller.trigger_round_results(self.round_id)
         pass
+    def stop_app(self):
+        # Run the stop_async_tasks coroutine and then stop the app
+        asyncio.run(self.stop_async_tasks())
+        App.get_running_app().stop()
+        
+    async def stop_async_tasks(self):
+        # Cancel all running asyncio tasks
+        tasks = [task for task in asyncio.all_tasks() if task is not asyncio.current_task()]
+        for task in tasks:
+            task.cancel()
+        await asyncio.gather(*tasks, return_exceptions=True)

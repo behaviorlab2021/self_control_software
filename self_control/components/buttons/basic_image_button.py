@@ -6,7 +6,6 @@ import datetime
 from self_control_software.self_control.utils.functions import distance_from, is_within_ellipse
 from self_control_software.self_control.services.clicker import Clicker
 from self_control_software.self_control.services.writer import Writer
-from self_control_software.self_control.services.injector import Injector
 
 class BasicImageButton(ButtonBehavior, Image):
 

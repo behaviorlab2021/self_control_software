@@ -3,12 +3,13 @@ import os
 import threading
 
 # Add the parent directory of self_control_software to the Python path
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+print("Project Root: ", project_root)
 sys.path.append(project_root)
 
 import tkinter as tk
 from tkinter import ttk, messagebox
-from self_control.services.postgres import ExperimentDB
+from self_control_software.self_control.controllers.postgres_sync_controller import PostgresSyncController
 import uuid
 import subprocess
 import json
@@ -19,11 +20,10 @@ class MultiStepApp:
         self.root = root  # Add this line
         self.root.title("Multi-Step Setup Wizard")
         self.root.geometry("720x520")
-        img_path = os.path.join(project_root, 'self_control', 'assets', 'icons', 'settings.png')
+        img_path = os.path.join(project_root, 'self_control_software','self_control', 'assets', 'icons', 'settings.png')
         img = tk.PhotoImage(file=img_path)
         root.iconphoto(False, img)    
-        self.db = ExperimentDB()
-        self.db.connect()
+        self.pg_controller = PostgresSyncController()
         self.current_step = 1
         self.session_id = str(uuid.uuid4())
         self.subject_name = tk.StringVar()
@@ -32,9 +32,9 @@ class MultiStepApp:
         self.feed_time = tk.StringVar(value="4")
         self.is_spot_on = tk.BooleanVar(value=False)
         self.reinforcement_ratio = tk.StringVar(value="60")
-        self.subjects = self.db.select_all_subjects()
+        self.subjects = self.pg_controller.select_all_subjects()
         self.mode_id = tk.StringVar()
-        self.modes = self.db.select_all_modes()
+        self.modes = self.pg_controller.select_all_modes()
         self.consecutive_warnings_limit = tk.StringVar(value="3")
         self.warning_alarm_volume = tk.StringVar(value="100")
         self.warning_display_volume = tk.StringVar(value="100")
@@ -623,9 +623,9 @@ class MultiStepApp:
 
     def load_last_session_data(self):
         subject_name = self.subject_name.get()
-        subject = self.db.select_subject_by_name(subject_name)
+        subject = self.pg_controller.select_subject_by_name(subject_name)
         if subject:
-            last_session = self.db.find_last_session_by_subject(subject['subject_id'])
+            last_session = self.pg_controller.find_last_session_by_subject(subject['subject_id'])
             if last_session:
                 if 'reinforcement_ratio' in last_session:
                     self.reinforcement_ratio.set(last_session['reinforcement_ratio'])
@@ -697,11 +697,12 @@ class MultiStepApp:
         peck_slide = session_data['Peck Slide']
         comments = session_data['Comments']
 
-        subject = self.db.select_subject_by_name(subject_name)
-        if not subject:
-            subject_id = self.db.insert_subject(subject_name)
-        else:
-            subject_id = subject['subject_id']
+        subject = self.pg_controller.select_subject_by_name(subject_name)
+        # if not subject:
+        #     subject_id = self.pg_controller.insert_subject(subject_name)
+        # else:
+        
+        subject_id = subject['subject_id']
         session_data = {
             'session_id': session_id,  # Use the generated UUID
             'reinforcement_ratio': reinforcement_ratio,
@@ -728,10 +729,9 @@ class MultiStepApp:
         }
         # Insert the session into the database and get the session_id
 
-        received_session_id = self.db.insert_session(session_data)
+        received_session_id = self.pg_controller.insert_session(session_data)
         print("Received session ID:", received_session_id)
         if received_session_id:
-            self.db.close()
             self.root.after(100, self.root.destroy)  # Close the Tkinter window after a short delay
             # Run the subprocess in a new thread and call on_subprocess_complete when done
             threading.Thread(target=self.run_subprocess, args=(received_session_id,)).start()
@@ -739,10 +739,9 @@ class MultiStepApp:
             print("Failed to insert session.")
         print()
         
-        self.db.close()
 
     def run_subprocess(self, session_id):
-        app_path = os.path.join(project_root, 'self_control', 'app.py')
+        app_path = os.path.join(project_root, 'self_control_software','self_control', 'app.py')
         subprocess.run(["python", app_path, str(session_id)])
         
         self.on_subprocess_complete()

@@ -16,7 +16,7 @@ class BasicImageButtonRed(BasicImageButton):
         super().__init__(**kwargs)
         self.clicker = None  # Initialize clicker
         self.writer = None  # Initialize writer
-        self.injector = None  # Initialize injector
+        self.async_pg_controller = None  # Initialize async_pg_controller
 
     def set_clicker(self, clicker):
         self.clicker = clicker
@@ -24,8 +24,8 @@ class BasicImageButtonRed(BasicImageButton):
     def set_writer(self, writer):
         self.writer = writer
     
-    def set_injector(self, injector):
-        self.injector = injector   
+    def set_async_pg_controller(self, async_pg_controller):
+        self.async_pg_controller = async_pg_controller   
 
     def on_touch_up(self, touch):
         window_x = Window.size[0]
@@ -56,7 +56,7 @@ class BasicImageButtonRed(BasicImageButton):
 
                     # Event Red
                     self.writer.write_data(parent.score, parent.warning_quarter, parent.clicks, "red-"+str(int(parent.warning_quarter)), not parent.button_red.disabled, parent.warning_signal_index) 
-                    self.injector.inject_event(parent.round_id, "red", True, parent.clicks)
+                    self.async_pg_controller.inject_event(parent.round_id, "red", True, parent.clicks)
                     parent.used_tries = 0
 
                     parent.negative_reinforcement()

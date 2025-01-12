@@ -3,14 +3,14 @@ import sys
 
 # Get the directory of the current script
 script_dir = os.path.normpath(os.path.dirname(os.path.abspath(__file__)))  # Normalize path
+
 # Append the parent directory of the script directory to sys.path
-sys.path.append(os.path.abspath(os.path.join(script_dir, os.pardir, os.pardir)))
+sys.path.append(os.path.abspath(os.path.join(script_dir, os.pardir, os.pardir,os.pardir)))
 
 print("PATH IS THIS:", sys.path, "LEN:", len(sys.path))
 
-from self_control.services.postgres import ExperimentDB
-
-from self_control.utils.serializer import datetime_serializer
+from self_control_software.self_control.controllers.postgres_sync_controller import PostgresSyncController
+from self_control_software.self_control.utils.serializer import datetime_serializer
 import subprocess
 import os
 import time
@@ -42,10 +42,9 @@ def send_email(report_path, cumulative_record_path, subject_name, session_date):
     print("Mail STDERR:", mail_result.stderr)
 
 def get_experiment_details(session_id):
-    db = ExperimentDB()
-    db.connect()
+    sync_pg_controller = PostgresSyncController()
     try:
-        session_info = db.get_session_basic_info(session_id)
+        session_info = sync_pg_controller.get_session_basic_info(session_id)
         if session_info is None:
             raise ValueError("No session found with ID " + session_id)
         subject_name = session_info['subject_name']
@@ -53,7 +52,7 @@ def get_experiment_details(session_id):
         mode_id = session_info['mode_id']
         return subject_name, experiment_date, mode_id
     finally:
-        db.close()
+        pass
 
 def main(session_id):
     check_rscript()  # Check if Rscript is available
