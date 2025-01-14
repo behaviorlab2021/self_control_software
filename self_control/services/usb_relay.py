@@ -10,7 +10,7 @@ def activate_relay_1():
                 relay.toggle_state(1)
         except:
             print("An exception occurred")
-    threading.Thread(target=task).start()
+    task()
     pass
 
 def deactivate_relay_1():
@@ -21,7 +21,7 @@ def deactivate_relay_1():
                 relay.toggle_state(1)
         except:
             print("An exception occurred")
-    threading.Thread(target=task).start()
+    task()
     pass
 
 def activate_relay_2():
@@ -30,7 +30,7 @@ def activate_relay_2():
         print(relay.get_state(1))
         if not relay.get_state(2):
             relay.toggle_state(2)
-    threading.Thread(target=task).start()
+    task()
     pass
 
 def deactivate_relay_2():
@@ -39,14 +39,14 @@ def deactivate_relay_2():
         print(relay.get_state(1))
         if relay.get_state(2):
             relay.toggle_state(2)
-    threading.Thread(target=task).start()
+    task()
     pass
 
 def toggle_relay_3():
     def task():
         relay = pyhid_usb_relay.find()
         relay.toggle_state(3)
-    threading.Thread(target=task).start()
+    task()
     pass
 
 # while True:
