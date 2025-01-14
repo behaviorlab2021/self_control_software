@@ -132,6 +132,7 @@ event_properties <- list(
   "new_round" = list(symbol = 124, color = "blue"),
   "session_start" = list(symbol = 8, color = "blue"),
   "session_end" = list(symbol = 8, color = "purple")
+  "session_terminated" = list(symbol = 8, color = "red")
 )
 
 # Open a PDF device to save the plot
@@ -167,7 +168,7 @@ axis(1, at = x_ticks, labels = x_labels, las = 2)  # Rotate labels 90 degrees
 # Add legend below the plot
 par(mar = c(0, 0, 0, 0))  # Adjust margins for the legend
 plot.new()
-legend("center", legend = c("reinforcement", "termination", "warning", "punishment", "new_round", "session_start", "session_end"), 
+legend("center", legend = c("reinforcement", "termination", "warning", "punishment", "new_round", "session_start", "session_end", "session_terminated"), 
        pch = sapply(event_properties, function(x) x$symbol), 
        col = sapply(event_properties, function(x) x$color), 
        horiz = TRUE, bty = "o")  # Add box around the legend

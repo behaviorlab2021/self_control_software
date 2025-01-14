@@ -8,8 +8,16 @@ import threading
 class Writer:
 
     def __init__(self, constant_data, subject):
+
+        keys_to_remove = ['created_at', 'updated_at', 'window_height', 'window_width', 'comments']
+        for key in keys_to_remove:
+            constant_data.pop(key, None)  # Use pop with a default to avoid KeyError if the key doesn't exist
         main_dir_path = os.path.dirname(sys.argv[0])
         self.cd_values = list(constant_data.values())
+
+
+
+
         self.header =  list(constant_data.keys()) + ['Time', 
                 'Reinforcers',
                 'Quarter', 
