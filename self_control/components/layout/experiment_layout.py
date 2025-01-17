@@ -575,4 +575,4 @@ class ExperimentLayout(FloatLayout):
         Clock.unschedule(self.cumulative_record_event) if self.cumulative_record_event else None
         Clock.unschedule(self.un_punish_event) if self.un_punish_event else None
         Clock.unschedule(self.un_feed_event) if self.un_feed_event else None
-        self.buzzer.cancel()
+        self.buzzer.cancel() if self.buzzer else None

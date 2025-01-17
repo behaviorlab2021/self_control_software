@@ -120,7 +120,7 @@ function App() {
           {session ? session.subject_name : ""} running{" "}
           {session ? session.mode_name : ""} -{" "}
           {session
-            ? format(new Date(session.created_at), "EEEE dd MMMM yyyy hh:mm")
+            ? format(new Date(session.created_at), "EEEE dd MMMM yyyy HH:mm")
             : ""}
         </h1>
       </div>
