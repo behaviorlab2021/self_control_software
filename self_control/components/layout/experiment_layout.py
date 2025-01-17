@@ -76,6 +76,7 @@ class ExperimentLayout(FloatLayout):
     touch_start_y = None
     has_ended = False
     cumulative_record_event = None
+    screen_on = False
     sync_pg_controller = PostgresSyncController()
 
 
@@ -131,6 +132,8 @@ class ExperimentLayout(FloatLayout):
         super(FloatLayout, self).__init__(**kwargs)
         with self.canvas.before:
             self.rect = Rectangle(source="assets/images/panel.png")
+        self.screen_on = True
+
     
     def initial_session_ended_text(self):        
         return ''
@@ -166,10 +169,10 @@ class ExperimentLayout(FloatLayout):
         #Event Touch
         if self.button_green.opacity == 0:
             self.writer.write_peck_data_blind( self.score, self.warning_quarter, self.clicks, touch.sx, touch.sy, "blind-peck", not self.button_red.disabled, self.warning_signal_index)
-            self.async_pg_controller.inject_peck(self.touch_start_x, self.touch_start_y, touch.sx, touch.sy, self.rect.source !="assets/images/black_panel.png" , False, not self.button_red.disabled, self.round_id)
+            self.async_pg_controller.inject_peck(self.touch_start_x, self.touch_start_y, touch.sx, touch.sy, self.screen_on , False, not self.button_red.disabled, self.round_id)
         else:
             self.writer.write_peck_data( self.score, self.warning_quarter, self.clicks, touch.sx, touch.sy,  not self.button_red.disabled, self.warning_signal_index)
-            self.async_pg_controller.inject_peck(self.touch_start_x, self.touch_start_y, touch.sx, touch.sy, self.rect.source !="assets/images/black_panel.png", not self.button_green.disabled, not self.button_red.disabled, self.round_id)
+            self.async_pg_controller.inject_peck(self.touch_start_x, self.touch_start_y, touch.sx, touch.sy, self.screen_on, not self.button_green.disabled, not self.button_red.disabled, self.round_id)
         if self.session_data["is_spot_on"]:
             self.spot.pos_hint = {'center_x':touch.sx, 'center_y':touch.sy}
         
@@ -354,9 +357,10 @@ class ExperimentLayout(FloatLayout):
             self.punish()
     
     def turn_off_screen(self):
+        self.screen_on = False
         print("Turning off screen")
         self.update_button_count()
-        self.rect.source ="assets/images/black_panel.png"
+        self.rect.source = "assets/images/black_panel.png"
         self.button_red.disable_button()
         self.button_green.disable_button()
         self.spot.opacity = 0
@@ -369,6 +373,7 @@ class ExperimentLayout(FloatLayout):
         self.turn_on_screen()
 
     def turn_on_screen(self):
+        self.screen_on = True
         self.rect.source ="assets/images/panel.png"
         if not self.session_data["mode_id"] == 1:
             self.button_green.enable_button()
