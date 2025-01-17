@@ -25,7 +25,7 @@ class AsyncLoop:
                 self.queue.task_done()
 
     def add_task(self, coro):
-        print("Adding task")
+        # print("Adding task")
         self.loop.call_soon_threadsafe(self.queue.put_nowait, coro)
 
     def has_tasks(self):

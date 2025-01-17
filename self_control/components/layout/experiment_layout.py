@@ -50,7 +50,10 @@ class ExperimentLayout(FloatLayout):
     warning_variable = False
     warning_signal_training_running = False
     warning_signal_scheduled_event = None
+    un_punish_event = None
+    un_feed_event = None
     buzzer_file = "assets/audio/buzzer.mp3"
+    buzzer = None
     sound = SoundLoader.load(buzzer_file) 
     canvas_picture = ObjectProperty(None)
     button_green = ObjectProperty(None)
@@ -72,7 +75,7 @@ class ExperimentLayout(FloatLayout):
     touch_start_x = None
     touch_start_y = None
     has_ended = False
-    cumulative_record = None
+    cumulative_record_event = None
     sync_pg_controller = PostgresSyncController()
 
 
@@ -92,7 +95,7 @@ class ExperimentLayout(FloatLayout):
         # Clock scheduling
         Clock.schedule_once(self.prepare_buttons, 0.8)
         Clock.schedule_once(self.start_session, 0.8)
-        self.cumulative_record = Clock.schedule_interval(self.add_cumulative_record, 0.5)        # Keyboard event binding
+        self.cumulative_record_event = Clock.schedule_interval(self.add_cumulative_record, 0.5)        # Keyboard event binding
         self._keyboard = Window.request_keyboard(self._keyboard_closed, self)
         self._keyboard.bind(on_key_down=self._on_keyboard_down)
         # USB MONITORING
@@ -194,12 +197,17 @@ class ExperimentLayout(FloatLayout):
         self.async_pg_controller.trigger_check_session(self.session_data["session_id"])
         self.async_pg_controller.trigger_session_results(self.session_data["session_id"])
         self.writer.write_data(self.score, self.warning_quarter, self.clicks, "end_of_session", False, self.warning_signal_index)
-
-        Clock.unschedule(self.cumulative_record)
+        self.session_ended_label.text = "Results are being generated. Please wait."
+        self.session_ended_label.color = [0.3, 0.2, 0.2, 0.6]
+        Clock.unschedule(self.cumulative_record_event)
         threading.Thread(target=self.create_results_pdf, args=(self.after_graceful_end_pdf_creation,)).start()
     
     def terminate_session(self):
+
+        self.feeder.deactivate()
+        self.unschedule_all_pending_events()
         print("Terminating session")
+
         self.turn_off_screen()
         self.close_last_round()
         self.async_pg_controller.inject_event(self.round_id, "session_terminated", not self.button_red.disabled, self.clicks)        
@@ -209,8 +217,8 @@ class ExperimentLayout(FloatLayout):
         self.async_pg_controller.trigger_check_session(self.session_data["session_id"])
         self.async_pg_controller.trigger_session_results(self.session_data["session_id"])
         self.writer.write_data(self.score, self.warning_quarter, self.clicks, "end_of_session", False, self.warning_signal_index)
-
-        Clock.unschedule(self.cumulative_record)
+        self.session_ended_label.text = "Results are being generated. Please wait."
+        self.session_ended_label.color = [0.3, 0.2, 0.2, 0.6]
         threading.Thread(target=self.create_results_pdf, args=(self.after_termination_pdf_creation,)).start()
 
     def create_results_pdf(self, callback=None):
@@ -238,7 +246,7 @@ class ExperimentLayout(FloatLayout):
         self.ending = False
         self.has_ended = True
         self.session_ended_label.text = "Session terminated by user."
-        self.session_ended_label.color = [1, 0.2, 0.2, 0.6]
+        self.session_ended_label.color = [0.2, 0.2, 0.2, 0.6]
         print("PDF creation completed. Executing callback function.")
         # Add the code you want to execute after PDF creation here
     def after_graceful_end_pdf_creation(self):
@@ -336,7 +344,7 @@ class ExperimentLayout(FloatLayout):
             self.houseLight.deactivate()
             self.feeder.activate()
             self.feeder.create_deactivate_feeder_event(self.session_data["feed_time"])
-            Clock.schedule_once(self.turn_feeding_condition_off, self.session_data["feed_time"])
+            self.un_feed_event = Clock.schedule_once(self.turn_feeding_condition_off, self.session_data["feed_time"])
             #Event Reinforcement
 
             self.turn_off_screen()
@@ -384,7 +392,7 @@ class ExperimentLayout(FloatLayout):
         self.buzzer.cancel() 
         self.subsequent_punishments += 1 
         self.button_green.zeroing()
-        Clock.schedule_once(self.un_punish, self.session_data["punishment_duration"])
+        self.un_punish_event = Clock.schedule_once(self.un_punish, self.session_data["punishment_duration"])
         #Event Punishment
         self.turn_off_screen()
 
@@ -554,3 +562,12 @@ class ExperimentLayout(FloatLayout):
         for task in tasks:
             task.cancel()
         await asyncio.gather(*tasks, return_exceptions=True)
+
+    def unschedule_all_pending_events(self):
+        Clock.unschedule(self.button_green.green_button_scheduled_event) if self.button_green.green_button_scheduled_event else None
+        Clock.unschedule(self.button_red.red_button_scheduled_event) if self.button_red.red_button_scheduled_event else None
+        Clock.unschedule(self.warning_signal_scheduled_event) if self.warning_signal_scheduled_event else None
+        Clock.unschedule(self.cumulative_record_event) if self.cumulative_record_event else None
+        Clock.unschedule(self.un_punish_event) if self.un_punish_event else None
+        Clock.unschedule(self.un_feed_event) if self.un_feed_event else None
+        self.buzzer.cancel()

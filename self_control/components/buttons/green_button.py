@@ -3,7 +3,7 @@ from kivy.core.window import Window
 import datetime
 import asyncio
 from threading import Thread
-
+import datetime
 from self_control_software.self_control.components.buttons.basic_image_button import BasicImageButton
 
 class BasicImageButtonGreen(BasicImageButton):
@@ -41,6 +41,7 @@ class BasicImageButtonGreen(BasicImageButton):
             pass
 
     def on_touch_up(self, touch):
+        a = datetime.datetime.now()
         if self.touch_on_button(touch):
             # if  not self.disabled and (datetime.datetime.now()-self.last_seen_outside > datetime.timedelta(milliseconds=300)):
             if not self.green_button_changed:
@@ -64,6 +65,8 @@ class BasicImageButtonGreen(BasicImageButton):
             self.writer.write_data(parent.score, parent.warning_quarter, self.button_count, "green", not parent.button_red.disabled, parent.warning_signal_index)
             parent.make_checks()
             self.disabled = False
+            b = datetime.datetime.now()
+            print("Time Dif", (b-a).microseconds)
             
         else:
             if self.touch_close_to_button(touch):
