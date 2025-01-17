@@ -131,7 +131,7 @@ event_properties <- list(
   "punishment" = list(symbol = 16, color = "black"),
   "new_round" = list(symbol = 124, color = "blue"),
   "session_start" = list(symbol = 8, color = "blue"),
-  "session_end" = list(symbol = 8, color = "purple")
+  "session_end" = list(symbol = 8, color = "purple"),
   "session_terminated" = list(symbol = 8, color = "red")
 )
 

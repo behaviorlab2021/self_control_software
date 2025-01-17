@@ -107,7 +107,7 @@ def main(session_id):
     report_path = os.path.normpath(os.path.join(output_dir, report_file_name))
     cumulative_record_path = os.path.normpath(os.path.join(output_dir, cumulative_record_file_name))
 
-    def wait_for_files(paths, timeout=60):
+    def wait_for_files(paths, timeout=600):
         start_time = time.time()
         while time.time() - start_time < timeout:
             if all(os.path.exists(path) for path in paths):
