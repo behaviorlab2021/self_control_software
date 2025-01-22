@@ -70,7 +70,7 @@ BEGIN
 					    (SELECT (window_width::NUMERIC ) / (window_height::NUMERIC ) FROM session_info)::NUMERIC
 					) AS in_circle,
 													
-                   distance_between(p.x_start, p.y_start, p.x_pos, p.y_pos) > (SELECT peck_slide FROM session_info) AS peck_slides,
+                   (distance_between(p.x_start, p.y_start, p.x_pos, p.y_pos) > ( (SELECT peck_slide FROM session_info)) / 100.0 )AS peck_slides,
                    p.screen_on AS screen_on,
                    p.red_on AS red_on
             FROM pecks p
