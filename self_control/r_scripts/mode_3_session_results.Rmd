@@ -177,7 +177,8 @@ session_stats <- dbGetQuery(conn, paste0("
     total_warning_presentations,
     total_warning_terminations,
     total_warning_switches,
-    TO_CHAR(total_time::interval, 'MI:SS') AS total_time
+    TO_CHAR(EXTRACT(EPOCH FROM total_time) / 60, 'FM9999') || ':' || 
+    TO_CHAR(EXTRACT(EPOCH FROM total_time) % 60, 'FM00') AS total_time
   FROM session_checks
   WHERE session_id = '", session_id, "';"))
 ```

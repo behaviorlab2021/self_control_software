@@ -8,7 +8,7 @@ header-includes:
   - \newcommand{\blandscape}{\begin{landscape}}
   - \newcommand{\elandscape}{\end{landscape}}
 params:
-  session_id: "f86849b1-24fe-42e0-93fa-f8b080decb43"
+  session_id: "bf8cda63-0354-4068-968c-b6c1ef797662"
   output_dir: "../data"
   output_name: "session_results.pdf"
   custom_output_name: NULL
@@ -175,7 +175,8 @@ session_stats <- dbGetQuery(conn, paste0("
     total_warning_presentations,
     total_warning_terminations,
     total_warning_switches,
-    TO_CHAR(total_time::interval, 'MI:SS') AS total_time
+    TO_CHAR(EXTRACT(EPOCH FROM total_time) / 60, 'FM9999') || ':' || 
+    TO_CHAR(EXTRACT(EPOCH FROM total_time) % 60, 'FM00') AS total_time
   FROM session_checks
   WHERE session_id = '", session_id, "';"))
 ```

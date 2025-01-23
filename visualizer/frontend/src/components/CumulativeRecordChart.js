@@ -142,6 +142,20 @@ function CumulativeRecordChart({ chartRef, records, events, session }) {
         .text("*");
 
       svg
+        .selectAll(".session-terminated-symbol")
+        .data(events.filter((event) => event.event_type === "session_terminated"))
+        .enter()
+        .append("text")
+        .attr("class", "session-start-symbol")
+        .attr("x", (d) => x((new Date(d.event_time) - minTime) / (1000 * 60)))
+        .attr("y", (d) => y(d.hit_count))
+        .attr("dy", ".5em")
+        .attr("text-anchor", "middle")
+        .attr("font-size", "40px")
+        .attr("fill", "red")
+        .text("*");
+
+      svg
         .selectAll(".new-round-symbol")
         .data(events.filter((event) => event.event_type === "new_round"))
         .enter()
