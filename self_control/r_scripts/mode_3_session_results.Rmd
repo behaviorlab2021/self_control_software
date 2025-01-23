@@ -238,7 +238,14 @@ colnames(session_checks_table) <- unlist(session_checks_column_names)
 
 # Transpose the session_checks table for better readability
 session_checks_t <- t(session_checks_table)
-kable(session_checks_t, caption = "Session Checks Information")
+
+# Apply styling based on the value
+styled_table <- kable(session_checks_t, caption = "Session Checks Information") %>%
+  kable_styling() %>%
+  row_spec(which(session_checks_t[, 1] == "FALSE"), bold = TRUE, color = "red", rows = 1) %>%
+  row_spec(which(session_checks_t[, 1] == "TRUE"), bold = TRUE, color = "blue", rows = 1)
+
+styled_table
 ```
 
 \newpage
