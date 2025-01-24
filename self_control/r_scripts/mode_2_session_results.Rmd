@@ -166,8 +166,8 @@ session_stats <- dbGetQuery(conn, paste0("
     total_warning_presentations,
     total_warning_terminations,
     total_warning_switches,
-    TO_CHAR(EXTRACT(EPOCH FROM total_time) / 60, 'FM9999') || ':' || 
-    TO_CHAR(EXTRACT(EPOCH FROM total_time) % 60, 'FM00') AS total_time  
+    TO_CHAR(EXTRACT(EPOCH FROM total_time) / 60, 'FM9999') || ':' ||
+    TO_CHAR(EXTRACT(EPOCH FROM total_time) % 60, 'FM00') AS total_time
     FROM session_checks
   WHERE session_id = '", session_id, "';"))
 ```
@@ -221,7 +221,13 @@ colnames(session_checks_table) <- unlist(session_checks_column_names)
 
 # Transpose the session_checks table for better readability
 session_checks_t <- t(session_checks_table)
-kable(session_checks_t, caption = "Session Checks Information")
+
+# Apply styling based on the value
+styled_table <- kable(session_checks_t, caption = "Session Checks Information") %>%
+  kable_styling() %>%
+  column_spec(2, bold = TRUE, color = ifelse(session_checks_t[, 1] == "FALSE", "red", "blue"))
+
+styled_table
 ```
 
 \newpage

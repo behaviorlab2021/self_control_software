@@ -177,8 +177,7 @@ session_stats <- dbGetQuery(conn, paste0("
     total_warning_presentations,
     total_warning_terminations,
     total_warning_switches,
-    TO_CHAR(EXTRACT(EPOCH FROM total_time) / 60, 'FM9999') || ':' || 
-    TO_CHAR(EXTRACT(EPOCH FROM total_time) % 60, 'FM00') AS total_time
+    TO_CHAR(total_time::interval, 'MI:SS') AS total_time
   FROM session_checks
   WHERE session_id = '", session_id, "';"))
 ```
@@ -243,8 +242,7 @@ session_checks_t <- t(session_checks_table)
 # Apply styling based on the value
 styled_table <- kable(session_checks_t, caption = "Session Checks Information") %>%
   kable_styling() %>%
-  row_spec(which(session_checks_t[, 1] == "FALSE"), bold = TRUE, color = "red", rows = 1) %>%
-  row_spec(which(session_checks_t[, 1] == "TRUE"), bold = TRUE, color = "blue", rows = 1)
+  column_spec(2, bold = TRUE, color = ifelse(session_checks_t[, 1] == "FALSE", "red", "blue"))
 
 styled_table
 ```
