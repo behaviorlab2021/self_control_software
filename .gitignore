@@ -2,6 +2,11 @@
 __pycache__/
 # Ignore experiment.bat
 experiment.bat
+*.env
 
 # But don't ignore experiment.bat_example
 !experiment.bat_example
+
+# But don't ignore env example
+!.env_example
+misc/experiment.bat
