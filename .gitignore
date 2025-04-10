@@ -1,1 +1,7 @@
 **/data
+__pycache__/
+# Ignore experiment.bat
+experiment.bat
+
+# But don't ignore experiment.bat_example
+!experiment.bat_example

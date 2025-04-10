@@ -1,6 +1,7 @@
 import pyhid_usb_relay
 import time
 import threading
+import datetime
 
 def activate_relay_1():
     def task():
@@ -42,15 +43,3 @@ def deactivate_relay_2():
     task()
     pass
 
-def toggle_relay_3():
-    def task():
-        relay = pyhid_usb_relay.find()
-        relay.toggle_state(3)
-    task()
-    pass
-
-# while True:
-#     activate_relay_1()
-#     time.sleep(5)
-#     deactivate_relay_1()
-#     time.sleep(20)

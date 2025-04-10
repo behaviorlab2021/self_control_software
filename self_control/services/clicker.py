@@ -1,9 +1,14 @@
 
-from self_control_software.self_control.services.usb_relay import toggle_relay_3
-
+import pyhid_usb_relay
+import datetime
 class Clicker:
 
-    def click(self):
-        toggle_relay_3()
+    def __init__(self):
+        self.relay = pyhid_usb_relay.find()
 
- 
+
+    def click(self):
+        a = datetime.datetime.now()
+        self.relay.toggle_state(3)
+        b = datetime.datetime.now()
+        print("Time Dif", (b-a).microseconds) 
