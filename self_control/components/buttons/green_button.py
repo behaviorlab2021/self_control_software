@@ -66,7 +66,7 @@ class BasicImageButtonGreen(BasicImageButton):
             parent.make_checks()
             self.disabled = False
             b = datetime.datetime.now()
-            print("Time Dif", (b-a).microseconds)
+            print("Time Dif --", (b-a).microseconds)
             
         else:
             if self.touch_close_to_button(touch):
