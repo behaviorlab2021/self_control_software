@@ -1,1 +1,12 @@
+# Ignore compiled Python files
+*.pyc
+
+# Ignore environment files
+*.env
+!.env_example
+
+# Ignore experiment.bat but not the example
+misc/experiment.bat
+!misc/experiment.bat_example
+
 **/data

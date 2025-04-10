@@ -19,8 +19,8 @@ const io = socketIo(server, {
 
 const pool = new Pool({
   user: "postgres",
-  host: "localhost",
-  database: "postgres",
+  host: "194.177.220.45",
+  database: "self_control_db",
   password: "pigeon123!",
   port: 5432,
 });
@@ -106,8 +106,8 @@ io.on("connection", (socket) => {
 
 const client = new Client({
   user: "postgres",
-  host: "localhost",
-  database: "postgres",
+  host: "194.177.220.45",
+  database: "self_control_db",
   password: "pigeon123!",
   port: 5432,
 });
