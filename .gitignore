@@ -10,3 +10,6 @@ experiment.bat
 # But don't ignore env example
 !.env_example
 misc/experiment.bat
+node_modules/
+visualizer/backend/node_modules/
+visualizer/frontend/node_modules/
