@@ -13,3 +13,5 @@ misc/experiment.bat
 node_modules/
 visualizer/backend/node_modules/
 visualizer/frontend/node_modules/
+misc/visualizer.bat
+/
