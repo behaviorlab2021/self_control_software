@@ -256,25 +256,30 @@ styled_table
 # Query the database to get detailed round checks information
 round_checks <- dbGetQuery(conn, paste0("
   SELECT
-    round_number,
-    round_start_time,
-    round_end_time,
-    round_valid,
-    warnings_presented,
-    reinforcements_given
+    round_id,
+    check_time,
+    outcome_valid,
+    green_pecks_valid,
+    red_pecks_valid,
+    feedback_period_valid,
+    pecks_until_warning_valid,
+    quarter_valid
   FROM round_checks
-  WHERE session_id = '", session_id, "';"))
+  WHERE session_id = '", session_id, "'
+  ORDER BY check_time;"))
 ```
 
 ```{r round_checks_table, echo=FALSE}
 # Define a list of column names in snake case and sentence case for round checks
 round_checks_column_names <- list(
-  "round_number" = "Round Number",
-  "round_start_time" = "Start Time",
-  "round_end_time" = "End Time",
-  "round_valid" = "Valid",
-  "warnings_presented" = "Warnings Presented",
-  "reinforcements_given" = "Reinforcements Given"
+  "round_id" = "Round ID",
+  "check_time" = "Check Time",
+  "outcome_valid" = "Outcome Valid",
+  "green_pecks_valid" = "Green Pecks Valid",
+  "red_pecks_valid" = "Red Pecks Valid",
+  "feedback_period_valid" = "Feedback Period Valid",
+  "pecks_until_warning_valid" = "Pecks Until Warning Valid",
+  "quarter_valid" = "Quarter Valid"
 )
 
 # Select and rename columns using the list
