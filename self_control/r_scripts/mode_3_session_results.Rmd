@@ -250,6 +250,44 @@ styled_table
 
 \newpage
 
+## Round Checks
+
+```{r query_round_checks, include=FALSE}
+# Query the database to get detailed round checks information
+round_checks <- dbGetQuery(conn, paste0("
+  SELECT
+    round_number,
+    round_start_time,
+    round_end_time,
+    round_valid,
+    warnings_presented,
+    reinforcements_given
+  FROM round_checks
+  WHERE session_id = '", session_id, "';"))
+```
+
+```{r round_checks_table, echo=FALSE}
+# Define a list of column names in snake case and sentence case for round checks
+round_checks_column_names <- list(
+  "round_number" = "Round Number",
+  "round_start_time" = "Start Time",
+  "round_end_time" = "End Time",
+  "round_valid" = "Valid",
+  "warnings_presented" = "Warnings Presented",
+  "reinforcements_given" = "Reinforcements Given"
+)
+
+# Select and rename columns using the list
+round_checks_table <- round_checks[, names(round_checks_column_names)]
+colnames(round_checks_table) <- unlist(round_checks_column_names)
+
+# Display the table
+kable(round_checks_table, caption = "Round Checks Information") %>%
+  kable_styling(font_size = 10) # Adjust the font size as needed
+```
+
+\newpage
+
 ## Session Results
 
 ```{r query_session_results, include=FALSE}
