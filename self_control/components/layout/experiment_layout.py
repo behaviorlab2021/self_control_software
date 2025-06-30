@@ -157,6 +157,10 @@ class ExperimentLayout(FloatLayout):
     def update_warning_quarter(self):
         self.warning_quarter = (self.warning_signal_index//( self.session_data["reinforcement_ratio"]/4))+1
 
+    def free_round(self):
+        if self.session_data["mode_id"] == 4:
+            self.warning_signal_index = -1
+            self.update_warning_quarter()
 
     def randomize_array(self):
         if self.session_data["mode_id"] == 4:
@@ -505,6 +509,7 @@ class ExperimentLayout(FloatLayout):
                 self.writer.write_data(self.score, self.warning_quarter, self.clicks, "gratis-red-"+str(int(self.warning_quarter)), not self.button_red.disabled, self.warning_signal_index)
                 self.async_pg_controller.inject_event(self.round_id, "gratis_red", not self.button_red.disabled, self.clicks)
                 self.negative_reinforcement()
+                self.used_tries = 0
                 if self.warning_signal_training_running:
                     self.stop_warning_signal_training()
         return True
@@ -536,7 +541,7 @@ class ExperimentLayout(FloatLayout):
             self.randomize_array()
             self.subsequent_punishments = 0
         elif self.subsequent_punishments >= self.session_data["consecutive_warnings_limit"]:
-            self.randomize_array()
+            self.free_round()
             self.async_pg_controller.inject_event(self.round_id, "warning_switch", not self.button_red.disabled, self.clicks)
             self.subsequent_punishments = 0
         self.round += 1

@@ -249,37 +249,38 @@ styled_table
 ```
 
 \newpage
+\blandscape
 
 ## Round Checks
 
 ```{r query_round_checks, include=FALSE}
 # Query the database to get detailed round checks information
-round_checks <- dbGetQuery(conn, paste0("
+round_checks <- dbGetQuery(conn, sprintf("
   SELECT
-    round_id,
-    check_time,
-    outcome_valid,
-    green_pecks_valid,
-    red_pecks_valid,
-    feedback_period_valid,
-    pecks_until_warning_valid,
-    quarter_valid
-  FROM round_checks
-  WHERE session_id = '", session_id, "'
-  ORDER BY check_time;"))
-```
+    rc.round_id,
+    rc.check_time,
+    rc.outcome_valid,
+    rc.green_pecks_valid,
+    rc.red_pecks_valid,
+    rc.feedback_period_valid,
+    rc.pecks_until_warning_valid,
+    rc.quarter_valid
+  FROM round_checks rc
+  JOIN rounds r ON r.round_id = rc.round_id
+  WHERE r.session_id = '%s'
+  ORDER BY rc.check_time;", session_id))
 
 ```{r round_checks_table, echo=FALSE}
 # Define a list of column names in snake case and sentence case for round checks
 round_checks_column_names <- list(
   "round_id" = "Round ID",
   "check_time" = "Check Time",
-  "outcome_valid" = "Outcome Valid",
-  "green_pecks_valid" = "Green Pecks Valid",
-  "red_pecks_valid" = "Red Pecks Valid",
-  "feedback_period_valid" = "Feedback Period Valid",
-  "pecks_until_warning_valid" = "Pecks Until Warning Valid",
-  "quarter_valid" = "Quarter Valid"
+  "outcome_valid" = "Outcome",
+  "green_pecks_valid" = "Green Pecks",
+  "red_pecks_valid" = "Red Pecks",
+  "feedback_period_valid" = "Feedback Period ",
+  "pecks_until_warning_valid" = "Pecks Until Warning",
+  "quarter_valid" = "Quarter"
 )
 
 # Select and rename columns using the list
@@ -290,6 +291,7 @@ colnames(round_checks_table) <- unlist(round_checks_column_names)
 kable(round_checks_table, caption = "Round Checks Information") %>%
   kable_styling(font_size = 10) # Adjust the font size as needed
 ```
+\elandscape
 
 \newpage
 
