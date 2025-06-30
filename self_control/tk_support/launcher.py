@@ -80,6 +80,7 @@ class MultiStepApp:
         self.root.register(self.validate_between_0_and_100)
         self.root.register(self.validate_greater_than_1)
         self.root.register(self.validate_between_1_and_10)
+        self.root.register(self.validate_between_1_and_600)
 
         self.update_step()
 
@@ -257,7 +258,7 @@ class MultiStepApp:
                 variable.set(new_value)
             elif variable == self.punishment_duration and new_value <= 100:
                 variable.set(new_value)
-            elif variable == self.feed_time and 1 <= new_value <= 10:
+            elif variable == self.feed_time and 1 <= new_value <= 600:
                 variable.set(new_value)
             elif variable == self.consecutive_warnings_limit and 1 <= new_value <= 10:
                 variable.set(new_value)
@@ -358,10 +359,12 @@ class MultiStepApp:
 
         # Feed Time
         tk.Label(input_frame, text="Feed Time (seconds):", font=("Tahoma", 12)).grid(row=2, column=0, pady=2, sticky="e")
-        self.feed_time_entry = tk.Entry(input_frame, textvariable=self.feed_time, validate="key", validatecommand=(self.root.register(self.validate_between_1_and_10), '%P'), width=5)
+        self.feed_time_entry = tk.Entry(input_frame, textvariable=self.feed_time, validate="key", validatecommand=(self.root.register(self.validate_between_1_and_600), '%P'), width=5)
         self.feed_time_entry.grid(row=2, column=1, pady=2, sticky="w")
         tk.Button(input_frame, text="+", command=lambda: self.increment_value(self.feed_time, 1)).grid(row=2, column=2, padx=2)
         tk.Button(input_frame, text="-", command=lambda: self.decrement_value(self.feed_time, 1)).grid(row=2, column=3, padx=2)
+        tk.Button(input_frame, text="+10", command=lambda: self.increment_value(self.feed_time, 10)).grid(row=2, column=4, padx=2)
+        tk.Button(input_frame, text="-10", command=lambda: self.decrement_value(self.feed_time, 10)).grid(row=2, column=5, padx=2)    
         self.feed_time_entry.bind("<FocusOut>", lambda e: self.validate_entry(self.feed_time, 1, 10))
 
         # Consecutive Warnings Limit
@@ -521,6 +524,11 @@ class MultiStepApp:
             return 1 <= int(value) <= 10
         return value == "1"
 
+    def validate_between_1_and_600(self, value):
+        if value.isdigit():
+            return 1 <= int(value) <= 600
+        return value == "1"
+    
     def validate_entry(self, variable, min_value, max_value):
         try:
             value = int(variable.get())
