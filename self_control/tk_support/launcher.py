@@ -266,7 +266,7 @@ class MultiStepApp:
                 variable.set(new_value)
             elif variable == self.warning_duration and new_value >= 1:
                 variable.set(new_value)
-            elif variable == self.time_before_warning_signal and 1 <= new_value <= 10:
+            elif variable == self.time_before_warning_signal and 0 <= new_value <= 100:
                 variable.set(new_value)
             elif variable == self.warning_signal_position and new_value <= 100:
                 variable.set(new_value)
@@ -315,7 +315,7 @@ class MultiStepApp:
                 if current_value > 1:
                     variable.set(max(1, current_value - decrement))
             elif variable == self.time_before_warning_signal:
-                if current_value > 1:
+                if current_value > 0:
                     variable.set(max(1, current_value - decrement))
             elif variable == self.warning_signal_position:
                 if current_value > 0:
@@ -408,7 +408,7 @@ class MultiStepApp:
         # Time Before Warning Signal
         if not self.is_basic_training_mode() and not self.is_schedule_training_mode() and not self.is_random_warning_mode():
             tk.Label(input_frame, text="Time Before Warning Signal (seconds):", font=("Tahoma", 12)).grid(row=7, column=0, pady=2, sticky="e")
-            self.time_before_warning_signal_entry = tk.Entry(input_frame, textvariable=self.time_before_warning_signal, validate="key", validatecommand=(self.root.register(self.validate_between_1_and_10), '%P'), width=5)
+            self.time_before_warning_signal_entry = tk.Entry(input_frame, textvariable=self.time_before_warning_signal, validate="key", validatecommand=(self.root.register(self.validate_between_0_and_100), '%P'), width=5)
             self.time_before_warning_signal_entry.grid(row=7, column=1, pady=2, sticky="w")
             tk.Button(input_frame, text="+", command=lambda: self.increment_value(self.time_before_warning_signal, 1)).grid(row=7, column=2, padx=2)
             tk.Button(input_frame, text="-", command=lambda: self.decrement_value(self.time_before_warning_signal, 1)).grid(row=7, column=3, padx=2)

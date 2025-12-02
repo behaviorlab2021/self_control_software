@@ -28,7 +28,7 @@ def send_email(subject, body, to_email, attachment_path):
               to = "{to_email}",
               subject = "{subject}",
               body = "{body}",
-              smtp = list(host.name = "smtp.gmail.com", port = 465, 
+              smtp = list(host.name = "smtp.gmail.com", port = 587, 
                           user.name = "{sender}",            
                           passwd = "{password}", ssl = TRUE),
               authenticate = TRUE,
