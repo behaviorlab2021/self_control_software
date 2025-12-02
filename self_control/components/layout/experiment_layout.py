@@ -42,6 +42,7 @@ class ExperimentLayout(FloatLayout):
     consecutive_warnings = 0
     feeding_condition = False
     score = 0
+    number_of_free = 0
     used_tries = 0
     is_panel_connected = False
     subsequent_punishments = 0
@@ -207,8 +208,11 @@ class ExperimentLayout(FloatLayout):
         self.session_ended_label.text = "Results are being generated. Please wait."
         self.session_ended_label.color = [0.3, 0.2, 0.2, 0.6]
         Clock.unschedule(self.cumulative_record_event)
-        threading.Thread(target=self.create_results_pdf, args=(self.after_graceful_end_pdf_creation,)).start()
-    
+        if (self.number_of_free == 3):
+            threading.Thread(target=self.create_results_pdf, args=(self.after_extinction_prevention_clause_termination_pdf_creation,)).start()
+        else: 
+            threading.Thread(target=self.create_results_pdf, args=(self.after_graceful_end_pdf_creation,)).start()
+
     def terminate_session(self):
 
         self.feeder.deactivate()
@@ -256,10 +260,18 @@ class ExperimentLayout(FloatLayout):
         self.session_ended_label.color = [0.2, 0.2, 0.2, 0.6]
         print("PDF creation completed. Executing callback function.")
         # Add the code you want to execute after PDF creation here
+
     def after_graceful_end_pdf_creation(self):
         self.ending = False
         self.has_ended = True
         self.session_ended_label.text = "Session ended gracefully."
+        self.session_ended_label.color = [0.2, 0.2, 0.2, 0.6]
+        print("PDF creation completed. Executing callback function.")
+
+    def after_extinction_prevention_clause_termination_pdf_creation(self):
+        self.ending = False
+        self.has_ended = True
+        self.session_ended_label.text = "Extinction Prevention Clause activated. Try again."
         self.session_ended_label.color = [0.2, 0.2, 0.2, 0.6]
         print("PDF creation completed. Executing callback function.")
 
@@ -323,6 +335,9 @@ class ExperimentLayout(FloatLayout):
         
     def check_if_end(self):
         if (self.score >= self.session_data["total_reinforcements"]):
+            self.end_session()
+            return True
+        elif (self.number_of_free >=3):
             self.end_session()
             return True
         else: 
@@ -528,6 +543,7 @@ class ExperimentLayout(FloatLayout):
         self.button_red.source = self.button_red.source_file
         self.button_red.disable_button()
         self.buzzer.cancel()
+        self.number_of_free = 0
         # Clock.schedule_once(self.button_red_shadow.enable_button_delayed, 0.2)
 
     def add_cumulative_record(self, dt):
@@ -543,6 +559,7 @@ class ExperimentLayout(FloatLayout):
         elif self.subsequent_punishments >= self.session_data["consecutive_warnings_limit"]:
             self.free_round()
             self.async_pg_controller.inject_event(self.round_id, "warning_switch", not self.button_red.disabled, self.clicks)
+            self.number_of_free += 1
             self.subsequent_punishments = 0
         self.round += 1
         self.update_button_count()
