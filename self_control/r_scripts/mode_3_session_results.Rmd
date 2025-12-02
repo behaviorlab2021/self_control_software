@@ -257,7 +257,7 @@ styled_table
 # Query the database to get detailed round checks information
 round_checks <- dbGetQuery(conn, sprintf("
   SELECT
-    rc.rc.round_id,
+    rc.round_id,
     rc.check_time,
     rc.outcome_valid,
     rc.green_pecks_valid,
@@ -265,8 +265,7 @@ round_checks <- dbGetQuery(conn, sprintf("
     rc.feedback_period_valid,
     rc.pecks_until_warning_valid,
     rc.quarter_valid
-  FROM round_checks rc rc
-  JOIN rounds r ON r.round_id = rc.round_id
+  FROM round_checks rc
   JOIN rounds r ON r.round_id = rc.round_id
   WHERE r.session_id = '%s'
   ORDER BY rc.check_time;", session_id))

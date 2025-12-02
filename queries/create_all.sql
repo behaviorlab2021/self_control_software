@@ -358,6 +358,8 @@ BEGIN
         CASE
             WHEN session_info.mode_id = 4 THEN
                 CASE
+                    WHEN (SELECT warning_index FROM rounds WHERE round_id = (SELECT id FROM round_id)) < 0 
+                        AND COUNT(CASE WHEN events.event_type = 'green' THEN 1 END) = sessions.reinforcement_ratio THEN TRUE 
                     WHEN COUNT(CASE WHEN events.event_type = 'red' THEN 1 END) = 0 
                          AND COUNT(CASE WHEN events.event_type = 'green' THEN 1 END) < sessions.reinforcement_ratio 
                          AND COUNT(CASE WHEN events.event_type = 'green' AND events.warning_signal_present = TRUE THEN 1 END) > sessions.warning_hits THEN TRUE
@@ -428,6 +430,7 @@ BEGIN
         CASE
             WHEN session_info.mode_id = 4 THEN
                 CASE
+                    WHEN (SELECT warning_index FROM rounds WHERE round_id = (SELECT id FROM round_id)) < 0 THEN TRUE
                     WHEN COUNT(CASE WHEN events.event_type = 'red' THEN 1 END) = 0 
                          AND ABS(EXTRACT(EPOCH FROM (MAX(timely_events.punishment_end_time) - MAX(timely_events.punishment_time))) - sessions.punishment_duration) <= 1 THEN TRUE
                     WHEN COUNT(CASE WHEN events.event_type = 'red' THEN 1 END) = 1 
@@ -459,8 +462,10 @@ BEGIN
 
         CASE
             WHEN session_info.mode_id = 4 THEN
+
                 CASE
                     WHEN (SELECT green_count_until_warning FROM green_events_until_warning) = (SELECT warning_index FROM rounds WHERE round_id = (SELECT id FROM round_id)) THEN TRUE
+                    WHEN (SELECT warning_index FROM rounds WHERE round_id = (SELECT id FROM round_id)) < 0 THEN TRUE
                     ELSE FALSE
                 END
             WHEN session_info.mode_id = 3 THEN TRUE
@@ -580,7 +585,7 @@ CREATE TABLE session_checks (
     warning_switch_valid BOOLEAN NOT NULL,
     round_checks_passed BOOLEAN NOT NULL,
     no_errors BOOLEAN NOT NULL
-    );
+);
 
 
 CREATE OR REPLACE FUNCTION insert_session_results(session_id UUID)

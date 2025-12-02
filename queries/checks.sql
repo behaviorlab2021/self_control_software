@@ -481,7 +481,7 @@ BEGIN
         CASE
             WHEN session_info.mode_id = 4 THEN
                 CASE
-                    WHEN (SELECT warning_switch_count FROM warning_switch_events) = count_consecutive_unterminated_warnings(session_uuid) THEN TRUE
+                    WHEN (SELECT warning_switch_count FROM warning_switch_events) = count_consecutive_unterminated_warnings(session_uuid)  THEN TRUE
                     ELSE FALSE
                 END
             WHEN session_info.mode_id = 3 THEN
