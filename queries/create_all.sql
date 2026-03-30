@@ -51,6 +51,7 @@ CREATE TABLE rounds (
     warning_index INTEGER NOT NULL,
     warning_quarter INTEGER NOT NULL,
     reinforcers_count INTEGER NOT NULL,
+    required_clicks INTEGER,
     started_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -361,12 +362,12 @@ BEGIN
             WHEN session_info.mode_id = 6 THEN
                 CASE
                     WHEN (SELECT warning_index FROM rounds WHERE round_id = (SELECT id FROM round_id)) < 0
-                        AND COUNT(CASE WHEN events.event_type = 'green' THEN 1 END) = sessions.reinforcement_ratio THEN TRUE
+                        AND COUNT(CASE WHEN events.event_type = 'green' THEN 1 END) = rounds.required_clicks THEN TRUE
                     WHEN COUNT(CASE WHEN events.event_type = 'red' THEN 1 END) = 0
-                         AND COUNT(CASE WHEN events.event_type = 'green' THEN 1 END) < sessions.reinforcement_ratio
+                         AND COUNT(CASE WHEN events.event_type = 'green' THEN 1 END) < rounds.required_clicks
                          AND COUNT(CASE WHEN events.event_type = 'green' AND events.warning_signal_present = TRUE THEN 1 END) > sessions.warning_hits THEN TRUE
                     WHEN COUNT(CASE WHEN events.event_type = 'red' THEN 1 END) = 1
-                         AND COUNT(CASE WHEN events.event_type = 'green' THEN 1 END) = sessions.reinforcement_ratio
+                         AND COUNT(CASE WHEN events.event_type = 'green' THEN 1 END) = rounds.required_clicks
                          AND COUNT(CASE WHEN events.event_type = 'green' AND events.warning_signal_present = TRUE THEN 1 END) <= sessions.warning_hits THEN TRUE
                     ELSE FALSE
                 END
@@ -394,7 +395,7 @@ BEGIN
                 END
             WHEN session_info.mode_id = 5 THEN
                 CASE
-                    WHEN COUNT(CASE WHEN events.event_type = 'green' THEN 1 END) = sessions.reinforcement_ratio THEN TRUE
+                    WHEN COUNT(CASE WHEN events.event_type = 'green' THEN 1 END) = rounds.required_clicks THEN TRUE
                     ELSE FALSE
                 END
             WHEN session_info.mode_id = 2 THEN
@@ -646,7 +647,17 @@ CREATE TABLE session_checks (
     total_warnings_valid BOOLEAN NOT NULL,
     warning_switch_valid BOOLEAN NOT NULL,
     round_checks_passed BOOLEAN NOT NULL,
-    no_errors BOOLEAN NOT NULL
+    session_end_valid BOOLEAN NOT NULL,
+    no_errors BOOLEAN NOT NULL,
+    total_time_valid BOOLEAN NOT NULL,
+    database_errors INT,
+    total_reinforcements INT,
+    total_rounds INT,
+    total_punishments INT,
+    total_warning_terminations INT,
+    total_warning_presentations INT,
+    total_warning_switches INT,
+    total_time INTERVAL
 );
 
 
@@ -698,3 +709,248 @@ CREATE TRIGGER peck_trigger
 AFTER INSERT ON pecks
 FOR EACH ROW
 EXECUTE FUNCTION notify_peck();
+
+
+CREATE OR REPLACE FUNCTION count_consecutive_unterminated_warnings(session_uuid UUID)
+RETURNS INT AS $$
+DECLARE
+    consecutive_count INT := 0;
+    consecutive_warnings_limit INT;
+    current_consecutive INT := 0;
+    round_id UUID;
+    warning_terminated BOOLEAN;
+BEGIN
+    SELECT s.consecutive_warnings_limit
+    INTO consecutive_warnings_limit
+    FROM sessions s
+    WHERE s.session_id = session_uuid;
+
+    FOR round_id, warning_terminated IN
+        SELECT r.round_id, rr.warning_terminated
+        FROM rounds r
+        JOIN round_results rr ON r.round_id = rr.round_id
+        WHERE r.session_id = session_uuid
+        ORDER BY r.round_index
+    LOOP
+        IF warning_terminated = FALSE THEN
+            current_consecutive := current_consecutive + 1;
+            IF current_consecutive >= consecutive_warnings_limit THEN
+                consecutive_count := consecutive_count + 1;
+                current_consecutive := 0;
+            END IF;
+        ELSE
+            current_consecutive := 0;
+        END IF;
+    END LOOP;
+
+    RETURN consecutive_count;
+END;
+$$ LANGUAGE plpgsql;
+
+
+CREATE OR REPLACE FUNCTION check_session(session_uuid UUID)
+RETURNS VOID AS $$
+BEGIN
+    WITH
+    session_info AS (
+        SELECT session_id, total_reinforcements, mode_id
+        FROM sessions
+        WHERE session_id = session_uuid
+    ),
+    session_start_event AS (
+        SELECT event_time AS session_start
+        FROM events
+        JOIN rounds ON events.round_id = rounds.round_id
+        WHERE event_type = 'session_start'
+        AND session_id = session_uuid
+        LIMIT 1
+    ),
+    session_end_event AS (
+        SELECT event_time AS session_end
+        FROM events
+        JOIN rounds ON events.round_id = rounds.round_id
+        WHERE event_type = 'session_end'
+        AND session_id = session_uuid
+        LIMIT 1
+    ),
+    feeding_events AS (
+        SELECT COUNT(*) AS feeding_count
+        FROM events e
+        JOIN rounds r ON e.round_id = r.round_id
+        WHERE e.event_type = 'feeding'
+        AND r.session_id = session_uuid
+    ),
+    round_count AS (
+        SELECT COUNT(*) AS round_count
+        FROM rounds
+        WHERE session_id = session_uuid
+    ),
+    round_end_events AS (
+        SELECT COUNT(*) AS round_end_count
+        FROM events e
+        JOIN rounds r ON e.round_id = r.round_id
+        WHERE e.event_type = 'round_end'
+        AND r.session_id = session_uuid
+    ),
+    new_round_events AS (
+        SELECT COUNT(*) AS new_round_count
+        FROM events e
+        JOIN rounds r ON e.round_id = r.round_id
+        WHERE e.event_type = 'new_round'
+        AND r.session_id = session_uuid
+    ),
+    session_end_events AS (
+        SELECT COUNT(*) AS session_end_count
+        FROM events e
+        JOIN rounds r ON e.round_id = r.round_id
+        WHERE e.event_type = 'session_end'
+        AND r.session_id = session_uuid
+    ),
+    warning_events AS (
+        SELECT COUNT(*) AS warning_count
+        FROM events e
+        JOIN rounds r ON e.round_id = r.round_id
+        WHERE e.event_type = 'warning'
+        AND r.session_id = session_uuid
+    ),
+    termination_events AS (
+        SELECT COUNT(*) AS termination_count
+        FROM events e
+        JOIN rounds r ON e.round_id = r.round_id
+        WHERE e.event_type = 'red'
+        AND r.session_id = session_uuid
+    ),
+    warning_switch_events AS (
+        SELECT COUNT(*) AS warning_switch_count
+        FROM events e
+        JOIN rounds r ON e.round_id = r.round_id
+        WHERE e.event_type = 'warning_switch'
+        AND r.session_id = session_uuid
+    ),
+    punishment_events AS (
+        SELECT COUNT(*) AS punishment_count
+        FROM events e
+        JOIN rounds r ON e.round_id = r.round_id
+        WHERE e.event_type = 'punishment'
+        AND r.session_id = session_uuid
+    ),
+    round_checks_passed AS (
+        SELECT COUNT(*) = 0 AS all_passed
+        FROM round_checks rc
+        JOIN rounds r ON rc.round_id = r.round_id
+        WHERE r.session_id = session_uuid
+        AND NOT (rc.outcome_valid AND rc.green_pecks_valid AND rc.red_pecks_valid AND rc.feedback_period_valid AND rc.pecks_until_warning_valid AND rc.quarter_valid)
+    ),
+    database_errors AS (
+        SELECT COUNT(*) AS error_count
+        FROM errors e
+        WHERE e.session_id = session_uuid
+        OR e.round_id IN (SELECT round_id FROM rounds WHERE session_id = session_uuid)
+    )
+    INSERT INTO session_checks (
+        session_id,
+        total_reinforcements_valid,
+        total_rounds_valid,
+        total_warnings_valid,
+        warning_switch_valid,
+        round_checks_passed,
+        session_end_valid,
+        no_errors,
+        total_time_valid,
+        database_errors,
+        total_reinforcements,
+        total_rounds,
+        total_punishments,
+        total_warning_terminations,
+        total_warning_presentations,
+        total_warning_switches,
+        total_time
+    )
+    SELECT
+        session_info.session_id,
+
+        CASE
+            WHEN (SELECT feeding_count FROM feeding_events) = session_info.total_reinforcements THEN TRUE
+            ELSE FALSE
+        END AS total_reinforcements_valid,
+
+        CASE
+            WHEN (SELECT round_count FROM round_count) = (SELECT round_end_count FROM round_end_events)
+                    AND (SELECT round_count FROM round_count) = (SELECT new_round_count FROM new_round_events)
+                    AND (SELECT round_count FROM round_count) = (session_info.total_reinforcements + (SELECT punishment_count FROM punishment_events)) THEN TRUE
+            ELSE FALSE
+        END AS total_rounds_valid,
+
+        CASE
+            WHEN session_info.mode_id = 6 THEN
+                CASE
+                    WHEN (SELECT warning_count FROM warning_events) = (session_info.total_reinforcements + (SELECT punishment_count FROM punishment_events)) THEN TRUE
+                    ELSE FALSE
+                END
+            WHEN session_info.mode_id = 4 THEN
+                CASE
+                    WHEN (SELECT warning_count FROM warning_events) = (session_info.total_reinforcements + (SELECT punishment_count FROM punishment_events)) THEN TRUE
+                    ELSE FALSE
+                END
+            WHEN session_info.mode_id = 3 THEN
+                CASE
+                    WHEN (SELECT warning_count FROM warning_events) = (SELECT punishment_count FROM punishment_events) + (SELECT termination_count FROM termination_events) THEN TRUE
+                    ELSE FALSE
+                END
+            WHEN session_info.mode_id = 5 THEN TRUE
+            WHEN session_info.mode_id = 2 THEN TRUE
+            WHEN session_info.mode_id = 1 THEN TRUE
+            ELSE FALSE
+        END AS total_warnings_valid,
+
+        CASE
+            WHEN session_info.mode_id = 6 THEN
+                CASE
+                    WHEN (SELECT warning_switch_count FROM warning_switch_events) = count_consecutive_unterminated_warnings(session_uuid) THEN TRUE
+                    ELSE FALSE
+                END
+            WHEN session_info.mode_id = 4 THEN
+                CASE
+                    WHEN (SELECT warning_switch_count FROM warning_switch_events) = count_consecutive_unterminated_warnings(session_uuid) THEN TRUE
+                    ELSE FALSE
+                END
+            WHEN session_info.mode_id = 3 THEN
+                CASE
+                    WHEN (SELECT round_count FROM round_count) = (SELECT termination_count FROM termination_events) + (SELECT punishment_count FROM punishment_events) + (SELECT warning_switch_count FROM warning_switch_events) + 1 THEN TRUE
+                    ELSE FALSE
+                END
+            WHEN session_info.mode_id = 5 THEN TRUE
+            WHEN session_info.mode_id = 2 THEN TRUE
+            WHEN session_info.mode_id = 1 THEN TRUE
+            ELSE FALSE
+        END AS warning_switch_valid,
+
+        (SELECT all_passed FROM round_checks_passed) AS round_checks_passed,
+
+        CASE
+            WHEN (SELECT session_end_count FROM session_end_events) = 1 THEN TRUE
+            ELSE FALSE
+        END AS session_end_valid,
+
+        CASE
+            WHEN (SELECT error_count FROM database_errors) = 0 THEN TRUE
+            ELSE FALSE
+        END AS no_errors,
+
+        CASE
+            WHEN EXTRACT(EPOCH FROM ((SELECT session_end FROM session_end_event) - (SELECT session_start FROM session_start_event))) > 0 THEN TRUE
+            ELSE FALSE
+        END AS total_time_valid,
+
+        (SELECT error_count FROM database_errors) AS database_errors,
+        (SELECT feeding_count FROM feeding_events) AS total_reinforcements,
+        (SELECT round_count FROM round_count) AS total_rounds,
+        (SELECT punishment_count FROM punishment_events) AS total_punishments,
+        (SELECT termination_count FROM termination_events) AS total_warning_terminations,
+        (SELECT warning_count FROM warning_events) AS total_warning_presentations,
+        (SELECT warning_switch_count FROM warning_switch_events) AS total_warning_switches,
+        (SELECT session_end FROM session_end_event) - (SELECT session_start FROM session_start_event) AS total_time
+    FROM
+        session_info;
+END;
+$$ LANGUAGE plpgsql;

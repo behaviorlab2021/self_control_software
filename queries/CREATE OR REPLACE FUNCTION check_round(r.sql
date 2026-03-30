@@ -105,11 +105,11 @@ BEGIN
         CASE
             WHEN session_info.mode_id = 6 THEN
                 CASE
-                    WHEN COUNT(CASE WHEN events.event_type = 'red' THEN 1 END) = 0 
-                         AND COUNT(CASE WHEN events.event_type = 'green' THEN 1 END) < sessions.reinforcement_ratio 
+                    WHEN COUNT(CASE WHEN events.event_type = 'red' THEN 1 END) = 0
+                         AND COUNT(CASE WHEN events.event_type = 'green' THEN 1 END) < rounds.required_clicks
                          AND COUNT(CASE WHEN events.event_type = 'green' AND events.warning_signal_present = TRUE THEN 1 END) > sessions.warning_hits THEN TRUE
-                    WHEN COUNT(CASE WHEN events.event_type = 'red' THEN 1 END) = 1 
-                         AND COUNT(CASE WHEN events.event_type = 'green' THEN 1 END) = sessions.reinforcement_ratio 
+                    WHEN COUNT(CASE WHEN events.event_type = 'red' THEN 1 END) = 1
+                         AND COUNT(CASE WHEN events.event_type = 'green' THEN 1 END) = rounds.required_clicks
                          AND COUNT(CASE WHEN events.event_type = 'green' AND events.warning_signal_present = TRUE THEN 1 END) <= sessions.warning_hits THEN TRUE
                     ELSE FALSE
                 END
@@ -135,7 +135,7 @@ BEGIN
                 END
             WHEN session_info.mode_id = 5 THEN
                 CASE
-                    WHEN COUNT(CASE WHEN events.event_type = 'green' THEN 1 END) = sessions.reinforcement_ratio THEN TRUE
+                    WHEN COUNT(CASE WHEN events.event_type = 'green' THEN 1 END) = rounds.required_clicks THEN TRUE
                     ELSE FALSE
                 END
             WHEN session_info.mode_id = 2 THEN

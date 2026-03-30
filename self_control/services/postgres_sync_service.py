@@ -228,8 +228,8 @@ class PostgresSyncService:
             cursor = self.connection.cursor()
             query = """
             INSERT INTO rounds (
-                session_id, round_index, warning_index, warning_quarter, reinforcers_count
-            ) VALUES (%s, %s, %s, %s, %s)
+                session_id, round_index, warning_index, warning_quarter, reinforcers_count, required_clicks
+            ) VALUES (%s, %s, %s, %s, %s, %s)
             RETURNING round_id
             """
             cursor.execute(query, (
@@ -237,7 +237,8 @@ class PostgresSyncService:
                 round_data['round_index'],
                 round_data['warning_index'],
                 round_data['warning_quarter'],
-                round_data['reinforcers_count']
+                round_data['reinforcers_count'],
+                round_data.get('required_clicks')
             ))
             round_id = cursor.fetchone()[0]
             self.connection.commit()  # Ensure the transaction is committed

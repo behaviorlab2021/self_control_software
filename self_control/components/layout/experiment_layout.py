@@ -28,6 +28,7 @@ from self_control_software.self_control.services.writer import Writer
 from self_control_software.self_control.controllers.postgres_sync_controller import PostgresSyncController
 from self_control_software.self_control.services.feeder import Feeder
 from self_control_software.self_control.utils.functions import distance_from
+from self_control_software.self_control.utils.variable_ratio import generate_required_clicks, compute_warning_quartiles
 from self_control_software.self_control.services.clicker import Clicker
 from self_control_software.self_control.utils.subject_names import ERMIS, ADAM, SNIK, MOSES
 import threading
@@ -112,7 +113,12 @@ class ExperimentLayout(FloatLayout):
         self.async_pg_controller.update_session_window_size(self.session_data["session_id"], self.window_x, self.window_y)
 
         self.button_size = self.session_data["button_size"]/100
-        
+
+        # Precompute warning quartiles for mode 6
+        if self.session_data["mode_id"] == 6:
+            self.warning_q1, self.warning_q2, self.warning_q3 = compute_warning_quartiles(
+                self.session_data["reinforcement_ratio"], self.session_data["warning_hits"])
+
         self.aspect_ratio = float(self.window_x/self.window_y)
 
         # if any(device.split("\\")[1] == "VID_0C45&PID_8419" for device in devices_dict):
@@ -156,7 +162,17 @@ class ExperimentLayout(FloatLayout):
         return [0.0, 0.0, 0.0, 0.0]
     
     def update_warning_quarter(self):
-        self.warning_quarter = (self.warning_signal_index//( self.session_data["reinforcement_ratio"]/4))+1
+        if self.session_data["mode_id"] == 6:
+            if self.warning_signal_index <= self.warning_q1:
+                self.warning_quarter = 1
+            elif self.warning_signal_index <= self.warning_q2:
+                self.warning_quarter = 2
+            elif self.warning_signal_index <= self.warning_q3:
+                self.warning_quarter = 3
+            else:
+                self.warning_quarter = 4
+        else:
+            self.warning_quarter = (self.warning_signal_index // (self.session_data["reinforcement_ratio"] / 4)) + 1
 
     def free_round(self):
         if self.session_data["mode_id"] in (4, 6):
@@ -164,7 +180,9 @@ class ExperimentLayout(FloatLayout):
             self.update_warning_quarter()
 
     def randomize_array(self):
-        if self.session_data["mode_id"] in (4, 6):
+        if self.session_data["mode_id"] == 6:
+            self.warning_signal_index = random.randint(1, self.required_clicks - self.session_data["warning_hits"] - 1)
+        elif self.session_data["mode_id"] == 4:
             self.warning_signal_index = random.randint(1, self.session_data["reinforcement_ratio"] - self.session_data["warning_hits"] - 1)
             self.update_warning_quarter()
         else:
@@ -191,7 +209,11 @@ class ExperimentLayout(FloatLayout):
         return super(FloatLayout, self).on_touch_down(touch)
 
     def check_reinforcement_condition(self):
-        if (self.button_green.button_count >= self.session_data["reinforcement_ratio"]):
+        if self.session_data["mode_id"] in (5, 6):
+            threshold = self.required_clicks
+        else:
+            threshold = self.session_data["reinforcement_ratio"]
+        if self.button_green.button_count >= threshold:
             self.positive_reinforcement()
 
     def end_session(self):
@@ -554,6 +576,15 @@ class ExperimentLayout(FloatLayout):
         print("Starting new round")
         #Increase round by ons
         if self.subsequent_punishments == 0:
+            # Generate required_clicks for VARIABLE RATIO / VARIABLE WARNING
+            if self.session_data["mode_id"] == 5:
+                self.required_clicks = generate_required_clicks(self.session_data["reinforcement_ratio"])
+            elif self.session_data["mode_id"] == 6:
+                self.required_clicks = generate_required_clicks(
+                    self.session_data["reinforcement_ratio"],
+                    min_value=self.session_data["warning_hits"] + 2)
+            else:
+                self.required_clicks = None
             self.randomize_array()
             self.subsequent_punishments = 0
         elif self.subsequent_punishments >= self.session_data["consecutive_warnings_limit"]:
@@ -565,7 +596,7 @@ class ExperimentLayout(FloatLayout):
         self.update_button_count()
         #Inject the new round in the database
         new_round = not self.round_id
-        self.round_id = self.sync_pg_controller.inject_round_data(self.session_data["session_id"], self.round, self.warning_signal_index, self.warning_quarter, self.score)
+        self.round_id = self.sync_pg_controller.inject_round_data(self.session_data["session_id"], self.round, self.warning_signal_index, self.warning_quarter, self.score, self.required_clicks)
         
         print("Round ID IS:", self.round_id, "SESSION ID IS:", self.session_data["session_id"])
         if new_round:

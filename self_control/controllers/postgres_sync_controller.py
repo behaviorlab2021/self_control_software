@@ -11,14 +11,15 @@ class PostgresSyncController:
         self.start_time = get_time_now() 
     
 
-    def inject_round_data(self, session_id, round_index, warning_index, warning_quarter, reinforcers_count):
+    def inject_round_data(self, session_id, round_index, warning_index, warning_quarter, reinforcers_count, required_clicks=None):
         """Inject new round data into the database."""
         round_data = {
             'session_id': session_id,
             'round_index': round_index,
             'warning_index': warning_index,
             'warning_quarter': warning_quarter,
-            'reinforcers_count': reinforcers_count
+            'reinforcers_count': reinforcers_count,
+            'required_clicks': required_clicks
         }
         try:
             round_id = self.db.insert_round_data(round_data)

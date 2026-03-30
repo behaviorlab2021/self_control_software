@@ -150,7 +150,8 @@ class MultiStepApp:
 
         # Reinforcement Ratio
         if not self.is_basic_training_mode():
-            tk.Label(input_frame, text="Reinforcement Ratio:", font=("Tahoma", 12)).grid(row=2, column=0, pady=2, sticky="e")
+            ratio_label = "Variability Ratio:" if self.mode_id.get() in ("VARIABLE RATIO", "VARIABLE WARNING") else "Reinforcement Ratio:"
+            tk.Label(input_frame, text=ratio_label, font=("Tahoma", 12)).grid(row=2, column=0, pady=2, sticky="e")
             self.reinforcement_ratio_entry = tk.Entry(input_frame, textvariable=self.reinforcement_ratio, validate="key", validatecommand=(self.root.register(self.validate_greater_than_1), '%P'), width=5)
             self.reinforcement_ratio_entry.grid(row=2, column=1, pady=2, sticky="w")
             tk.Button(input_frame, text="+", command=lambda: self.increment_value(self.reinforcement_ratio, 1)).grid(row=2, column=2, padx=2)
