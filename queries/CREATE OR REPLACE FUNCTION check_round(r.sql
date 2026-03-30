@@ -103,7 +103,17 @@ BEGIN
     SELECT
         events.round_id,
         CASE
-            WHEN session_info.mode_id IN (4, 6) THEN
+            WHEN session_info.mode_id = 6 THEN
+                CASE
+                    WHEN COUNT(CASE WHEN events.event_type = 'red' THEN 1 END) = 0 
+                         AND COUNT(CASE WHEN events.event_type = 'green' THEN 1 END) < sessions.reinforcement_ratio 
+                         AND COUNT(CASE WHEN events.event_type = 'green' AND events.warning_signal_present = TRUE THEN 1 END) > sessions.warning_hits THEN TRUE
+                    WHEN COUNT(CASE WHEN events.event_type = 'red' THEN 1 END) = 1 
+                         AND COUNT(CASE WHEN events.event_type = 'green' THEN 1 END) = sessions.reinforcement_ratio 
+                         AND COUNT(CASE WHEN events.event_type = 'green' AND events.warning_signal_present = TRUE THEN 1 END) <= sessions.warning_hits THEN TRUE
+                    ELSE FALSE
+                END
+            WHEN session_info.mode_id = 4 THEN
                 CASE
                     WHEN COUNT(CASE WHEN events.event_type = 'red' THEN 1 END) = 0 
                          AND COUNT(CASE WHEN events.event_type = 'green' THEN 1 END) < sessions.reinforcement_ratio 
@@ -123,7 +133,12 @@ BEGIN
                          AND COUNT(CASE WHEN events.event_type = 'green' THEN 1 END) < sessions.reinforcement_ratio THEN TRUE
                     ELSE FALSE
                 END
-            WHEN session_info.mode_id IN (2, 5) THEN
+            WHEN session_info.mode_id = 5 THEN
+                CASE
+                    WHEN COUNT(CASE WHEN events.event_type = 'green' THEN 1 END) = sessions.reinforcement_ratio THEN TRUE
+                    ELSE FALSE
+                END
+            WHEN session_info.mode_id = 2 THEN
                 CASE
                     WHEN COUNT(CASE WHEN events.event_type = 'green' THEN 1 END) = sessions.reinforcement_ratio THEN TRUE
                     ELSE FALSE
@@ -137,7 +152,12 @@ BEGIN
         END AS outcome_valid,
 
         CASE
-            WHEN session_info.mode_id IN (4, 6) THEN
+            WHEN session_info.mode_id = 6 THEN
+                CASE
+                    WHEN COUNT(CASE WHEN events.event_type = 'green' THEN 1 END) = pecks_in_green.peck_count THEN TRUE
+                    ELSE FALSE
+                END
+            WHEN session_info.mode_id = 4 THEN
                 CASE
                     WHEN COUNT(CASE WHEN events.event_type = 'green' THEN 1 END) = pecks_in_green.peck_count THEN TRUE
                     ELSE FALSE
@@ -147,7 +167,12 @@ BEGIN
                     WHEN COUNT(CASE WHEN events.event_type = 'green' THEN 1 END) = pecks_in_green.peck_count THEN TRUE
                     ELSE FALSE
                 END
-            WHEN session_info.mode_id IN (2, 5) THEN
+            WHEN session_info.mode_id = 5 THEN
+                CASE
+                    WHEN COUNT(CASE WHEN events.event_type = 'green' THEN 1 END) = pecks_in_green.peck_count THEN TRUE
+                    ELSE FALSE
+                END
+            WHEN session_info.mode_id = 2 THEN
                 CASE
                     WHEN COUNT(CASE WHEN events.event_type = 'green' THEN 1 END) = pecks_in_green.peck_count THEN TRUE
                     ELSE FALSE
@@ -157,7 +182,12 @@ BEGIN
         END AS green_pecks_valid,
 
         CASE
-            WHEN session_info.mode_id IN (4, 6) THEN
+            WHEN session_info.mode_id = 6 THEN
+                CASE
+                    WHEN COUNT(CASE WHEN events.event_type = 'red' THEN 1 END) = pecks_in_red.peck_count THEN TRUE
+                    ELSE FALSE
+                END
+            WHEN session_info.mode_id = 4 THEN
                 CASE
                     WHEN COUNT(CASE WHEN events.event_type = 'red' THEN 1 END) = pecks_in_red.peck_count THEN TRUE
                     ELSE FALSE
@@ -167,13 +197,22 @@ BEGIN
                     WHEN COUNT(CASE WHEN events.event_type = 'red' THEN 1 END) = pecks_in_red.peck_count THEN TRUE
                     ELSE FALSE
                 END
-            WHEN session_info.mode_id IN (2, 5) THEN TRUE
+            WHEN session_info.mode_id = 5 THEN TRUE
+            WHEN session_info.mode_id = 2 THEN TRUE
             WHEN session_info.mode_id = 1 THEN TRUE
             ELSE FALSE
         END AS red_pecks_valid,
 
         CASE
-            WHEN session_info.mode_id IN (4, 6) THEN
+            WHEN session_info.mode_id = 6 THEN
+                CASE
+                    WHEN COUNT(CASE WHEN events.event_type = 'red' THEN 1 END) = 0 
+                         AND ABS(EXTRACT(EPOCH FROM (MAX(timely_events.punishment_end_time) - MAX(timely_events.punishment_time))) - sessions.punishment_duration) <= 0.2 THEN TRUE
+                    WHEN COUNT(CASE WHEN events.event_type = 'red' THEN 1 END) = 1 
+                         AND ABS(EXTRACT(EPOCH FROM (MAX(timely_events.feeding_end_time) - MAX(timely_events.feeding_time))) - sessions.feed_time) <= 0.2 THEN TRUE
+                    ELSE FALSE
+                END
+            WHEN session_info.mode_id = 4 THEN
                 CASE
                     WHEN COUNT(CASE WHEN events.event_type = 'red' THEN 1 END) = 0 
                          AND ABS(EXTRACT(EPOCH FROM (MAX(timely_events.punishment_end_time) - MAX(timely_events.punishment_time))) - sessions.punishment_duration) <= 0.2 THEN TRUE
@@ -191,7 +230,12 @@ BEGIN
                          AND ABS(EXTRACT(EPOCH FROM (MAX(timely_events.punishment_end_time) - MAX(timely_events.punishment_time))) - sessions.punishment_duration) <= 0.2 THEN TRUE
                     ELSE FALSE
                 END
-            WHEN session_info.mode_id IN (2, 5) THEN
+            WHEN session_info.mode_id = 5 THEN
+                CASE
+                    WHEN ABS(EXTRACT(EPOCH FROM (MAX(timely_events.feeding_end_time) - MAX(timely_events.feeding_time))) - sessions.feed_time) <= 0.2 THEN TRUE
+                    ELSE FALSE
+                END
+            WHEN session_info.mode_id = 2 THEN
                 CASE
                     WHEN ABS(EXTRACT(EPOCH FROM (MAX(timely_events.feeding_end_time) - MAX(timely_events.feeding_time))) - sessions.feed_time) <= 0.2 THEN TRUE
                     ELSE FALSE
@@ -205,19 +249,31 @@ BEGIN
         END AS feedback_period_valid,
 
         CASE
-            WHEN session_info.mode_id IN (4, 6) THEN
+            WHEN session_info.mode_id = 6 THEN
+                CASE
+                    WHEN (SELECT green_count_until_warning FROM green_events_until_warning) = (SELECT warning_index FROM rounds WHERE round_id = (SELECT id FROM round_id)) THEN TRUE
+                    ELSE FALSE
+                END
+            WHEN session_info.mode_id = 4 THEN
                 CASE
                     WHEN (SELECT green_count_until_warning FROM green_events_until_warning) = (SELECT warning_index FROM rounds WHERE round_id = (SELECT id FROM round_id)) THEN TRUE
                     ELSE FALSE
                 END
             WHEN session_info.mode_id = 3 THEN TRUE
-            WHEN session_info.mode_id IN (2, 5) THEN TRUE
+            WHEN session_info.mode_id = 5 THEN TRUE
+            WHEN session_info.mode_id = 2 THEN TRUE
             WHEN session_info.mode_id = 1 THEN TRUE
             ELSE FALSE
         END AS pecks_until_warning_valid,
 
         CASE
-            WHEN session_info.mode_id IN (4, 6) THEN 
+            WHEN session_info.mode_id = 6 THEN 
+                CASE
+                    WHEN (SELECT warning_quarter FROM rounds WHERE round_id = (SELECT id FROM round_id)) = 
+                         FLOOR((SELECT warning_index FROM rounds WHERE round_id = (SELECT id FROM round_id))::float / (SELECT reinforcement_ratio FROM sessions WHERE session_id = (SELECT session_id FROM rounds WHERE round_id = (SELECT id FROM round_id)))::float * 4) + 1 THEN TRUE
+                    ELSE FALSE
+                END
+            WHEN session_info.mode_id = 4 THEN 
                 CASE
                     WHEN (SELECT warning_quarter FROM rounds WHERE round_id = (SELECT id FROM round_id)) = 
                          FLOOR((SELECT warning_index FROM rounds WHERE round_id = (SELECT id FROM round_id))::float / (SELECT reinforcement_ratio FROM sessions WHERE session_id = (SELECT session_id FROM rounds WHERE round_id = (SELECT id FROM round_id)))::float * 4) + 1 THEN TRUE
@@ -228,7 +284,8 @@ BEGIN
                     WHEN (SELECT warning_quarter FROM rounds WHERE round_id = (SELECT id FROM round_id)) = -1 THEN TRUE
                     ELSE FALSE
                 END
-            WHEN session_info.mode_id IN (2, 5) THEN TRUE
+            WHEN session_info.mode_id = 5 THEN TRUE
+            WHEN session_info.mode_id = 2 THEN TRUE
             WHEN session_info.mode_id = 1 THEN TRUE
             ELSE FALSE
         END AS quarter_valid,
