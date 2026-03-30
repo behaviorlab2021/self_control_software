@@ -234,10 +234,10 @@ class MultiStepApp:
         return self.mode_id.get() == "HOPPER TRAINING"
 
     def is_schedule_training_mode(self):
-        return self.mode_id.get() == "SCHEDULE TRAINING"
+        return self.mode_id.get() in ("SCHEDULE TRAINING", "VARIABLE RATIO")
 
     def is_random_warning_mode(self):
-        return self.mode_id.get() == "RANDOM WARNING"
+        return self.mode_id.get() in ("RANDOM WARNING", "VARIABLE WARNING")
 
     def is_warning_training_mode(self):
         return self.mode_id.get() == "WARNING TRAINING"

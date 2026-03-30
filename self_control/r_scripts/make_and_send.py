@@ -66,7 +66,9 @@ def main(session_id):
     report_file_name = generate_file_name(experiment_date, subject_name, "report.pdf")
     cumulative_record_file_name = generate_file_name(experiment_date, subject_name, "cumulative_record.pdf")
 
-    rmd_path = os.path.normpath(os.path.join(script_dir, "mode_" + str(mode_id) + "_session_results.Rmd"))
+    rmd_mode_map = {5: 2, 6: 4}  # VARIABLE RATIO -> mode_2, VARIABLE WARNING -> mode_4
+    rmd_mode_id = rmd_mode_map.get(mode_id, mode_id)
+    rmd_path = os.path.normpath(os.path.join(script_dir, "mode_" + str(rmd_mode_id) + "_session_results.Rmd"))
     output_file_path = os.path.normpath(os.path.join(output_dir, report_file_name))
     print("Report File Name:", report_file_name)
     print("RMD Path:", rmd_path)

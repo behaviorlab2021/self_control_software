@@ -4,6 +4,7 @@ kivy-garden==0.1.4        # Kivy extensions
 
 # Database
 psycopg2-binary==2.9.6    # PostgreSQL connector for Python
+asyncpg==0.30.0           # Async PostgreSQL connector
 
 # USB Device Monitoring
 usbmonitor==0.9.3         # USB monitor to track touch panel device connections
@@ -17,7 +18,7 @@ scipy==1.11.2             # For any scientific calculations (optional)
 
 # Utilities & Extras
 Pillow==9.4.0             # Image processing (used by Kivy)
-python-decouple==3.8     # To load environment variables
+python-dotenv==1.0.1     # To load environment variables
 python-dateutil==2.8.2   # For better date and time handling
 loguru==0.6.0            # For better logging than the default logger
 

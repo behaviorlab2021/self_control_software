@@ -159,12 +159,12 @@ class ExperimentLayout(FloatLayout):
         self.warning_quarter = (self.warning_signal_index//( self.session_data["reinforcement_ratio"]/4))+1
 
     def free_round(self):
-        if self.session_data["mode_id"] == 4:
+        if self.session_data["mode_id"] in (4, 6):
             self.warning_signal_index = -1
             self.update_warning_quarter()
 
     def randomize_array(self):
-        if self.session_data["mode_id"] == 4:
+        if self.session_data["mode_id"] in (4, 6):
             self.warning_signal_index = random.randint(1, self.session_data["reinforcement_ratio"] - self.session_data["warning_hits"] - 1)
             self.update_warning_quarter()
         else:

@@ -3,6 +3,7 @@ __pycache__/
 # Ignore experiment.bat
 experiment.bat
 *.env
+venv/
 
 # But don't ignore experiment.bat_example
 !experiment.bat_example
