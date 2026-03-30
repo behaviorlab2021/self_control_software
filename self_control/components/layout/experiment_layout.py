@@ -60,6 +60,7 @@ class ExperimentLayout(FloatLayout):
     canvas_picture = ObjectProperty(None)
     button_green = ObjectProperty(None)
     button_red = ObjectProperty(None)
+    button_grey = ObjectProperty(None)
     label_top_left = ObjectProperty(None)
     label_top_right = ObjectProperty(None)
     label_bottom_left = ObjectProperty(None)
@@ -154,6 +155,9 @@ class ExperimentLayout(FloatLayout):
     
     def session_grace_radius(self):
         return float(self.session_data["grace_radius"]/100)
+
+    def update_grey_button_position(self):
+        self.button_grey.pos_hint = {'center_x': 0.3 + self.session_data["warning_signal_position"] / 100 * 0.4, 'center_y': self.session_data["button_height"] / 100}
 
     def initial_panel_connected_color(self):
         return [0.2, 0.2, 0.2, 0.2] if self.is_panel_connected  else [1, 0.2, 0.2, 1]
@@ -405,6 +409,7 @@ class ExperimentLayout(FloatLayout):
         self.rect.source = "assets/images/black_panel.png"
         self.button_red.disable_button()
         self.button_green.disable_button()
+        self.button_grey.opacity = 0
         self.spot.opacity = 0
         self.panel_connected_label.opacity = 0.3
         self.label_top_left.opacity = 0
@@ -421,7 +426,8 @@ class ExperimentLayout(FloatLayout):
             self.button_green.enable_button()
         else:
             self.button_green.disable_button()
-        # self.button_red_shadow.enable_button()
+        self.update_grey_button_position()
+        self.button_grey.opacity = 1
         self.spot.opacity = 1
         self.panel_connected_label.opacity = 1
         self.label_top_left.opacity = 1

@@ -4,6 +4,7 @@
 
     button_green: button_green
     button_red: button_red
+    button_grey: button_grey
     spot: spot
     label_top_right: label_top_right
     label_top_left: label_top_left
@@ -21,11 +22,18 @@
         on_parent: app.set_clicker(self); app.set_writer(self), app.set_async_pg_controller(self)
 
 
-    BasicImageButtonRed:  
+    Image:
+        id: button_grey
+        source: 'assets/images/grey_light.png'
+        size_hint: self.parent.button_size, self.parent.button_size
+        pos_hint:  {'center_x':.6, 'center_y': self.parent.button_height}
+        opacity: 0
+
+    BasicImageButtonRed:
         id: button_red
         source: 'assets/images/red_light.png'
         size_hint: self.parent.button_size, self.parent.button_size
-        pos_hint:  {'center_x':.6, 'center_y': self.parent.button_height} 
+        pos_hint:  {'center_x':.6, 'center_y': self.parent.button_height}
         grace_radius: root.session_grace_radius()
         on_parent: app.set_clicker(self); app.set_writer(self), app.set_async_pg_controller(self)
 
