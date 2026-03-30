@@ -1,14 +1,14 @@
-CREATE TABLE experiment_modes (
+CREATE TABLE IF NOT EXISTS experiment_modes (
     mode_id SERIAL PRIMARY KEY,
     mode_name VARCHAR(255) NOT NULL UNIQUE
 );
 
-CREATE TABLE subjects (
+CREATE TABLE IF NOT EXISTS subjects (
     subject_id SERIAL PRIMARY KEY,
     subject_name VARCHAR(255) NOT NULL UNIQUE
 );
 
-CREATE TABLE sessions (
+CREATE TABLE IF NOT EXISTS sessions (
     session_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     reinforcement_ratio INTEGER NOT NULL CHECK (reinforcement_ratio > 0),                                                     -- Integer, not null, greater than zero
     warning_hits INTEGER,                                           -- Number of hits
@@ -33,18 +33,21 @@ CREATE TABLE sessions (
     created_at TIMESTAMP DEFAULT NOW(),                 -- Record creation timestamp
     updated_at TIMESTAMP DEFAULT NOW(),                 -- Record update timestamp
     window_height INTEGER,                              -- Height of the window
-    window_width INTEGER,                               -- Width of the window  
+    window_width INTEGER,                               -- Width of the window
+    warning_q1 INTEGER,                                 -- Warning quartile 1 boundary (mode 6)
+    warning_q2 INTEGER,                                 -- Warning quartile 2 boundary (mode 6)
+    warning_q3 INTEGER,                                 -- Warning quartile 3 boundary (mode 6)
     comments TEXT                                       -- Optional comments
 );
 
-CREATE TABLE cumulative_record (
+CREATE TABLE IF NOT EXISTS cumulative_record (
     record_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(), -- Unique identifier for the event
     event_time TIMESTAMP NOT NULL DEFAULT NOW(),          -- Time of the event
     hit_count INTEGER,                                    -- Number of hit_count
     session_id UUID REFERENCES sessions(session_id) -- Foreign key to experiments table
 );
 
-CREATE TABLE rounds (
+CREATE TABLE IF NOT EXISTS rounds (
     session_id UUID REFERENCES sessions(session_id),
     round_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     round_index INTEGER NOT NULL,
@@ -56,7 +59,7 @@ CREATE TABLE rounds (
 );
 
 
-CREATE TABLE events (
+CREATE TABLE IF NOT EXISTS events (
     round_id UUID REFERENCES rounds(round_id),              -- Round Index
     event_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),   -- Unique identifier for the event
     event_time TIMESTAMP NOT NULL DEFAULT NOW(),            -- Time of the event
@@ -66,7 +69,7 @@ CREATE TABLE events (
 );
 
 -- Create pecks table
-CREATE TABLE pecks (
+CREATE TABLE IF NOT EXISTS pecks (
     peck_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 	x_start FLOAT NOT NULL, 
 	y_start FLOAT NOT NULL,
@@ -80,7 +83,7 @@ CREATE TABLE pecks (
 );
 
 
-CREATE TABLE round_tests (
+CREATE TABLE IF NOT EXISTS round_tests (
     round_test_id UUID PRIMARY KEY,
     round_id UUID REFERENCES rounds(round_id),
     green_number_accurate BOOLEAN,
@@ -97,7 +100,7 @@ CREATE TABLE round_tests (
 
 
 
-CREATE TABLE session_tests (
+CREATE TABLE IF NOT EXISTS session_tests (
     session_test_id UUID PRIMARY KEY,
     session_id UUID REFERENCES sessions(session_id),
     green_number_accurate BOOLEAN,
@@ -116,11 +119,12 @@ CREATE TABLE session_tests (
 
 
 INSERT INTO subjects (subject_name, subject_id)
-VALUES 
+VALUES
     ('Adam', 1),
     ('Moses', 2),
     ('Snik', 3),
-    ('Ermis', 4);
+    ('Ermis', 4)
+ON CONFLICT DO NOTHING;
 
 
 INSERT INTO experiment_modes (mode_name, mode_id) VALUES
@@ -129,23 +133,24 @@ INSERT INTO experiment_modes (mode_name, mode_id) VALUES
 ('WARNING TRAINING', 3),
 ('RANDOM WARNING', 4),
 ('VARIABLE RATIO', 5),
-('VARIABLE WARNING', 6);
+('VARIABLE WARNING', 6)
+ON CONFLICT DO NOTHING;
 
 -- Index for JOIN
-CREATE INDEX idx_events_round_id ON events(round_id);
-CREATE INDEX idx_rounds_round_id ON rounds(round_id);
+CREATE INDEX IF NOT EXISTS idx_events_round_id ON events(round_id);
+CREATE INDEX IF NOT EXISTS idx_rounds_round_id ON rounds(round_id);
 
 -- Index for Subquery Sorting
-CREATE INDEX idx_rounds_started_at ON rounds(started_at);
+CREATE INDEX IF NOT EXISTS idx_rounds_started_at ON rounds(started_at);
 
 -- Index for Filtering
-CREATE INDEX idx_events_event_type ON events(event_type);
-CREATE INDEX idx_events_warning_signal_present ON events(warning_signal_present);
+CREATE INDEX IF NOT EXISTS idx_events_event_type ON events(event_type);
+CREATE INDEX IF NOT EXISTS idx_events_warning_signal_present ON events(warning_signal_present);
 
 -- Composite Index for Filtering
-CREATE INDEX idx_events_round_event_type ON events(round_id, event_type);
+CREATE INDEX IF NOT EXISTS idx_events_round_event_type ON events(round_id, event_type);
 
-CREATE TABLE round_results (
+CREATE TABLE IF NOT EXISTS round_results (
     result_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     round_id UUID UNIQUE REFERENCES rounds(round_id),
     warning_terminated BOOLEAN,
@@ -175,7 +180,7 @@ $$ LANGUAGE plpgsql;
 
 
 
-CREATE TABLE round_checks (
+CREATE TABLE IF NOT EXISTS round_checks (
     round_check_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     round_id UUID UNIQUE REFERENCES rounds(round_id),
     check_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -364,7 +369,7 @@ BEGIN
                     WHEN (SELECT warning_index FROM rounds WHERE round_id = (SELECT id FROM round_id)) < 0
                         AND COUNT(CASE WHEN events.event_type = 'green' THEN 1 END) = rounds.required_clicks THEN TRUE
                     WHEN COUNT(CASE WHEN events.event_type = 'red' THEN 1 END) = 0
-                         AND COUNT(CASE WHEN events.event_type = 'green' THEN 1 END) < rounds.required_clicks
+                         AND COUNT(CASE WHEN events.event_type = 'green' THEN 1 END) <= rounds.required_clicks
                          AND COUNT(CASE WHEN events.event_type = 'green' AND events.warning_signal_present = TRUE THEN 1 END) > sessions.warning_hits THEN TRUE
                     WHEN COUNT(CASE WHEN events.event_type = 'red' THEN 1 END) = 1
                          AND COUNT(CASE WHEN events.event_type = 'green' THEN 1 END) = rounds.required_clicks
@@ -376,7 +381,7 @@ BEGIN
                     WHEN (SELECT warning_index FROM rounds WHERE round_id = (SELECT id FROM round_id)) < 0
                         AND COUNT(CASE WHEN events.event_type = 'green' THEN 1 END) = sessions.reinforcement_ratio THEN TRUE
                     WHEN COUNT(CASE WHEN events.event_type = 'red' THEN 1 END) = 0
-                         AND COUNT(CASE WHEN events.event_type = 'green' THEN 1 END) < sessions.reinforcement_ratio
+                         AND COUNT(CASE WHEN events.event_type = 'green' THEN 1 END) <= sessions.reinforcement_ratio
                          AND COUNT(CASE WHEN events.event_type = 'green' AND events.warning_signal_present = TRUE THEN 1 END) > sessions.warning_hits THEN TRUE
                     WHEN COUNT(CASE WHEN events.event_type = 'red' THEN 1 END) = 1
                          AND COUNT(CASE WHEN events.event_type = 'green' THEN 1 END) = sessions.reinforcement_ratio
@@ -533,12 +538,21 @@ BEGIN
         CASE
             WHEN session_info.mode_id = 6 THEN
                 CASE
+                    WHEN (SELECT warning_index FROM rounds WHERE round_id = (SELECT id FROM round_id)) < 0
+                         AND (SELECT warning_quarter FROM rounds WHERE round_id = (SELECT id FROM round_id)) = -1 THEN TRUE
                     WHEN (SELECT warning_quarter FROM rounds WHERE round_id = (SELECT id FROM round_id)) =
-                         FLOOR((SELECT warning_index FROM rounds WHERE round_id = (SELECT id FROM round_id))::float / (SELECT reinforcement_ratio FROM sessions WHERE session_id = (SELECT session_id FROM rounds WHERE round_id = (SELECT id FROM round_id)))::float * 4) + 1 THEN TRUE
+                         CASE
+                             WHEN (SELECT warning_index FROM rounds WHERE round_id = (SELECT id FROM round_id)) <= (SELECT warning_q1 FROM sessions WHERE session_id = (SELECT session_id FROM rounds WHERE round_id = (SELECT id FROM round_id))) THEN 1
+                             WHEN (SELECT warning_index FROM rounds WHERE round_id = (SELECT id FROM round_id)) <= (SELECT warning_q2 FROM sessions WHERE session_id = (SELECT session_id FROM rounds WHERE round_id = (SELECT id FROM round_id))) THEN 2
+                             WHEN (SELECT warning_index FROM rounds WHERE round_id = (SELECT id FROM round_id)) <= (SELECT warning_q3 FROM sessions WHERE session_id = (SELECT session_id FROM rounds WHERE round_id = (SELECT id FROM round_id))) THEN 3
+                             ELSE 4
+                         END THEN TRUE
                     ELSE FALSE
                 END
             WHEN session_info.mode_id = 4 THEN
                 CASE
+                    WHEN (SELECT warning_index FROM rounds WHERE round_id = (SELECT id FROM round_id)) < 0
+                         AND (SELECT warning_quarter FROM rounds WHERE round_id = (SELECT id FROM round_id)) = -1 THEN TRUE
                     WHEN (SELECT warning_quarter FROM rounds WHERE round_id = (SELECT id FROM round_id)) =
                          FLOOR((SELECT warning_index FROM rounds WHERE round_id = (SELECT id FROM round_id))::float / (SELECT reinforcement_ratio FROM sessions WHERE session_id = (SELECT session_id FROM rounds WHERE round_id = (SELECT id FROM round_id)))::float * 4) + 1 THEN TRUE
                     ELSE FALSE
@@ -597,7 +611,7 @@ $$ LANGUAGE plpgsql;
 
 --SELECT check_round('cd0d766e-a4b8-4da3-a2e6-a7af0d84c201');
 
-CREATE TABLE session_results (
+CREATE TABLE IF NOT EXISTS session_results (
     result_id UUID UNIQUE PRIMARY KEY DEFAULT gen_random_uuid(),
     session_id UUID  REFERENCES sessions(session_id),
     warning_quarter INT NOT NULL,
@@ -607,14 +621,14 @@ CREATE TABLE session_results (
     UNIQUE (session_id, warning_quarter) -- Composite unique constraint
 );
 
-CREATE TABLE weights (
+CREATE TABLE IF NOT EXISTS weights (
     weight_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),          -- Primary key
     subject_id INTEGER NOT NULL REFERENCES subjects(subject_id),    -- Foreign key to subjects table
     weighted_at TIMESTAMP DEFAULT NOW(),                            -- Record creation timestamp
     subject_weight INTEGER NOT NULL                                 -- Weight of the subject
 );
 
-CREATE TABLE errors (
+CREATE TABLE IF NOT EXISTS errors (
     error_id UUID UNIQUE PRIMARY KEY DEFAULT gen_random_uuid(),
     error_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     error_message TEXT,
@@ -638,7 +652,7 @@ $$ LANGUAGE plpgsql;
 
 
 
-CREATE TABLE session_checks (
+CREATE TABLE IF NOT EXISTS session_checks (
     session_check_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     session_id UUID UNIQUE REFERENCES sessions(session_id),
     check_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -676,7 +690,8 @@ BEGIN
         rounds r ON rr.round_id = r.round_id
     WHERE 
         r.session_id = $1 -- Use $1 to explicitly reference the function parameter
-    GROUP BY 
+        AND r.warning_quarter >= 0 -- Exclude free rounds (warning_quarter = -1)
+    GROUP BY
         warning_quarter, r.session_id
     ORDER BY 
         warning_quarter;
@@ -730,6 +745,7 @@ BEGIN
         FROM rounds r
         JOIN round_results rr ON r.round_id = rr.round_id
         WHERE r.session_id = session_uuid
+        AND r.warning_index >= 0 -- Exclude free rounds
         ORDER BY r.round_index
     LOOP
         IF warning_terminated = FALSE THEN
@@ -884,12 +900,12 @@ BEGIN
         CASE
             WHEN session_info.mode_id = 6 THEN
                 CASE
-                    WHEN (SELECT warning_count FROM warning_events) = (session_info.total_reinforcements + (SELECT punishment_count FROM punishment_events)) THEN TRUE
+                    WHEN (SELECT warning_count FROM warning_events) = (session_info.total_reinforcements + (SELECT punishment_count FROM punishment_events) - (SELECT warning_switch_count FROM warning_switch_events)) THEN TRUE
                     ELSE FALSE
                 END
             WHEN session_info.mode_id = 4 THEN
                 CASE
-                    WHEN (SELECT warning_count FROM warning_events) = (session_info.total_reinforcements + (SELECT punishment_count FROM punishment_events)) THEN TRUE
+                    WHEN (SELECT warning_count FROM warning_events) = (session_info.total_reinforcements + (SELECT punishment_count FROM punishment_events) - (SELECT warning_switch_count FROM warning_switch_events)) THEN TRUE
                     ELSE FALSE
                 END
             WHEN session_info.mode_id = 3 THEN
@@ -954,3 +970,12 @@ BEGIN
         session_info;
 END;
 $$ LANGUAGE plpgsql;
+
+
+-- ============================================================
+-- Schema migrations for existing databases
+-- Adds new columns that may not exist yet
+-- ============================================================
+ALTER TABLE sessions ADD COLUMN IF NOT EXISTS warning_q1 INTEGER;
+ALTER TABLE sessions ADD COLUMN IF NOT EXISTS warning_q2 INTEGER;
+ALTER TABLE sessions ADD COLUMN IF NOT EXISTS warning_q3 INTEGER;

@@ -92,9 +92,10 @@ BEGIN
         round_results rr
     JOIN 
         rounds r ON rr.round_id = r.round_id
-    WHERE 
+    WHERE
         r.session_id = $1 -- Use $1 to explicitly reference the function parameter
-    GROUP BY 
+        AND r.warning_quarter >= 0 -- Exclude free rounds (warning_quarter = -1)
+    GROUP BY
         warning_quarter, r.session_id
     ORDER BY 
         warning_quarter;

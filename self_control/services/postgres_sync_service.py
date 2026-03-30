@@ -138,33 +138,39 @@ class PostgresSyncService:
                 button_size,
                 grace_radius,
                 peck_slide,
-                comments
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                comments,
+                warning_q1,
+                warning_q2,
+                warning_q3
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             RETURNING session_id
             """
             cursor.execute(query, (
                 session_data['session_id'],
-                session_data['reinforcement_ratio'], 
-                session_data['warning_hits'], 
-                session_data['punishment_duration'], 
-                session_data['feed_time'], 
-                session_data['total_reinforcements'], 
-                session_data['consecutive_warnings_limit'], 
-                session_data['warning_alarm_volume'], 
-                session_data['warning_display_volume'], 
-                session_data['subject_id'], 
-                session_data['mode_id'], 
-                session_data['is_spot_on'], 
-                session_data['punishment_periodicity'], 
-                session_data['warning_duration'], 
-                session_data['time_before_warning_signal'], 
-                session_data['highlight_warning_signal'], 
-                session_data['warning_signal_position'], 
+                session_data['reinforcement_ratio'],
+                session_data['warning_hits'],
+                session_data['punishment_duration'],
+                session_data['feed_time'],
+                session_data['total_reinforcements'],
+                session_data['consecutive_warnings_limit'],
+                session_data['warning_alarm_volume'],
+                session_data['warning_display_volume'],
+                session_data['subject_id'],
+                session_data['mode_id'],
+                session_data['is_spot_on'],
+                session_data['punishment_periodicity'],
+                session_data['warning_duration'],
+                session_data['time_before_warning_signal'],
+                session_data['highlight_warning_signal'],
+                session_data['warning_signal_position'],
                 session_data['button_height'],
                 session_data['button_size'],
                 session_data['grace_radius'],
-                session_data['peck_slide'], 
-                session_data['comments']
+                session_data['peck_slide'],
+                session_data['comments'],
+                session_data.get('warning_q1'),
+                session_data.get('warning_q2'),
+                session_data.get('warning_q3')
             ))
             self.connection.commit()
             cursor.close()

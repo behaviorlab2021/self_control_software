@@ -267,6 +267,7 @@ SELECT warning_quarter,
 FROM round_results rr
 JOIN rounds r ON rr.round_id = r.round_id
 WHERE r.session_id = '", session_id, "'
+AND r.warning_quarter >= 0
 GROUP BY warning_quarter
 ORDER BY warning_quarter;"))
 ```

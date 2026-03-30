@@ -690,7 +690,7 @@ class MultiStepApp:
         punishment_duration = session_data['Punishment Duration']
         feed_time = session_data['Feed Time']
         is_spot_on = session_data['Is Spot On']
-        mode_id = session_data['Mode'],
+        mode_id = session_data['Mode']
         consecutive_warnings_limit = session_data['Consecutive Warnings Limit']
         warning_alarm_volume = session_data['Warning Alarm Volume']
         warning_display_volume = session_data['Warning Display Volume']
@@ -712,6 +712,13 @@ class MultiStepApp:
         # else:
         
         subject_id = subject['subject_id']
+
+        # Precompute warning quartiles for mode 6 (VARIABLE WARNING)
+        warning_q1, warning_q2, warning_q3 = None, None, None
+        if mode_id == 6:
+            from self_control_software.self_control.utils.variable_ratio import compute_warning_quartiles
+            warning_q1, warning_q2, warning_q3 = compute_warning_quartiles(int(reinforcement_ratio), int(warning_hits))
+
         session_data = {
             'session_id': session_id,  # Use the generated UUID
             'reinforcement_ratio': reinforcement_ratio,
@@ -734,7 +741,10 @@ class MultiStepApp:
             'button_size': button_size,
             'grace_radius': grace_radius,
             'peck_slide': peck_slide,
-            'comments': comments
+            'comments': comments,
+            'warning_q1': warning_q1,
+            'warning_q2': warning_q2,
+            'warning_q3': warning_q3
         }
         # Insert the session into the database and get the session_id
 
