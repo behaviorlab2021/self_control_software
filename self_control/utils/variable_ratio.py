@@ -92,3 +92,27 @@ def compute_warning_quartiles(mean, warning_hits):
             break
 
     return q1, q2, q3
+
+
+def plot_distribution(mean, min_value=1, n_samples=10000):
+    """Plot the shifted geometric distribution for given mean and min_value."""
+    import matplotlib.pyplot as plt
+
+    samples = [generate_required_clicks(mean, min_value) for _ in range(n_samples)]
+    p = _geometric_p(mean, min_value)
+
+    plt.figure(figsize=(10, 5))
+    plt.hist(samples, bins=range(min(samples), max(samples) + 2),
+             density=True, alpha=0.7, edgecolor='black', label='Samples')
+
+    x = range(min_value, max(samples) + 1)
+    pmf = [p * (1 - p) ** (k - min_value) for k in x]
+    plt.plot(x, pmf, 'r-o', markersize=3, label='Theoretical PMF')
+
+    plt.axvline(mean, color='green', linestyle='--', label=f'Mean = {mean}')
+    plt.xlabel('Required clicks')
+    plt.ylabel('Probability')
+    plt.title(f'Shifted Geometric (min={min_value}, mean={mean}, p={p:.4f})')
+    plt.legend()
+    plt.tight_layout()
+    plt.show()

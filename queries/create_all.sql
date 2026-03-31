@@ -58,6 +58,16 @@ CREATE TABLE IF NOT EXISTS rounds (
     started_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Migration: add required_clicks for existing databases (no-op if column already exists)
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'rounds' AND column_name = 'required_clicks'
+    ) THEN
+        ALTER TABLE rounds ADD COLUMN required_clicks INTEGER;
+    END IF;
+END $$;
 
 CREATE TABLE IF NOT EXISTS events (
     round_id UUID REFERENCES rounds(round_id),              -- Round Index
