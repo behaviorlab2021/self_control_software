@@ -166,19 +166,19 @@ kable(session_details_t, caption = "Detailed Session Information")
 
 \newpage
 
-## Required Clicks per Round
+## Variable Schedule per Round
 
 ```{r query_required_clicks, include=FALSE}
 rounds_data <- dbGetQuery(conn, paste0("
-  SELECT round_index, required_clicks
+  SELECT round_index, required_clicks, warning_index, warning_quarter
   FROM rounds
   WHERE session_id = '", session_id, "'
   ORDER BY round_index;"))
 ```
 
 ```{r required_clicks_table, echo=FALSE}
-kable(rounds_data, caption = "Required Clicks per Round",
-      col.names = c("Round", "Required Clicks"))
+kable(rounds_data, caption = "Variable Schedule per Round",
+      col.names = c("Round", "Required Clicks", "Warning Index", "Quarter"))
 ```
 
 ```{r required_clicks_histogram, echo=FALSE, fig.width=8, fig.height=5}
