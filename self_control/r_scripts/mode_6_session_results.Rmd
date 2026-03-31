@@ -105,7 +105,10 @@ session_details <- dbGetQuery(conn, paste0("
     peck_slide,
     window_height,
     window_width,
-    comments
+    comments,
+    warning_q1,
+    warning_q2,
+    warning_q3
   FROM sessions
   JOIN subjects ON sessions.subject_id = subjects.subject_id
   JOIN experiment_modes ON sessions.mode_id = experiment_modes.mode_id
@@ -277,6 +280,8 @@ styled_table
 \newpage
 
 ## Session Results
+
+**Quarter boundaries:** Q1: warning index $\leq$ `r session_details$warning_q1` | Q2: `r session_details$warning_q1 + 1`--`r session_details$warning_q2` | Q3: `r session_details$warning_q2 + 1`--`r session_details$warning_q3` | Q4: $>$ `r session_details$warning_q3`
 
 ```{r query_session_results, include=FALSE}
 # Query the database to get detailed session information
