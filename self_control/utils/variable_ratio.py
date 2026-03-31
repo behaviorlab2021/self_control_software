@@ -60,13 +60,13 @@ def compute_warning_quartiles_uniform(mean, warning_hits):
 
 def compute_warning_quartiles(mean, warning_hits):
     """Compute Q1, Q2, Q3 for the compound distribution of warning_signal_index.
-    R ~ ShiftedGeometric(min_value=1, mean) and W|R ~ Uniform(1, R - warning_hits - 1).
+    R ~ ShiftedGeometric(min_value=warning_hits+2, mean) and W|R ~ Uniform(1, R - warning_hits - 1).
     Returns the quartile cutoff points (Q1, Q2, Q3).
     """
     h = warning_hits
-    min_value = 1
+    min_value = h + 2
     p = _geometric_p(mean, min_value)
-    a = max(min_value, h + 2)
+    a = min_value
     r_max = min_value + int(math.ceil(math.log(0.001) / math.log(1 - p)))
 
     def p_r(r):
